@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+
+	"frost-k8s-threshold-signing/internal/api"
 )
 
 func healthHandler(
@@ -47,6 +50,70 @@ func signerHealthHandler(
 	)
 }
 
+func collectCommitmentHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	ports := []string{
+		"8081",
+		"8082",
+		"8083",
+	}
+
+	var result api.CommitmentCollection
+
+	for _, port := range ports {
+
+		resp, err := http.Post(
+			"http://localhost:"+port+"/commit",
+			"application/json",
+			nil,
+		)
+
+		if err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		var commitment api.CommitmentResponse
+
+		if err := json.NewDecoder(
+			resp.Body,
+		).Decode(&commitment); err != nil {
+
+			resp.Body.Close()
+
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		resp.Body.Close()
+
+		result.Commitments = append(
+			result.Commitments,
+			commitment,
+		)
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(
+		result,
+	)
+}
+
 func main() {
 
 	http.HandleFunc(
@@ -57,6 +124,11 @@ func main() {
 	http.HandleFunc(
 		"/signer-health",
 		signerHealthHandler,
+	)
+
+	http.HandleFunc(
+		"/collect-commitment",
+		collectCommitmentHandler,
 	)
 
 	fmt.Println(

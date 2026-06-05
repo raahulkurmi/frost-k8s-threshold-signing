@@ -6,6 +6,8 @@ import (
 	 "encoding/json"
 
     "frost-k8s-threshold-signing/internal/api"
+	"frost-k8s-threshold-signing/internal/froststate"
+	"frost-k8s-threshold-signing/internal/config"
 )
 
 func healthHandler(
@@ -24,10 +26,12 @@ func commitHandler(
 	r *http.Request,
 ) {
 
-	resp := api.CommitmentResponse{
-	CommitmentID: 12345,
-	SignerID:     1,
-	Commitment:   "frost-commitment-placeholder",
+commitment := froststate.Signer.Commit()
+
+resp := api.CommitmentResponse{
+	CommitmentID: commitment.CommitmentID,
+	SignerID:     commitment.SignerID,
+	Commitment:   commitment.Hex(),
 }
 	w.Header().Set(
 		"Content-Type",
@@ -39,6 +43,11 @@ func commitHandler(
 
 func main() {
 
+
+
+	if err := froststate.Init(); err != nil {
+		panic(err)
+	}
 	http.HandleFunc(
 		"/health",
 		healthHandler,
@@ -48,14 +57,17 @@ func main() {
 	commitHandler,
 )
 
-	fmt.Println(
-		"Signer listening on :8081",
-	)
+	port := config.Port()
 
-	if err := http.ListenAndServe(
-		":8081",
-		nil,
-	); err != nil {
-		panic(err)
-	}
+fmt.Printf(
+	"Signer listening on :%s\n",
+	port,
+)
+
+if err := http.ListenAndServe(
+	":"+port,
+	nil,
+); err != nil {
+	panic(err)
+}
 }
