@@ -8,6 +8,7 @@ import (
     "frost-k8s-threshold-signing/internal/api"
 	"frost-k8s-threshold-signing/internal/froststate"
 	"frost-k8s-threshold-signing/internal/config"
+	
 )
 
 func healthHandler(
@@ -41,9 +42,33 @@ resp := api.CommitmentResponse{
 	json.NewEncoder(w).Encode(resp)
 }
 
+
+func signHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	resp := api.SignatureShareResponse{
+		SignerID: froststate.Signer.Identifier(),
+		Share:    "signature-share-placeholder",
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(
+		resp,
+	)
+}
+
 func main() {
 
-
+	http.HandleFunc(
+	"/sign",
+	signHandler,
+)
 
 	if err := froststate.Init(); err != nil {
 		panic(err)

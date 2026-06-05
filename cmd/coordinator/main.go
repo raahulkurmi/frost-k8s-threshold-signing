@@ -114,13 +114,79 @@ func collectCommitmentHandler(
 	)
 }
 
+
+func collectSignaturesHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	ports := []string{
+		"8081",
+		"8082",
+		"8083",
+	}
+
+	var result api.SignatureCollection
+
+	for _, port := range ports {
+
+		resp, err := http.Post(
+			"http://localhost:"+port+"/sign",
+			"application/json",
+			nil,
+		)
+
+		if err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		var share api.SignatureShareResponse
+
+		if err := json.NewDecoder(
+			resp.Body,
+		).Decode(&share); err != nil {
+
+			resp.Body.Close()
+
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		resp.Body.Close()
+
+		result.Signatures = append(
+			result.Signatures,
+			share,
+		)
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(result)
+}
+
 func main() {
 
 	http.HandleFunc(
 		"/health",
 		healthHandler,
 	)
-
+http.HandleFunc(
+	"/collect-signatures",
+	collectSignaturesHandler,
+)
 	http.HandleFunc(
 		"/signer-health",
 		signerHealthHandler,

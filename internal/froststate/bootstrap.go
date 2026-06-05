@@ -66,11 +66,12 @@ shareIndex := signerID - 1
 		return err
 	}
 
-	Signer = signer
+	
 	println(
 	"Loaded signer",
 	signer.Identifier(),
 )
-
+    Signer = signer
+	Config = frostConfig
 	return nil
 }
