@@ -7,12 +7,18 @@ import (
 )
 
 type Coordinator struct {
-	Signers []*signer.Signer
+	Signers   []*signer.Signer
+	Threshold int
 }
 
-func New(signers []*signer.Signer) *Coordinator {
+func New(
+	signers []*signer.Signer,
+	threshold int,
+) *Coordinator {
+
 	return &Coordinator{
-		Signers: signers,
+		Signers:   signers,
+		Threshold: threshold,
 	}
 }
 
@@ -20,10 +26,25 @@ func (c *Coordinator) Sign(message string) {
 
 	fmt.Println("Coordinator received request")
 
+	var partials []string
+
 	for _, s := range c.Signers {
 
 		signature := s.Sign(message)
 
-		fmt.Println(signature)
+		partials = append(partials, signature)
+
+		if len(partials) >= c.Threshold {
+
+			break
+		}
+	}
+
+	fmt.Println()
+	fmt.Println("Threshold reached")
+
+	for _, p := range partials {
+
+		fmt.Println(p)
 	}
 }
