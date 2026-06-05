@@ -194,4 +194,25 @@ fmt.Printf(
 )
 
 
+commitments.Sort()
+
+signature, err := config.AggregateSignatures(
+	message,
+	sigShares,
+	commitments,
+	true,
+)
+
+if err != nil {
+	panic(err)
+}
+
+fmt.Println()
+fmt.Println("Threshold signature generated successfully")
+
+fmt.Printf(
+	"Signature Group: %v\n",
+	signature.Group,
+)
+
 }
