@@ -26,9 +26,9 @@ func main() {
 
 	for _, share := range shares {
 
-		fmt.Printf(
-			"Signer ID: %d\n",
-			share.Identifier,
-		)
-	}
+	fmt.Printf(
+		"Signer ID: %d\n",
+		share.Identifier(),
+	)
+}
 }
