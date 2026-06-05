@@ -1,0 +1,13 @@
+# binaries
+bin/
+dist/
+
+# mac
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# logs
+*.log
