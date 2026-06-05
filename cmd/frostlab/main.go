@@ -118,4 +118,19 @@ fmt.Printf(
 	signer.Identifier(),
 )
 
+commitment := signer.Commit()
+
+fmt.Println()
+fmt.Println("Commitment generated")
+
+fmt.Printf(
+	"Commitment ID: %d\n",
+	commitment.CommitmentID,
+)
+
+fmt.Printf(
+	"Signer ID: %d\n",
+	commitment.SignerID,
+)
+
 }
