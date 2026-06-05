@@ -6,6 +6,7 @@ import (
 	secretsharing "github.com/bytemare/secret-sharing"
 	"github.com/bytemare/secret-sharing/keys"
 	"github.com/bytemare/ecc"
+	"github.com/bytemare/frost"
 )
 
 func main() {
@@ -67,5 +68,37 @@ func main() {
 			share.Public() != nil,
 			share.SecretKey() != nil,
 		)
+		
 	}
+	fmt.Println()
+
+for _, share := range shares {
+
+	fmt.Printf(
+		"ID=%d VerificationKeyExists=%v\n",
+		share.Identifier(),
+		share.VerificationKey != nil,
+	)
+}
+
+
+
+fmt.Println()
+
+config := &frost.Configuration{
+	Ciphersuite:           frost.Default,
+	Threshold:             3,
+	MaxSigners:            5,
+	VerificationKey:       shares[0].VerificationKey,
+	SignerPublicKeyShares: publicShares,
+}
+
+err = config.Init()
+
+if err != nil {
+	panic(err)
+}
+
+fmt.Println("FROST configuration initialized successfully")
+
 }
