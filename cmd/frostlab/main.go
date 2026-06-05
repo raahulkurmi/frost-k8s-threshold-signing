@@ -101,4 +101,21 @@ if err != nil {
 
 fmt.Println("FROST configuration initialized successfully")
 
+
+
+fmt.Println()
+
+signer, err := config.Signer(
+	shares[0],
+)
+
+if err != nil {
+	panic(err)
+}
+
+fmt.Printf(
+	"Created FROST signer with ID %d\n",
+	signer.Identifier(),
+)
+
 }
