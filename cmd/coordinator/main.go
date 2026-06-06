@@ -11,6 +11,7 @@ import (
 
 	"frost-k8s-threshold-signing/internal/api"
 	"frost-k8s-threshold-signing/internal/coordinatorstate"
+	"encoding/base64"
 )
 
 var signerPorts = []string{
@@ -229,6 +230,10 @@ func collectSignaturesHandler(
 	)
 }
 
+func encodeBase64URL(data []byte) string {
+	return base64.RawURLEncoding.EncodeToString(data)
+}
+
 func thresholdSignHandler(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -342,6 +347,139 @@ func thresholdSignHandler(
 	json.NewEncoder(w).Encode(resp)
 }
 
+
+func thresholdJWTHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	headerJSON := []byte(`{"alg":"FROST-RISTRETTO255-SHA512","typ":"JWT"}`)
+
+	payloadJSON := []byte(`{
+		"iss":"kubernetes/serviceaccount",
+		"sub":"system:serviceaccount:default:demo-sa",
+		"aud":["https://kubernetes.default.svc"],
+		"namespace":"default",
+		"serviceaccount":"demo-sa"
+	}`)
+
+	header := encodeBase64URL(headerJSON)
+	payload := encodeBase64URL(payloadJSON)
+
+	signingInput := header + "." + payload
+
+	commitmentCollection, err := collectCommitments()
+
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	signatureCollection, err := collectSignaturesWithCommitments(
+		signingInput,
+		commitmentCollection.Commitments,
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	var commitmentList frost.CommitmentList
+
+	for _, item := range commitmentCollection.Commitments {
+
+		commitment := &frost.Commitment{}
+
+		if err := commitment.DecodeHex(
+			item.Commitment,
+		); err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		commitmentList = append(
+			commitmentList,
+			commitment,
+		)
+	}
+
+	commitmentList.Sort()
+
+	var signatureShares []*frost.SignatureShare
+
+	for _, item := range signatureCollection.Signatures {
+
+		share := &frost.SignatureShare{}
+
+		if err := share.DecodeHex(
+			item.Share,
+		); err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		signatureShares = append(
+			signatureShares,
+			share,
+		)
+	}
+
+	finalSignature, err := coordinatorstate.Config.AggregateSignatures(
+		[]byte(signingInput),
+		signatureShares,
+		commitmentList,
+		true,
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	signature := encodeBase64URL(
+		[]byte(finalSignature.Hex()),
+	)
+
+	token := signingInput + "." + signature
+
+	resp := api.ThresholdJWTResponse{
+		Header:       header,
+		Payload:      payload,
+		SigningInput: signingInput,
+		Signature:    signature,
+		Token:        token,
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+
 func main() {
 
 	if err := coordinatorstate.Init(); err != nil {
@@ -372,7 +510,10 @@ func main() {
 		"/threshold-sign",
 		thresholdSignHandler,
 	)
-
+http.HandleFunc(
+	"/threshold-jwt",
+	thresholdJWTHandler,
+)
 	fmt.Println(
 		"Coordinator listening on :8080",
 	)
