@@ -1,8 +1,8 @@
 package api
 
 type SignRequest struct {
-	Message     string                 `json:"message"`
-	Commitments []CommitmentResponse   `json:"commitments"`
+	Message     string               `json:"message"`
+	Commitments []CommitmentResponse `json:"commitments"`
 }
 
 type SignatureShareResponse struct {
