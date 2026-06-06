@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package v1alpha1;
+package v1;
 
 option go_package = "frost-k8s-threshold-signing/proto/externaljwt/v1alpha1";
 

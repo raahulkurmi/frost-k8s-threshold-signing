@@ -2,6 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -24,6 +28,7 @@ var signerAddresses = []string{
 
 var (
 	socketPath = getEnv("SOCKET_PATH", "/var/run/frost-k8s/signer.sock")
+	tcpAddr    = getEnv("TCP_ADDR", "")
 	keyID      = getEnv("KEY_ID", "frost-k8s-v1")
 )
 
@@ -123,22 +128,47 @@ func generateThresholdJWT(payloadJSON []byte) (string, string, error) {
 	return header, signature, nil
 }
 
+// getVerificationKeyPKIX generates an ephemeral ECDSA key pair.
+// In production this would be derived from the FROST verification key.
+// K8s requires RS256/ES256 — FROST Schnorr signatures are verified separately.
+// This is a known prototype limitation documented in Paper 3.
+func getVerificationKeyPKIX() ([]byte, error) {
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return x509.MarshalPKIXPublicKey(&ecKey.PublicKey)
+}
+
 func main() {
 	if err := coordinatorstate.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
 	}
 
-	_ = os.MkdirAll("/var/run/frost-k8s", 0750)
-
-	srv, err := grpcserver.New(generateThresholdJWT, keyID)
+	pkix, err := getVerificationKeyPKIX()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("[proxy] socket=%s key=%s signers=%v\n", socketPath, keyID, signerAddresses)
+	srv, err := grpcserver.New(generateThresholdJWT, keyID, pkix)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		os.Exit(1)
+	}
 
+	if tcpAddr != "" {
+		fmt.Printf("[proxy] TCP mode — addr=%s key=%s signers=%v\n", tcpAddr, keyID, signerAddresses)
+		if err := grpcserver.ListenAndServeTCP(tcpAddr, srv); err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	_ = os.MkdirAll("/var/run/frost-k8s", 0750)
+	fmt.Printf("[proxy] Unix mode — socket=%s key=%s signers=%v\n", socketPath, keyID, signerAddresses)
 	if err := grpcserver.ListenAndServe(socketPath, srv); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)

@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ExternalJWTSigner_Sign_FullMethodName      = "/v1alpha1.ExternalJWTSigner/Sign"
-	ExternalJWTSigner_FetchKeys_FullMethodName = "/v1alpha1.ExternalJWTSigner/FetchKeys"
-	ExternalJWTSigner_Metadata_FullMethodName  = "/v1alpha1.ExternalJWTSigner/Metadata"
+	ExternalJWTSigner_Sign_FullMethodName      = "/v1.ExternalJWTSigner/Sign"
+	ExternalJWTSigner_FetchKeys_FullMethodName = "/v1.ExternalJWTSigner/FetchKeys"
+	ExternalJWTSigner_Metadata_FullMethodName  = "/v1.ExternalJWTSigner/Metadata"
 )
 
 // ExternalJWTSignerClient is the client API for ExternalJWTSigner service.
@@ -176,7 +176,7 @@ func _ExternalJWTSigner_Metadata_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ExternalJWTSigner_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "v1alpha1.ExternalJWTSigner",
+	ServiceName: "v1.ExternalJWTSigner",
 	HandlerType: (*ExternalJWTSignerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

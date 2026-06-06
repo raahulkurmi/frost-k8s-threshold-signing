@@ -358,15 +358,15 @@ var File_proto_externaljwt_v1alpha1_api_proto protoreflect.FileDescriptor
 
 const file_proto_externaljwt_v1alpha1_api_proto_rawDesc = "" +
 	"\n" +
-	"$proto/externaljwt/v1alpha1/api.proto\x12\bv1alpha1\x1a\x1fgoogle/protobuf/timestamp.proto\"(\n" +
+	"$proto/externaljwt/v1alpha1/api.proto\x12\x02v1\x1a\x1fgoogle/protobuf/timestamp.proto\"(\n" +
 	"\x0eSignJWTRequest\x12\x16\n" +
 	"\x06claims\x18\x01 \x01(\tR\x06claims\"G\n" +
 	"\x0fSignJWTResponse\x12\x16\n" +
 	"\x06header\x18\x01 \x01(\tR\x06header\x12\x1c\n" +
 	"\tsignature\x18\x02 \x01(\tR\tsignature\"\x12\n" +
-	"\x10FetchKeysRequest\"\xab\x01\n" +
-	"\x11FetchKeysResponse\x12!\n" +
-	"\x04keys\x18\x01 \x03(\v2\r.v1alpha1.KeyR\x04keys\x12A\n" +
+	"\x10FetchKeysRequest\"\xa5\x01\n" +
+	"\x11FetchKeysResponse\x12\x1b\n" +
+	"\x04keys\x18\x01 \x03(\v2\a.v1.KeyR\x04keys\x12A\n" +
 	"\x0edata_timestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\rdataTimestamp\x120\n" +
 	"\x14refresh_hint_seconds\x18\x03 \x01(\x03R\x12refreshHintSeconds\"m\n" +
 	"\x03Key\x12\x15\n" +
@@ -375,11 +375,11 @@ const file_proto_externaljwt_v1alpha1_api_proto_rawDesc = "" +
 	"\x1bexclude_from_oidc_discovery\x18\x03 \x01(\bR\x18excludeFromOidcDiscovery\"\x11\n" +
 	"\x0fMetadataRequest\"S\n" +
 	"\x10MetadataResponse\x12?\n" +
-	"\x1cmax_token_expiration_seconds\x18\x01 \x01(\x03R\x19maxTokenExpirationSeconds2\xdf\x01\n" +
-	"\x11ExternalJWTSigner\x12=\n" +
-	"\x04Sign\x12\x18.v1alpha1.SignJWTRequest\x1a\x19.v1alpha1.SignJWTResponse\"\x00\x12F\n" +
-	"\tFetchKeys\x12\x1a.v1alpha1.FetchKeysRequest\x1a\x1b.v1alpha1.FetchKeysResponse\"\x00\x12C\n" +
-	"\bMetadata\x12\x19.v1alpha1.MetadataRequest\x1a\x1a.v1alpha1.MetadataResponse\"\x00B8Z6frost-k8s-threshold-signing/proto/externaljwt/v1alpha1b\x06proto3"
+	"\x1cmax_token_expiration_seconds\x18\x01 \x01(\x03R\x19maxTokenExpirationSeconds2\xbb\x01\n" +
+	"\x11ExternalJWTSigner\x121\n" +
+	"\x04Sign\x12\x12.v1.SignJWTRequest\x1a\x13.v1.SignJWTResponse\"\x00\x12:\n" +
+	"\tFetchKeys\x12\x14.v1.FetchKeysRequest\x1a\x15.v1.FetchKeysResponse\"\x00\x127\n" +
+	"\bMetadata\x12\x13.v1.MetadataRequest\x1a\x14.v1.MetadataResponse\"\x00B8Z6frost-k8s-threshold-signing/proto/externaljwt/v1alpha1b\x06proto3"
 
 var (
 	file_proto_externaljwt_v1alpha1_api_proto_rawDescOnce sync.Once
@@ -395,24 +395,24 @@ func file_proto_externaljwt_v1alpha1_api_proto_rawDescGZIP() []byte {
 
 var file_proto_externaljwt_v1alpha1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_externaljwt_v1alpha1_api_proto_goTypes = []any{
-	(*SignJWTRequest)(nil),        // 0: v1alpha1.SignJWTRequest
-	(*SignJWTResponse)(nil),       // 1: v1alpha1.SignJWTResponse
-	(*FetchKeysRequest)(nil),      // 2: v1alpha1.FetchKeysRequest
-	(*FetchKeysResponse)(nil),     // 3: v1alpha1.FetchKeysResponse
-	(*Key)(nil),                   // 4: v1alpha1.Key
-	(*MetadataRequest)(nil),       // 5: v1alpha1.MetadataRequest
-	(*MetadataResponse)(nil),      // 6: v1alpha1.MetadataResponse
+	(*SignJWTRequest)(nil),        // 0: v1.SignJWTRequest
+	(*SignJWTResponse)(nil),       // 1: v1.SignJWTResponse
+	(*FetchKeysRequest)(nil),      // 2: v1.FetchKeysRequest
+	(*FetchKeysResponse)(nil),     // 3: v1.FetchKeysResponse
+	(*Key)(nil),                   // 4: v1.Key
+	(*MetadataRequest)(nil),       // 5: v1.MetadataRequest
+	(*MetadataResponse)(nil),      // 6: v1.MetadataResponse
 	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
 }
 var file_proto_externaljwt_v1alpha1_api_proto_depIdxs = []int32{
-	4, // 0: v1alpha1.FetchKeysResponse.keys:type_name -> v1alpha1.Key
-	7, // 1: v1alpha1.FetchKeysResponse.data_timestamp:type_name -> google.protobuf.Timestamp
-	0, // 2: v1alpha1.ExternalJWTSigner.Sign:input_type -> v1alpha1.SignJWTRequest
-	2, // 3: v1alpha1.ExternalJWTSigner.FetchKeys:input_type -> v1alpha1.FetchKeysRequest
-	5, // 4: v1alpha1.ExternalJWTSigner.Metadata:input_type -> v1alpha1.MetadataRequest
-	1, // 5: v1alpha1.ExternalJWTSigner.Sign:output_type -> v1alpha1.SignJWTResponse
-	3, // 6: v1alpha1.ExternalJWTSigner.FetchKeys:output_type -> v1alpha1.FetchKeysResponse
-	6, // 7: v1alpha1.ExternalJWTSigner.Metadata:output_type -> v1alpha1.MetadataResponse
+	4, // 0: v1.FetchKeysResponse.keys:type_name -> v1.Key
+	7, // 1: v1.FetchKeysResponse.data_timestamp:type_name -> google.protobuf.Timestamp
+	0, // 2: v1.ExternalJWTSigner.Sign:input_type -> v1.SignJWTRequest
+	2, // 3: v1.ExternalJWTSigner.FetchKeys:input_type -> v1.FetchKeysRequest
+	5, // 4: v1.ExternalJWTSigner.Metadata:input_type -> v1.MetadataRequest
+	1, // 5: v1.ExternalJWTSigner.Sign:output_type -> v1.SignJWTResponse
+	3, // 6: v1.ExternalJWTSigner.FetchKeys:output_type -> v1.FetchKeysResponse
+	6, // 7: v1.ExternalJWTSigner.Metadata:output_type -> v1.MetadataResponse
 	5, // [5:8] is the sub-list for method output_type
 	2, // [2:5] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

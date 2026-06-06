@@ -2,10 +2,6 @@ package grpcserver
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
 	"fmt"
 	"net"
 	"os"
@@ -26,19 +22,11 @@ type Server struct {
 	verificationKeyPKIX []byte
 }
 
-func New(signFn ThresholdSignFn, keyID string) (*Server, error) {
-	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, fmt.Errorf("generate key: %w", err)
-	}
-	pkix, err := x509.MarshalPKIXPublicKey(&ecKey.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("marshal pkix: %w", err)
-	}
+func New(signFn ThresholdSignFn, keyID string, verificationKeyPKIX []byte) (*Server, error) {
 	return &Server{
 		signFn:              signFn,
 		keyID:               keyID,
-		verificationKeyPKIX: pkix,
+		verificationKeyPKIX: verificationKeyPKIX,
 	}, nil
 }
 
@@ -54,7 +42,10 @@ func (s *Server) Sign(ctx context.Context, req *pb.SignJWTRequest) (*pb.SignJWTR
 func (s *Server) FetchKeys(ctx context.Context, req *pb.FetchKeysRequest) (*pb.FetchKeysResponse, error) {
 	fmt.Println("[grpc] FetchKeys()")
 	return &pb.FetchKeysResponse{
-		Keys:               []*pb.Key{{KeyId: s.keyID, Key: s.verificationKeyPKIX}},
+		Keys: []*pb.Key{{
+			KeyId: s.keyID,
+			Key:   s.verificationKeyPKIX,
+		}},
 		DataTimestamp:      timestamppb.New(time.Now()),
 		RefreshHintSeconds: 300,
 	}, nil
@@ -74,5 +65,16 @@ func ListenAndServe(socketPath string, srv *Server) error {
 	grpcServer := grpc.NewServer()
 	pb.RegisterExternalJWTSignerServer(grpcServer, srv)
 	fmt.Printf("[grpc] Listening on unix://%s\n", socketPath)
+	return grpcServer.Serve(listener)
+}
+
+func ListenAndServeTCP(addr string, srv *Server) error {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("listen tcp %s: %w", addr, err)
+	}
+	grpcServer := grpc.NewServer()
+	pb.RegisterExternalJWTSignerServer(grpcServer, srv)
+	fmt.Printf("[grpc] Listening on tcp://%s\n", addr)
 	return grpcServer.Serve(listener)
 }

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   signer-1:
     build:
@@ -8,8 +6,8 @@ services:
     environment:
       - SIGNER_ID=1
       - PORT=8081
-    ports:
-      - "8081:8081"
+    networks:
+      - minikube
 
   signer-2:
     build:
@@ -18,8 +16,8 @@ services:
     environment:
       - SIGNER_ID=2
       - PORT=8082
-    ports:
-      - "8082:8082"
+    networks:
+      - minikube
 
   signer-3:
     build:
@@ -28,8 +26,8 @@ services:
     environment:
       - SIGNER_ID=3
       - PORT=8083
-    ports:
-      - "8083:8083"
+    networks:
+      - minikube
 
   grpc-proxy:
     build:
@@ -39,15 +37,17 @@ services:
       - SIGNER_1_ADDR=http://signer-1:8081
       - SIGNER_2_ADDR=http://signer-2:8082
       - SIGNER_3_ADDR=http://signer-3:8083
-      - SOCKET_PATH=/var/run/frost-k8s/signer.sock
+      - TCP_ADDR=0.0.0.0:9090
       - KEY_ID=frost-k8s-v1
-      - KEYS_FILE=/app/data/frost-keys.json
-    volumes:
-      - frost-socket:/var/run/frost-k8s
+    ports:
+      - "9090:9090"
     depends_on:
       - signer-1
       - signer-2
       - signer-3
+    networks:
+      - minikube
 
-volumes:
-  frost-socket:
+networks:
+  minikube:
+    external: true
