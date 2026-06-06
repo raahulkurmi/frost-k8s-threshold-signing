@@ -29,6 +29,26 @@ services:
     networks:
       - minikube
 
+  signer-4:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.signer
+    environment:
+      - SIGNER_ID=4
+      - PORT=8084
+    networks:
+      - minikube
+
+  signer-5:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.signer
+    environment:
+      - SIGNER_ID=5
+      - PORT=8085
+    networks:
+      - minikube
+
   grpc-proxy:
     build:
       context: ../
@@ -37,6 +57,8 @@ services:
       - SIGNER_1_ADDR=http://signer-1:8081
       - SIGNER_2_ADDR=http://signer-2:8082
       - SIGNER_3_ADDR=http://signer-3:8083
+      - SIGNER_4_ADDR=http://signer-4:8084
+      - SIGNER_5_ADDR=http://signer-5:8085
       - TCP_ADDR=0.0.0.0:9090
       - KEY_ID=frost-k8s-v1
     ports:
@@ -45,6 +67,8 @@ services:
       - signer-1
       - signer-2
       - signer-3
+      - signer-4
+      - signer-5
     networks:
       - minikube
 

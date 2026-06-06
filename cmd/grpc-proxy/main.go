@@ -24,7 +24,11 @@ var signerAddresses = []string{
 	getEnv("SIGNER_1_ADDR", "http://localhost:8081"),
 	getEnv("SIGNER_2_ADDR", "http://localhost:8082"),
 	getEnv("SIGNER_3_ADDR", "http://localhost:8083"),
+	getEnv("SIGNER_4_ADDR", "http://localhost:8084"),
+	getEnv("SIGNER_5_ADDR", "http://localhost:8085"),
 }
+
+const threshold = 3
 
 var (
 	socketPath = getEnv("SOCKET_PATH", "/var/run/frost-k8s/signer.sock")
@@ -43,39 +47,61 @@ func encodeBase64URL(data []byte) string {
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
-func collectCommitments() ([]api.CommitmentResponse, error) {
+// collectCommitments tries all signers, returns first `threshold` successful ones
+func collectCommitments() ([]api.CommitmentResponse, []string, error) {
 	var commitments []api.CommitmentResponse
+	var activeSigners []string
+
 	for _, addr := range signerAddresses {
+		if len(commitments) >= threshold {
+			break
+		}
+
 		resp, err := http.Post(addr+"/commit", "application/json", nil)
 		if err != nil {
-			return nil, fmt.Errorf("commit from %s: %w", addr, err)
+			fmt.Printf("[proxy] Signer %s unavailable, skipping\n", addr)
+			continue
 		}
 		defer resp.Body.Close()
+
 		var c api.CommitmentResponse
 		if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
-			return nil, fmt.Errorf("decode commitment: %w", err)
+			fmt.Printf("[proxy] Signer %s decode error, skipping\n", addr)
+			continue
 		}
+
 		commitments = append(commitments, c)
+		activeSigners = append(activeSigners, addr)
+		fmt.Printf("[proxy] Commitment from %s\n", addr)
 	}
-	return commitments, nil
+
+	if len(commitments) < threshold {
+		return nil, nil, fmt.Errorf("not enough signers: got %d, need %d", len(commitments), threshold)
+	}
+
+	return commitments, activeSigners, nil
 }
 
-func collectShares(message string, commitments []api.CommitmentResponse) ([]api.SignatureShareResponse, error) {
+// collectShares collects signature shares from active signers only
+func collectShares(message string, commitments []api.CommitmentResponse, activeSigners []string) ([]api.SignatureShareResponse, error) {
 	reqBody, _ := json.Marshal(api.SignRequest{Message: message, Commitments: commitments})
 	var shares []api.SignatureShareResponse
-	for _, addr := range signerAddresses {
+
+	for _, addr := range activeSigners {
 		resp, err := http.Post(addr+"/sign", "application/json", bytes.NewReader(reqBody))
 		if err != nil {
 			return nil, fmt.Errorf("sign from %s: %w", addr, err)
 		}
 		defer resp.Body.Close()
 		b, _ := io.ReadAll(resp.Body)
+
 		var share api.SignatureShareResponse
 		if err := json.Unmarshal(b, &share); err != nil {
-			return nil, fmt.Errorf("decode share: %w", err)
+			return nil, fmt.Errorf("decode share from %s: %w", addr, err)
 		}
 		shares = append(shares, share)
 	}
+
 	return shares, nil
 }
 
@@ -108,12 +134,12 @@ func generateThresholdJWT(payloadJSON []byte) (string, string, error) {
 	payload := encodeBase64URL(payloadJSON)
 	signingInput := header + "." + payload
 
-	commitments, err := collectCommitments()
+	commitments, activeSigners, err := collectCommitments()
 	if err != nil {
 		return "", "", err
 	}
 
-	shares, err := collectShares(signingInput, commitments)
+	shares, err := collectShares(signingInput, commitments, activeSigners)
 	if err != nil {
 		return "", "", err
 	}
@@ -124,14 +150,10 @@ func generateThresholdJWT(payloadJSON []byte) (string, string, error) {
 	}
 
 	signature := encodeBase64URL([]byte(finalSig.Hex()))
-	fmt.Printf("[proxy] Signed JWT — kid=%s\n", keyID)
+	fmt.Printf("[proxy] Signed JWT — kid=%s active_signers=%v\n", keyID, activeSigners)
 	return header, signature, nil
 }
 
-// getVerificationKeyPKIX generates an ephemeral ECDSA key pair.
-// In production this would be derived from the FROST verification key.
-// K8s requires RS256/ES256 — FROST Schnorr signatures are verified separately.
-// This is a known prototype limitation documented in Paper 3.
 func getVerificationKeyPKIX() ([]byte, error) {
 	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -159,7 +181,7 @@ func main() {
 	}
 
 	if tcpAddr != "" {
-		fmt.Printf("[proxy] TCP mode — addr=%s key=%s signers=%v\n", tcpAddr, keyID, signerAddresses)
+		fmt.Printf("[proxy] TCP mode — addr=%s key=%s threshold=%d\n", tcpAddr, keyID, threshold)
 		if err := grpcserver.ListenAndServeTCP(tcpAddr, srv); err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 			os.Exit(1)
@@ -168,7 +190,7 @@ func main() {
 	}
 
 	_ = os.MkdirAll("/var/run/frost-k8s", 0750)
-	fmt.Printf("[proxy] Unix mode — socket=%s key=%s signers=%v\n", socketPath, keyID, signerAddresses)
+	fmt.Printf("[proxy] Unix mode — socket=%s key=%s threshold=%d\n", socketPath, keyID, threshold)
 	if err := grpcserver.ListenAndServe(socketPath, srv); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
