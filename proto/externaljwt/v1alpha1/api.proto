@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package v1alpha1;
+
+option go_package = "frost-k8s-threshold-signing/proto/externaljwt/v1alpha1";
+
+import "google/protobuf/timestamp.proto";
+
+service ExternalJWTSigner {
+  rpc Sign(SignJWTRequest) returns (SignJWTResponse) {}
+  rpc FetchKeys(FetchKeysRequest) returns (FetchKeysResponse) {}
+  rpc Metadata(MetadataRequest) returns (MetadataResponse) {}
+}
+
+message SignJWTRequest {
+  string claims = 1;
+}
+
+message SignJWTResponse {
+  string header = 1;
+  string signature = 2;
+}
+
+message FetchKeysRequest {}
+
+message FetchKeysResponse {
+  repeated Key keys = 1;
+  google.protobuf.Timestamp data_timestamp = 2;
+  int64 refresh_hint_seconds = 3;
+}
+
+message Key {
+  string key_id = 1;
+  bytes key = 2;
+  bool exclude_from_oidc_discovery = 3;
+}
+
+message MetadataRequest {}
+
+message MetadataResponse {
+  int64 max_token_expiration_seconds = 1;
+}
