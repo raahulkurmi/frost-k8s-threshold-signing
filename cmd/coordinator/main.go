@@ -354,14 +354,22 @@ func thresholdJWTHandler(
 ) {
 
 	headerJSON := []byte(`{"alg":"FROST-RISTRETTO255-SHA512","typ":"JWT"}`)
+var req api.ThresholdJWTRequest
 
-	payloadJSON := []byte(`{
+if err := json.NewDecoder(
+	r.Body,
+).Decode(&req); err != nil || len(req.Claims) == 0 {
+
+	req.Claims = []byte(`{
 		"iss":"kubernetes/serviceaccount",
 		"sub":"system:serviceaccount:default:demo-sa",
 		"aud":["https://kubernetes.default.svc"],
 		"namespace":"default",
 		"serviceaccount":"demo-sa"
 	}`)
+}
+
+payloadJSON := req.Claims
 
 	header := encodeBase64URL(headerJSON)
 	payload := encodeBase64URL(payloadJSON)
