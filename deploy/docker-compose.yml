@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  signer-1:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.signer
+    environment:
+      - SIGNER_ID=1
+      - PORT=8081
+    ports:
+      - "8081:8081"
+
+  signer-2:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.signer
+    environment:
+      - SIGNER_ID=2
+      - PORT=8082
+    ports:
+      - "8082:8082"
+
+  signer-3:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.signer
+    environment:
+      - SIGNER_ID=3
+      - PORT=8083
+    ports:
+      - "8083:8083"
+
+  grpc-proxy:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.proxy
+    environment:
+      - SIGNER_1_ADDR=http://signer-1:8081
+      - SIGNER_2_ADDR=http://signer-2:8082
+      - SIGNER_3_ADDR=http://signer-3:8083
+      - SOCKET_PATH=/var/run/frost-k8s/signer.sock
+      - KEY_ID=frost-k8s-v1
+      - KEYS_FILE=/app/data/frost-keys.json
+    volumes:
+      - frost-socket:/var/run/frost-k8s
+    depends_on:
+      - signer-1
+      - signer-2
+      - signer-3
+
+volumes:
+  frost-socket:
