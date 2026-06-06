@@ -120,10 +120,17 @@ func aggregateSignature(message string, commitments []api.CommitmentResponse, sh
 }
 
 func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
-	return func(payloadJSON []byte) (string, string, error) {
+	return func(claimsB64 []byte) (string, string, error) {
+		// claimsB64 is already base64url encoded payload from kube-apiserver
+		// DO NOT re-encode it
+		payload := string(claimsB64)
+
+		// Build header
 		headerJSON := []byte(fmt.Sprintf(`{"alg":"ES256","typ":"JWT","kid":"%s"}`, keyID))
 		header := encodeBase64URL(headerJSON)
-		payload := encodeBase64URL(payloadJSON)
+
+		// signingInput = base64url(header) + "." + base64url(payload)
+		// payload is already base64url encoded
 		signingInput := header + "." + payload
 
 		// FROST threshold signing — internal coordination
