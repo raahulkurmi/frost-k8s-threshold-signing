@@ -1,6 +1,6 @@
 module frost-k8s-threshold-signing
 
-go 1.23
+go 1.25.0
 
 require (
 	github.com/bytemare/ecc v0.8.2

@@ -15,6 +15,7 @@ RUN mkdir -p /var/run/frost-k8s
 
 COPY --from=builder /bin/grpc-proxy /bin/grpc-proxy
 COPY --from=builder /app/data/frost-keys.json /app/data/frost-keys.json
+COPY --from=builder /app/data/ecdsa-signing.pem /app/data/ecdsa-signing.pem
 
 WORKDIR /app
 

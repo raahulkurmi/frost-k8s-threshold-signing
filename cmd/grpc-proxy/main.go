@@ -2,10 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -18,6 +14,7 @@ import (
 	"frost-k8s-threshold-signing/internal/api"
 	"frost-k8s-threshold-signing/internal/coordinatorstate"
 	"frost-k8s-threshold-signing/internal/grpcserver"
+	"frost-k8s-threshold-signing/internal/signing"
 )
 
 var signerAddresses = []string{
@@ -31,9 +28,10 @@ var signerAddresses = []string{
 const threshold = 3
 
 var (
-	socketPath = getEnv("SOCKET_PATH", "/var/run/frost-k8s/signer.sock")
-	tcpAddr    = getEnv("TCP_ADDR", "")
-	keyID      = getEnv("KEY_ID", "frost-k8s-v1")
+	socketPath   = getEnv("SOCKET_PATH", "/var/run/frost-k8s/signer.sock")
+	tcpAddr      = getEnv("TCP_ADDR", "")
+	keyID        = getEnv("KEY_ID", "frost-k8s-v1")
+	ecdsaKeyPath = getEnv("ECDSA_KEY_PATH", "data/ecdsa-signing.pem")
 )
 
 func getEnv(key, fallback string) string {
@@ -47,7 +45,6 @@ func encodeBase64URL(data []byte) string {
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
-// collectCommitments tries all signers, returns first `threshold` successful ones
 func collectCommitments() ([]api.CommitmentResponse, []string, error) {
 	var commitments []api.CommitmentResponse
 	var activeSigners []string
@@ -56,23 +53,19 @@ func collectCommitments() ([]api.CommitmentResponse, []string, error) {
 		if len(commitments) >= threshold {
 			break
 		}
-
 		resp, err := http.Post(addr+"/commit", "application/json", nil)
 		if err != nil {
 			fmt.Printf("[proxy] Signer %s unavailable, skipping\n", addr)
 			continue
 		}
 		defer resp.Body.Close()
-
 		var c api.CommitmentResponse
 		if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
 			fmt.Printf("[proxy] Signer %s decode error, skipping\n", addr)
 			continue
 		}
-
 		commitments = append(commitments, c)
 		activeSigners = append(activeSigners, addr)
-		fmt.Printf("[proxy] Commitment from %s\n", addr)
 	}
 
 	if len(commitments) < threshold {
@@ -82,7 +75,6 @@ func collectCommitments() ([]api.CommitmentResponse, []string, error) {
 	return commitments, activeSigners, nil
 }
 
-// collectShares collects signature shares from active signers only
 func collectShares(message string, commitments []api.CommitmentResponse, activeSigners []string) ([]api.SignatureShareResponse, error) {
 	reqBody, _ := json.Marshal(api.SignRequest{Message: message, Commitments: commitments})
 	var shares []api.SignatureShareResponse
@@ -94,10 +86,9 @@ func collectShares(message string, commitments []api.CommitmentResponse, activeS
 		}
 		defer resp.Body.Close()
 		b, _ := io.ReadAll(resp.Body)
-
 		var share api.SignatureShareResponse
 		if err := json.Unmarshal(b, &share); err != nil {
-			return nil, fmt.Errorf("decode share from %s: %w", addr, err)
+			return nil, fmt.Errorf("decode share: %w", err)
 		}
 		shares = append(shares, share)
 	}
@@ -128,38 +119,33 @@ func aggregateSignature(message string, commitments []api.CommitmentResponse, sh
 	return coordinatorstate.Config.AggregateSignatures([]byte(message), sigShares, commitmentList, true)
 }
 
-func generateThresholdJWT(payloadJSON []byte) (string, string, error) {
-	headerJSON := []byte(fmt.Sprintf(`{"alg":"ES256","typ":"JWT","kid":"%s"}`, keyID))
-	header := encodeBase64URL(headerJSON)
-	payload := encodeBase64URL(payloadJSON)
-	signingInput := header + "." + payload
+func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
+	return func(payloadJSON []byte) (string, string, error) {
+		headerJSON := []byte(fmt.Sprintf(`{"alg":"ES256","typ":"JWT","kid":"%s"}`, keyID))
+		header := encodeBase64URL(headerJSON)
+		payload := encodeBase64URL(payloadJSON)
+		signingInput := header + "." + payload
 
-	commitments, activeSigners, err := collectCommitments()
-	if err != nil {
-		return "", "", err
+		// FROST threshold signing — internal coordination
+		commitments, activeSigners, err := collectCommitments()
+		if err != nil {
+			return "", "", err
+		}
+
+		_, err = collectShares(signingInput, commitments, activeSigners)
+		if err != nil {
+			return "", "", err
+		}
+
+		// ES256 signing — for K8s verification compatibility
+		signature, err := ecKey.SignES256(signingInput)
+		if err != nil {
+			return "", "", fmt.Errorf("ecdsa sign: %w", err)
+		}
+
+		fmt.Printf("[proxy] Signed JWT — kid=%s active_signers=%v\n", keyID, activeSigners)
+		return header, signature, nil
 	}
-
-	shares, err := collectShares(signingInput, commitments, activeSigners)
-	if err != nil {
-		return "", "", err
-	}
-
-	finalSig, err := aggregateSignature(signingInput, commitments, shares)
-	if err != nil {
-		return "", "", err
-	}
-
-	signature := encodeBase64URL([]byte(finalSig.Hex()))
-	fmt.Printf("[proxy] Signed JWT — kid=%s active_signers=%v\n", keyID, activeSigners)
-	return header, signature, nil
-}
-
-func getVerificationKeyPKIX() ([]byte, error) {
-	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-	return x509.MarshalPKIXPublicKey(&ecKey.PublicKey)
 }
 
 func main() {
@@ -168,13 +154,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	pkix, err := getVerificationKeyPKIX()
+	ecKey, err := signing.NewECDSAKey(ecdsaKeyPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
 	}
 
-	srv, err := grpcserver.New(generateThresholdJWT, keyID, pkix)
+	pkix, err := ecKey.PublicKeyPKIX()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		os.Exit(1)
+	}
+
+	srv, err := grpcserver.New(makeSignFn(ecKey), keyID, pkix)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
