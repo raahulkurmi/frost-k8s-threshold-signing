@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/bytemare/frost"
 
@@ -79,9 +82,45 @@ func main() {
 	http.HandleFunc("/sign", signHandler)
 
 	port := config.Port()
-	fmt.Printf("Signer listening on :%s\n", port)
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	// mTLS configuration
+	certFile := getEnv("TLS_CERT", "certs/signer.crt")
+	keyFile  := getEnv("TLS_KEY", "certs/signer.key")
+	caFile   := getEnv("TLS_CA", "certs/ca.crt")
+
+	// Load CA for client verification
+	caCert, err := os.ReadFile(caFile)
+	if err != nil {
+		fmt.Printf("[signer] No CA found, starting without mTLS: %v\n", err)
+		fmt.Printf("Signer listening on :%s (plain HTTP)\n", port)
+		if err := http.ListenAndServe(":"+port, nil); err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		ClientCAs:  caCertPool,
+		ClientAuth: tls.RequireAndVerifyClientCert,
+	}
+
+	server := &http.Server{
+		Addr:      ":" + port,
+		TLSConfig: tlsConfig,
+	}
+
+	fmt.Printf("Signer listening on :%s (mTLS enabled)\n", port)
+	if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
 		panic(err)
 	}
+}
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }

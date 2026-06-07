@@ -1,0 +1,16 @@
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+
+[req_distinguished_name]
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = signer-1
+DNS.2 = signer-2
+DNS.3 = signer-3
+DNS.4 = signer-4
+DNS.5 = signer-5
+DNS.6 = localhost

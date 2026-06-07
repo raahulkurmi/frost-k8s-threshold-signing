@@ -14,15 +14,16 @@ import (
 	"frost-k8s-threshold-signing/internal/api"
 	"frost-k8s-threshold-signing/internal/coordinatorstate"
 	"frost-k8s-threshold-signing/internal/grpcserver"
+	"frost-k8s-threshold-signing/internal/mtls"
 	"frost-k8s-threshold-signing/internal/signing"
 )
 
 var signerAddresses = []string{
-	getEnv("SIGNER_1_ADDR", "http://localhost:8081"),
-	getEnv("SIGNER_2_ADDR", "http://localhost:8082"),
-	getEnv("SIGNER_3_ADDR", "http://localhost:8083"),
-	getEnv("SIGNER_4_ADDR", "http://localhost:8084"),
-	getEnv("SIGNER_5_ADDR", "http://localhost:8085"),
+	getEnv("SIGNER_1_ADDR", "https://signer-1:8081"),
+	getEnv("SIGNER_2_ADDR", "https://signer-2:8082"),
+	getEnv("SIGNER_3_ADDR", "https://signer-3:8083"),
+	getEnv("SIGNER_4_ADDR", "https://signer-4:8084"),
+	getEnv("SIGNER_5_ADDR", "https://signer-5:8085"),
 }
 
 const threshold = 3
@@ -32,7 +33,12 @@ var (
 	tcpAddr      = getEnv("TCP_ADDR", "")
 	keyID        = getEnv("KEY_ID", "frost-k8s-v1")
 	ecdsaKeyPath = getEnv("ECDSA_KEY_PATH", "data/ecdsa-signing.pem")
+	tlsCert      = getEnv("TLS_CERT", "certs/proxy.crt")
+	tlsKey       = getEnv("TLS_KEY", "certs/proxy.key")
+	tlsCA        = getEnv("TLS_CA", "certs/ca.crt")
 )
+
+var httpClient *http.Client
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
@@ -53,7 +59,7 @@ func collectCommitments() ([]api.CommitmentResponse, []string, error) {
 		if len(commitments) >= threshold {
 			break
 		}
-		resp, err := http.Post(addr+"/commit", "application/json", nil)
+		resp, err := httpClient.Post(addr+"/commit", "application/json", nil)
 		if err != nil {
 			fmt.Printf("[proxy] Signer %s unavailable, skipping\n", addr)
 			continue
@@ -80,7 +86,7 @@ func collectShares(message string, commitments []api.CommitmentResponse, activeS
 	var shares []api.SignatureShareResponse
 
 	for _, addr := range activeSigners {
-		resp, err := http.Post(addr+"/sign", "application/json", bytes.NewReader(reqBody))
+		resp, err := httpClient.Post(addr+"/sign", "application/json", bytes.NewReader(reqBody))
 		if err != nil {
 			return nil, fmt.Errorf("sign from %s: %w", addr, err)
 		}
@@ -121,19 +127,11 @@ func aggregateSignature(message string, commitments []api.CommitmentResponse, sh
 
 func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
 	return func(claimsB64 []byte) (string, string, error) {
-		// claimsB64 is already base64url encoded payload from kube-apiserver
-		// DO NOT re-encode it
 		payload := string(claimsB64)
-
-		// Build header
 		headerJSON := []byte(fmt.Sprintf(`{"alg":"ES256","typ":"JWT","kid":"%s"}`, keyID))
 		header := encodeBase64URL(headerJSON)
-
-		// signingInput = base64url(header) + "." + base64url(payload)
-		// payload is already base64url encoded
 		signingInput := header + "." + payload
 
-		// FROST threshold signing — internal coordination
 		commitments, activeSigners, err := collectCommitments()
 		if err != nil {
 			return "", "", err
@@ -144,7 +142,6 @@ func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
 			return "", "", err
 		}
 
-		// ES256 signing — for K8s verification compatibility
 		signature, err := ecKey.SignES256(signingInput)
 		if err != nil {
 			return "", "", fmt.Errorf("ecdsa sign: %w", err)
@@ -158,6 +155,14 @@ func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
 func main() {
 	if err := coordinatorstate.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Setup mTLS client — required
+	var err error
+	httpClient, err = mtls.NewClient(tlsCert, tlsKey, tlsCA)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR loading mTLS certs: %v\n", err)
 		os.Exit(1)
 	}
 

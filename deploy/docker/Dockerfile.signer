@@ -13,6 +13,9 @@ FROM alpine:3.20
 
 COPY --from=builder /bin/signer /bin/signer
 COPY --from=builder /app/data/frost-keys.json /app/data/frost-keys.json
+COPY --from=builder /app/certs/signer.crt /app/certs/signer.crt
+COPY --from=builder /app/certs/signer.key /app/certs/signer.key
+COPY --from=builder /app/certs/ca.crt /app/certs/ca.crt
 
 WORKDIR /app
 

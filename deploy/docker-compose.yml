@@ -54,11 +54,11 @@ services:
       context: ../
       dockerfile: deploy/docker/Dockerfile.proxy
     environment:
-      - SIGNER_1_ADDR=http://signer-1:8081
-      - SIGNER_2_ADDR=http://signer-2:8082
-      - SIGNER_3_ADDR=http://signer-3:8083
-      - SIGNER_4_ADDR=http://signer-4:8084
-      - SIGNER_5_ADDR=http://signer-5:8085
+      - SIGNER_1_ADDR=https://signer-1:8081
+      - SIGNER_2_ADDR=https://signer-2:8082
+      - SIGNER_3_ADDR=https://signer-3:8083
+      - SIGNER_4_ADDR=https://signer-4:8084
+      - SIGNER_5_ADDR=https://signer-5:8085
       - TCP_ADDR=0.0.0.0:9090
       - KEY_ID=frost-k8s-v1
     ports:
