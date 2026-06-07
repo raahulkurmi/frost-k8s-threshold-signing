@@ -1,4 +1,21 @@
 services:
+  vault:
+    image: hashicorp/vault:latest
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=frost-dev-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    networks:
+      - minikube
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   signer-1:
     build:
       context: ../
@@ -6,6 +23,11 @@ services:
     environment:
       - SIGNER_ID=1
       - PORT=8081
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=frost-dev-token
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - minikube
 
@@ -16,6 +38,11 @@ services:
     environment:
       - SIGNER_ID=2
       - PORT=8082
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=frost-dev-token
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - minikube
 
@@ -26,6 +53,11 @@ services:
     environment:
       - SIGNER_ID=3
       - PORT=8083
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=frost-dev-token
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - minikube
 
@@ -36,6 +68,11 @@ services:
     environment:
       - SIGNER_ID=4
       - PORT=8084
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=frost-dev-token
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - minikube
 
@@ -46,6 +83,11 @@ services:
     environment:
       - SIGNER_ID=5
       - PORT=8085
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=frost-dev-token
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - minikube
 
