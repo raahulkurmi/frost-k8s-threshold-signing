@@ -8,6 +8,8 @@ services:
       - IPC_LOCK
     ports:
       - "8200:8200"
+    volumes:
+      - vault-data:/vault/data
     networks:
       - minikube
     healthcheck:
@@ -117,3 +119,6 @@ services:
 networks:
   minikube:
     external: true
+
+volumes:
+  vault-data:
