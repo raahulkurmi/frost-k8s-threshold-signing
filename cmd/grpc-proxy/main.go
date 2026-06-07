@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/bytemare/frost"
 
@@ -51,27 +52,50 @@ func encodeBase64URL(data []byte) string {
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
-func collectCommitments() ([]api.CommitmentResponse, []string, error) {
+// collectCommitmentsParallel collects commitments from all signers in parallel
+func collectCommitmentsParallel() ([]api.CommitmentResponse, []string, error) {
+	type result struct {
+		commitment api.CommitmentResponse
+		addr       string
+		err        error
+	}
+
+	results := make(chan result, len(signerAddresses))
+
+	// Fire all requests in parallel
+	for _, addr := range signerAddresses {
+		go func(a string) {
+			resp, err := httpClient.Post(a+"/commit", "application/json", nil)
+			if err != nil {
+				results <- result{addr: a, err: err}
+				return
+			}
+			defer resp.Body.Close()
+			var c api.CommitmentResponse
+			if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
+				results <- result{addr: a, err: err}
+				return
+			}
+			results <- result{commitment: c, addr: a}
+		}(addr)
+	}
+
+	// Collect threshold results
 	var commitments []api.CommitmentResponse
 	var activeSigners []string
 
-	for _, addr := range signerAddresses {
+	for i := 0; i < len(signerAddresses); i++ {
+		r := <-results
+		if r.err != nil {
+			fmt.Printf("[proxy] Signer %s unavailable: %v\n", r.addr, r.err)
+			continue
+		}
+		commitments = append(commitments, r.commitment)
+		activeSigners = append(activeSigners, r.addr)
+
 		if len(commitments) >= threshold {
 			break
 		}
-		resp, err := httpClient.Post(addr+"/commit", "application/json", nil)
-		if err != nil {
-			fmt.Printf("[proxy] Signer %s unavailable, skipping\n", addr)
-			continue
-		}
-		defer resp.Body.Close()
-		var c api.CommitmentResponse
-		if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
-			fmt.Printf("[proxy] Signer %s decode error, skipping\n", addr)
-			continue
-		}
-		commitments = append(commitments, c)
-		activeSigners = append(activeSigners, addr)
 	}
 
 	if len(commitments) < threshold {
@@ -81,22 +105,44 @@ func collectCommitments() ([]api.CommitmentResponse, []string, error) {
 	return commitments, activeSigners, nil
 }
 
-func collectShares(message string, commitments []api.CommitmentResponse, activeSigners []string) ([]api.SignatureShareResponse, error) {
+// collectSharesParallel collects signature shares in parallel
+func collectSharesParallel(message string, commitments []api.CommitmentResponse, activeSigners []string) ([]api.SignatureShareResponse, error) {
 	reqBody, _ := json.Marshal(api.SignRequest{Message: message, Commitments: commitments})
-	var shares []api.SignatureShareResponse
+
+	type result struct {
+		share api.SignatureShareResponse
+		err   error
+	}
+
+	results := make(chan result, len(activeSigners))
+	var mu sync.Mutex
+	_ = mu
 
 	for _, addr := range activeSigners {
-		resp, err := httpClient.Post(addr+"/sign", "application/json", bytes.NewReader(reqBody))
-		if err != nil {
-			return nil, fmt.Errorf("sign from %s: %w", addr, err)
+		go func(a string) {
+			resp, err := httpClient.Post(a+"/sign", "application/json", bytes.NewReader(reqBody))
+			if err != nil {
+				results <- result{err: fmt.Errorf("sign from %s: %w", a, err)}
+				return
+			}
+			defer resp.Body.Close()
+			b, _ := io.ReadAll(resp.Body)
+			var share api.SignatureShareResponse
+			if err := json.Unmarshal(b, &share); err != nil {
+				results <- result{err: fmt.Errorf("decode share from %s: %w", a, err)}
+				return
+			}
+			results <- result{share: share}
+		}(addr)
+	}
+
+	var shares []api.SignatureShareResponse
+	for i := 0; i < len(activeSigners); i++ {
+		r := <-results
+		if r.err != nil {
+			return nil, r.err
 		}
-		defer resp.Body.Close()
-		b, _ := io.ReadAll(resp.Body)
-		var share api.SignatureShareResponse
-		if err := json.Unmarshal(b, &share); err != nil {
-			return nil, fmt.Errorf("decode share: %w", err)
-		}
-		shares = append(shares, share)
+		shares = append(shares, r.share)
 	}
 
 	return shares, nil
@@ -132,16 +178,19 @@ func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
 		header := encodeBase64URL(headerJSON)
 		signingInput := header + "." + payload
 
-		commitments, activeSigners, err := collectCommitments()
+		// Parallel commitment collection
+		commitments, activeSigners, err := collectCommitmentsParallel()
 		if err != nil {
 			return "", "", err
 		}
 
-		_, err = collectShares(signingInput, commitments, activeSigners)
+		// Parallel signature share collection
+		_, err = collectSharesParallel(signingInput, commitments, activeSigners)
 		if err != nil {
 			return "", "", err
 		}
 
+		// ES256 signing
 		signature, err := ecKey.SignES256(signingInput)
 		if err != nil {
 			return "", "", fmt.Errorf("ecdsa sign: %w", err)
@@ -158,7 +207,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup mTLS client — required
 	var err error
 	httpClient, err = mtls.NewClient(tlsCert, tlsKey, tlsCA)
 	if err != nil {
