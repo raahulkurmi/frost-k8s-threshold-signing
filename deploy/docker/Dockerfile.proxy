@@ -7,18 +7,22 @@ RUN go mod download
 
 COPY . .
 
-RUN go mod tidy && go build -o /bin/grpc-proxy ./cmd/grpc-proxy/
+RUN go mod tidy && \
+    go build -o /bin/grpc-proxy ./cmd/grpc-proxy/ && \
+    go build -o /bin/dkg-coordinator ./cmd/dkg-coordinator/
 
 FROM alpine:3.20
 
-RUN mkdir -p /var/run/frost-k8s /app/certs
-
 COPY --from=builder /bin/grpc-proxy /bin/grpc-proxy
+COPY --from=builder /bin/dkg-coordinator /bin/dkg-coordinator
+COPY --from=builder /app/data/frost-keys.enc /app/data/frost-keys.enc
 COPY --from=builder /app/data/frost-keys.json /app/data/frost-keys.json
 COPY --from=builder /app/data/ecdsa-signing.pem /app/data/ecdsa-signing.pem
 COPY --from=builder /app/certs/proxy.crt /app/certs/proxy.crt
 COPY --from=builder /app/certs/proxy.key /app/certs/proxy.key
 COPY --from=builder /app/certs/ca.crt /app/certs/ca.crt
+
+RUN chmod +x /bin/grpc-proxy /bin/dkg-coordinator
 
 WORKDIR /app
 

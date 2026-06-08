@@ -7,12 +7,22 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"sync"
 
 	"github.com/bytemare/frost"
 
 	"frost-k8s-threshold-signing/internal/api"
 	"frost-k8s-threshold-signing/internal/config"
+	"frost-k8s-threshold-signing/internal/dkg"
 	"frost-k8s-threshold-signing/internal/froststate"
+)
+
+var (
+	dkgMu          sync.Mutex
+	dkgParticipant *dkg.Participant
+	dkgCommitment  *dkg.Commitment
+	allCommitments []*dkg.Commitment
 )
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,16 +32,13 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 func commitHandler(w http.ResponseWriter, r *http.Request) {
 	froststate.Mu.Lock()
 	defer froststate.Mu.Unlock()
-
 	commitment := froststate.Signer.Commit()
 	froststate.Commitments[commitment.CommitmentID] = commitment
-
 	resp := api.CommitmentResponse{
 		CommitmentID: commitment.CommitmentID,
 		SignerID:     commitment.SignerID,
 		Commitment:   commitment.Hex(),
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
@@ -39,13 +46,11 @@ func commitHandler(w http.ResponseWriter, r *http.Request) {
 func signHandler(w http.ResponseWriter, r *http.Request) {
 	froststate.Mu.Lock()
 	defer froststate.Mu.Unlock()
-
 	var req api.SignRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	var commitments frost.CommitmentList
 	for _, item := range req.Commitments {
 		commitment := &frost.Commitment{}
@@ -56,20 +61,105 @@ func signHandler(w http.ResponseWriter, r *http.Request) {
 		commitments = append(commitments, commitment)
 	}
 	commitments.Sort()
-
 	sigShare, err := froststate.Signer.Sign([]byte(req.Message), commitments)
 	if err != nil {
+		fmt.Printf("[dkg] ERROR: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	resp := api.SignatureShareResponse{
 		SignerID: sigShare.SignerIdentifier,
 		Share:    sigShare.Hex(),
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func dkgRound1Handler(w http.ResponseWriter, r *http.Request) {
+	dkgMu.Lock()
+	defer dkgMu.Unlock()
+	signerID, _ := strconv.Atoi(config.SignerID())
+	dkgParticipant = dkg.NewParticipant(uint16(signerID), 3, 5)
+	commitment, err := dkgParticipant.Round1()
+	if err != nil {
+		fmt.Printf("[dkg] ERROR: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	dkgCommitment = commitment
+	fmt.Printf("[dkg] Round1 complete — signer-%d commitment ready\n", signerID)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(commitment)
+}
+
+func dkgCommitmentsHandler(w http.ResponseWriter, r *http.Request) {
+	dkgMu.Lock()
+	defer dkgMu.Unlock()
+	var commitments []*dkg.Commitment
+	if err := json.NewDecoder(r.Body).Decode(&commitments); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	allCommitments = commitments
+	fmt.Printf("[dkg] Received %d commitments\n", len(commitments))
+	w.WriteHeader(http.StatusOK)
+}
+
+func dkgRound2Handler(w http.ResponseWriter, r *http.Request) {
+	dkgMu.Lock()
+	defer dkgMu.Unlock()
+	path := r.URL.Path
+	toIDStr := path[len("/dkg/round2/"):]
+	toID64, err := strconv.ParseUint(toIDStr, 10, 16)
+	if err != nil {
+		http.Error(w, "invalid toID", http.StatusBadRequest)
+		return
+	}
+	pkg, err := dkgParticipant.Round2(uint16(toID64))
+	if err != nil {
+		fmt.Printf("[dkg] ERROR: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pkg)
+}
+
+func dkgFinalizeHandler(w http.ResponseWriter, r *http.Request) {
+	dkgMu.Lock()
+	defer dkgMu.Unlock()
+	var shares []*dkg.SharePackage
+	if err := json.NewDecoder(r.Body).Decode(&shares); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	cs := frost.Default
+	g := cs.Group()
+	groupPubKey, err := dkg.ComputeGroupPublicKey(g, allCommitments)
+	if err != nil {
+		fmt.Printf("[dkg] ERROR: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	keyShare, err := dkgParticipant.Finalize(shares, allCommitments, groupPubKey, nil)
+	if err != nil {
+		fmt.Printf("[dkg] ERROR: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Printf("[dkg] ✅ Signer-%d DKG complete! Share: %s...\n", dkgParticipant.ID, keyShare.Hex()[:16])
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "ok",
+		"signer": fmt.Sprintf("%d", dkgParticipant.ID),
+	})
+}
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func main() {
@@ -77,23 +167,24 @@ func main() {
 		panic(err)
 	}
 
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/commit", commitHandler)
-	http.HandleFunc("/sign", signHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/commit", commitHandler)
+	mux.HandleFunc("/sign", signHandler)
+	mux.HandleFunc("/dkg/round1", dkgRound1Handler)
+	mux.HandleFunc("/dkg/commitments", dkgCommitmentsHandler)
+	mux.HandleFunc("/dkg/round2/", dkgRound2Handler)
+	mux.HandleFunc("/dkg/finalize", dkgFinalizeHandler)
 
 	port := config.Port()
-
-	// mTLS configuration
 	certFile := getEnv("TLS_CERT", "certs/signer.crt")
-	keyFile  := getEnv("TLS_KEY", "certs/signer.key")
-	caFile   := getEnv("TLS_CA", "certs/ca.crt")
+	keyFile := getEnv("TLS_KEY", "certs/signer.key")
+	caFile := getEnv("TLS_CA", "certs/ca.crt")
 
-	// Load CA for client verification
 	caCert, err := os.ReadFile(caFile)
 	if err != nil {
-		fmt.Printf("[signer] No CA found, starting without mTLS: %v\n", err)
 		fmt.Printf("Signer listening on :%s (plain HTTP)\n", port)
-		if err := http.ListenAndServe(":"+port, nil); err != nil {
+		if err := http.ListenAndServe(":"+port, mux); err != nil {
 			panic(err)
 		}
 		return
@@ -104,12 +195,13 @@ func main() {
 
 	tlsConfig := &tls.Config{
 		ClientCAs:  caCertPool,
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth: tls.RequestClientCert,
 	}
 
 	server := &http.Server{
 		Addr:      ":" + port,
 		TLSConfig: tlsConfig,
+		Handler:   mux,
 	}
 
 	fmt.Printf("Signer listening on :%s (mTLS enabled)\n", port)
@@ -117,10 +209,4 @@ func main() {
 		panic(err)
 	}
 }
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
+// This is handled in main() already

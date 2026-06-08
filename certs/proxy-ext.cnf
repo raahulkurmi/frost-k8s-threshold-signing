@@ -1,0 +1,18 @@
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+
+[req_distinguished_name]
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = frost-proxy
+DNS.2 = localhost
+IP.1 = 192.168.49.4
+IP.2 = 192.168.49.5
+IP.3 = 192.168.49.6
+IP.4 = 192.168.49.7
+IP.5 = 192.168.49.8
+IP.6 = 192.168.49.9
