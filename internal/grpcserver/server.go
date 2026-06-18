@@ -35,7 +35,7 @@ func (s *Server) Sign(ctx context.Context, req *pb.SignJWTRequest) (*pb.SignJWTR
 	if err != nil {
 		return nil, fmt.Errorf("threshold sign: %w", err)
 	}
-	fmt.Printf("[grpc] Sign() kid=%s\n", s.keyID)
+	fmt.Fprintf(os.Stderr, "[grpc] Sign() kid=%s\n", s.keyID)
 	return &pb.SignJWTResponse{Header: header, Signature: signature}, nil
 }
 

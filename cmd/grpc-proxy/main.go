@@ -52,7 +52,8 @@ func encodeBase64URL(data []byte) string {
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
-// collectCommitmentsParallel collects commitments from all signers in parallel
+// collectCommitmentsParallel collects commitments from all signers in parallel.
+// FIX: Collects ALL results before selecting threshold — prevents goroutine leaks.
 func collectCommitmentsParallel() ([]api.CommitmentResponse, []string, error) {
 	type result struct {
 		commitment api.CommitmentResponse
@@ -60,9 +61,9 @@ func collectCommitmentsParallel() ([]api.CommitmentResponse, []string, error) {
 		err        error
 	}
 
+	// Buffer = all signers so no goroutine ever blocks on send
 	results := make(chan result, len(signerAddresses))
 
-	// Fire all requests in parallel
 	for _, addr := range signerAddresses {
 		go func(a string) {
 			resp, err := httpClient.Post(a+"/commit", "application/json", nil)
@@ -80,7 +81,7 @@ func collectCommitmentsParallel() ([]api.CommitmentResponse, []string, error) {
 		}(addr)
 	}
 
-	// Collect threshold results
+	// Collect ALL results — no early break, all goroutines finish cleanly
 	var commitments []api.CommitmentResponse
 	var activeSigners []string
 
@@ -90,11 +91,10 @@ func collectCommitmentsParallel() ([]api.CommitmentResponse, []string, error) {
 			fmt.Printf("[proxy] Signer %s unavailable: %v\n", r.addr, r.err)
 			continue
 		}
-		commitments = append(commitments, r.commitment)
-		activeSigners = append(activeSigners, r.addr)
-
-		if len(commitments) >= threshold {
-			break
+		// Only keep up to threshold — extras discarded but goroutine already done
+		if len(commitments) < threshold {
+			commitments = append(commitments, r.commitment)
+			activeSigners = append(activeSigners, r.addr)
 		}
 	}
 
@@ -105,7 +105,7 @@ func collectCommitmentsParallel() ([]api.CommitmentResponse, []string, error) {
 	return commitments, activeSigners, nil
 }
 
-// collectSharesParallel collects signature shares in parallel
+// collectSharesParallel collects signature shares from active signers in parallel.
 func collectSharesParallel(message string, commitments []api.CommitmentResponse, activeSigners []string) ([]api.SignatureShareResponse, error) {
 	reqBody, _ := json.Marshal(api.SignRequest{Message: message, Commitments: commitments})
 
@@ -114,6 +114,7 @@ func collectSharesParallel(message string, commitments []api.CommitmentResponse,
 		err   error
 	}
 
+	// Buffer = active signers so no goroutine blocks
 	results := make(chan result, len(activeSigners))
 	var mu sync.Mutex
 	_ = mu
@@ -178,25 +179,33 @@ func makeSignFn(ecKey *signing.ECDSAKey) grpcserver.ThresholdSignFn {
 		header := encodeBase64URL(headerJSON)
 		signingInput := header + "." + payload
 
-		// Parallel commitment collection
+		// Step 1: Collect commitments from threshold signers (parallel)
 		commitments, activeSigners, err := collectCommitmentsParallel()
 		if err != nil {
 			return "", "", err
 		}
 
-		// Parallel signature share collection
-		_, err = collectSharesParallel(signingInput, commitments, activeSigners)
+		// Step 2: Collect signature shares (parallel)
+		shares, err := collectSharesParallel(signingInput, commitments, activeSigners)
 		if err != nil {
 			return "", "", err
 		}
 
-		// ES256 signing
+		// Step 3: FROST aggregation — verify threshold signature is valid
+		// This validates that t-of-n signers genuinely collaborated
+		_, err = aggregateSignature(signingInput, commitments, shares)
+		if err != nil {
+			return "", "", fmt.Errorf("frost aggregate: %w", err)
+		}
+
+		// Step 4: ECDSA sign for K8s JWT verification compatibility
+		// (K8s uses go-jose which requires ECDSA/ES256 format)
 		signature, err := ecKey.SignES256(signingInput)
 		if err != nil {
 			return "", "", fmt.Errorf("ecdsa sign: %w", err)
 		}
 
-		fmt.Printf("[proxy] Signed JWT — kid=%s active_signers=%v\n", keyID, activeSigners)
+		fmt.Fprintf(os.Stderr, "[proxy] Signed JWT — kid=%s active_signers=%v\n", keyID, activeSigners)
 		return header, signature, nil
 	}
 }
