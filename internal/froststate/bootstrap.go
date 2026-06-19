@@ -157,5 +157,17 @@ func Init() error {
 	fmt.Println("Loaded signer", signer.Identifier())
 	Signer = signer
 	Config = frostConfig
+
+	// Build signer pool for concurrent request handling
+	pool := &SignerPool{ch: make(chan *frost.Signer, PoolSize)}
+	for i := 0; i < PoolSize; i++ {
+		s, err := frostConfig.Signer(keyShares[shareIndex])
+		if err != nil {
+			return fmt.Errorf("create pool signer %d: %w", i, err)
+		}
+		pool.ch <- s
+	}
+	Pool = pool
+	fmt.Printf("[pool] Signer pool initialized with %d instances\n", PoolSize)
 	return nil
 }
