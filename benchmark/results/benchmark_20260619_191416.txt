@@ -1,0 +1,96 @@
+[ 1 ] Single Token Latency (10 runs)
+─────────────────────────────────────
+  Run 1: 0m0.236s
+  Run 2: 0m0.038s
+  Run 3: 0m0.035s
+  Run 4: 0m0.035s
+  Run 5: 0m0.032s
+  Run 6: 0m0.030s
+  Run 7: 0m0.032s
+  Run 8: 0m0.036s
+  Run 9: 0m0.029s
+  Run 10: 0m0.034s
+
+[ 2 ] 100 Token Throughput
+─────────────────────────────────────
+  Total: 3141ms
+  Average per token: 31ms
+  Throughput: 31 tokens/sec
+
+[ 3 ] 500 Token Throughput
+─────────────────────────────────────
+  Total: 16309ms
+  Average per token: 32ms
+  Throughput: 30 tokens/sec
+
+[ 4 ] Concurrent Token Requests (10 parallel)
+─────────────────────────────────────
+  10 concurrent tokens: 147ms
+
+[ 5 ] Concurrent Token Requests (50 parallel)
+─────────────────────────────────────
+error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = error reading from server: EOF
+error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = error reading from server: EOF
+error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = error reading from server: EOF
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+  50 concurrent tokens: 34523ms
+
+[ 6 ] Memory Usage
+─────────────────────────────────────
+  grpc-proxy (idle):
+CPU: 0.00% | Memory: 0B / 0B
+  signer-1 (idle):
+CPU: 0.00% | Memory: 10.43MiB / 7.654GiB
+
+[ 7 ] Signer Failure Tolerance
+─────────────────────────────────────
+  Killing signer-4 and signer-5...
+error: failed to create token: Timeout: request did not complete within requested timeout - context deadline exceeded
+  Token with 3/5 signers: 34072ms
+
+[ 8 ] Signer Recovery Time
+─────────────────────────────────────
