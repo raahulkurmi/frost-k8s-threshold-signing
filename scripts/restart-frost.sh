@@ -1,21 +1,29 @@
 #!/bin/bash
 # restart-frost.sh — Run this after every minikube restart
+# Updated: Uses coordinator-lb (nginx HA) instead of grpc-proxy inside minikube
 set -e
 
 echo "=== FROST K8s Restart Script ==="
 
-# Step 1: Get signer IPs
-echo "Getting signer IPs..."
-S1=$(docker inspect deploy-signer-1-1 | grep '"IPAddress"' | tail -1 | grep -o '[0-9.]*')
-S2=$(docker inspect deploy-signer-2-1 | grep '"IPAddress"' | tail -1 | grep -o '[0-9.]*')
-S3=$(docker inspect deploy-signer-3-1 | grep '"IPAddress"' | tail -1 | grep -o '[0-9.]*')
-S4=$(docker inspect deploy-signer-4-1 | grep '"IPAddress"' | tail -1 | grep -o '[0-9.]*')
-S5=$(docker inspect deploy-signer-5-1 | grep '"IPAddress"' | tail -1 | grep -o '[0-9.]*')
+# Step 1: Make sure deploy containers are running
+echo "Starting deploy containers..."
+cd "$(dirname "$0")/../deploy"
+docker compose up -d
+sleep 5
+cd - > /dev/null
 
-echo "Signer IPs: $S1 $S2 $S3 $S4 $S5"
+# Step 2: Get coordinator-lb IP
+echo "Getting coordinator-lb IP..."
+LB_IP=$(docker inspect deploy-coordinator-lb-1 | grep '"IPAddress"' | tail -1 | grep -o '[0-9.]*')
+echo "Coordinator LB IP: $LB_IP"
 
-# Step 2: Copy files to minikube
-echo "Copying files to minikube..."
+if [ -z "$LB_IP" ]; then
+  echo "ERROR: coordinator-lb IP not found"
+  exit 1
+fi
+
+# Step 3: Copy files to minikube
+echo "Copying certs and keys to minikube..."
 docker exec minikube mkdir -p /app/data /app/certs /var/run/frost-k8s
 docker cp data/frost-keys.json minikube:/app/data/frost-keys.json
 docker cp data/ecdsa-signing.pem minikube:/app/data/ecdsa-signing.pem
@@ -23,33 +31,14 @@ docker cp certs/proxy.crt minikube:/app/certs/proxy.crt
 docker cp certs/proxy.key minikube:/app/certs/proxy.key
 docker cp certs/ca.crt minikube:/app/certs/ca.crt
 
-# Step 3: Build and copy grpc-proxy binary
-echo "Building grpc-proxy (ARM64)..."
-GOOS=linux GOARCH=arm64 go build -o /tmp/grpc-proxy-arm64 ./cmd/grpc-proxy/
-docker cp /tmp/grpc-proxy-arm64 minikube:/usr/local/bin/grpc-proxy
-docker exec minikube chmod +x /usr/local/bin/grpc-proxy
-
-# Step 4: Start grpc-proxy inside minikube
-echo "Starting grpc-proxy inside minikube..."
+# Step 4: Start socat bridge inside minikube
+echo "Starting socat bridge → coordinator-lb:9090..."
 docker exec minikube bash -c "
-pkill grpc-proxy 2>/dev/null
 pkill socat 2>/dev/null
 rm -f /var/run/frost-k8s/signer.sock
-cd /app && nohup env \
-  SIGNER_1_ADDR=https://${S1}:8081 \
-  SIGNER_2_ADDR=https://${S2}:8082 \
-  SIGNER_3_ADDR=https://${S3}:8083 \
-  SIGNER_4_ADDR=https://${S4}:8084 \
-  SIGNER_5_ADDR=https://${S5}:8085 \
-  SOCKET_PATH=/var/run/frost-k8s/signer.sock \
-  KEY_ID=frost-k8s-v1 \
-  ECDSA_KEY_PATH=/app/data/ecdsa-signing.pem \
-  TLS_CERT=/app/certs/proxy.crt \
-  TLS_KEY=/app/certs/proxy.key \
-  TLS_CA=/app/certs/ca.crt \
-  /usr/local/bin/grpc-proxy > /var/log/grpc-proxy.log 2>/var/log/grpc-proxy-err.log &
+socat UNIX-LISTEN:/var/run/frost-k8s/signer.sock,fork,reuseaddr TCP:${LB_IP}:9090 &
 sleep 2
-cat /var/log/grpc-proxy.log
+ss -xlp | grep signer.sock
 "
 
 # Step 5: Patch kube-apiserver manifest
@@ -149,6 +138,13 @@ echo "Waiting 60s for apiserver restart..."
 sleep 60
 
 echo "=== Testing FROST signing ==="
-kubectl create token default | cut -d. -f1 | base64 -d
-echo ""
+HEADER=$(kubectl create token default | cut -d. -f1 | base64 -d 2>/dev/null)
+echo "JWT Header: $HEADER"
+if echo "$HEADER" | grep -q "frost-k8s-v1"; then
+  echo "✅ FROST signing working!"
+else
+  echo "❌ FROST signing NOT working — check logs"
+  docker exec minikube bash -c "cat /var/log/grpc-proxy-err.log 2>/dev/null"
+fi
+
 echo "=== Setup Complete ==="
