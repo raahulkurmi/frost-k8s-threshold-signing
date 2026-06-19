@@ -93,7 +93,7 @@ services:
     networks:
       - minikube
 
-  grpc-proxy:
+  grpc-proxy-1:
     build:
       context: ../
       dockerfile: deploy/docker/Dockerfile.proxy
@@ -105,14 +105,67 @@ services:
       - SIGNER_5_ADDR=https://signer-5:8085
       - TCP_ADDR=0.0.0.0:9090
       - KEY_ID=frost-k8s-v1
-    ports:
-      - "9090:9090"
     depends_on:
       - signer-1
       - signer-2
       - signer-3
       - signer-4
       - signer-5
+    networks:
+      - minikube
+
+  grpc-proxy-2:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.proxy
+    environment:
+      - SIGNER_1_ADDR=https://signer-1:8081
+      - SIGNER_2_ADDR=https://signer-2:8082
+      - SIGNER_3_ADDR=https://signer-3:8083
+      - SIGNER_4_ADDR=https://signer-4:8084
+      - SIGNER_5_ADDR=https://signer-5:8085
+      - TCP_ADDR=0.0.0.0:9090
+      - KEY_ID=frost-k8s-v1
+    depends_on:
+      - signer-1
+      - signer-2
+      - signer-3
+      - signer-4
+      - signer-5
+    networks:
+      - minikube
+
+  grpc-proxy-3:
+    build:
+      context: ../
+      dockerfile: deploy/docker/Dockerfile.proxy
+    environment:
+      - SIGNER_1_ADDR=https://signer-1:8081
+      - SIGNER_2_ADDR=https://signer-2:8082
+      - SIGNER_3_ADDR=https://signer-3:8083
+      - SIGNER_4_ADDR=https://signer-4:8084
+      - SIGNER_5_ADDR=https://signer-5:8085
+      - TCP_ADDR=0.0.0.0:9090
+      - KEY_ID=frost-k8s-v1
+    depends_on:
+      - signer-1
+      - signer-2
+      - signer-3
+      - signer-4
+      - signer-5
+    networks:
+      - minikube
+
+  coordinator-lb:
+    image: nginx:alpine
+    volumes:
+      - ./nginx-grpc.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - grpc-proxy-1
+      - grpc-proxy-2
+      - grpc-proxy-3
     networks:
       - minikube
 
