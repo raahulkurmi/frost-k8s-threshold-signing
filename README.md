@@ -1065,7 +1065,7 @@ This implementation accompanies a three-paper research series:
 |---|---|---|
 | Survey | Authentication Mechanisms in Kubernetes: A Systematic Review | [10.5281/zenodo.20734453](https://doi.org/10.5281/zenodo.20734453) |
 | Security Analysis | Threat Modeling and Security Analysis of Threshold-Based Token Signing | [10.5281/zenodo.20733863](https://doi.org/10.5281/zenodo.20733863) |
-| Prototype | frost-k8s: A FROST-Based Threshold Signing Proxy | Submitted to SCORED '26 |
+| Prototype | frost-k8s: A FROST-Based Threshold Signing Proxy | [10.5281/zenodo.20770308](https://doi.org/10.5281/zenodo.20770308) |
 
 ---
 
