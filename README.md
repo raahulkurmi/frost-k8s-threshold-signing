@@ -2,7 +2,13 @@
 
 **First working implementation of FROST threshold signing integrated with the Kubernetes ExternalJWTSigner API (KEP-740, stable v1.36)**
 
-[![Go](https://img.shields.io/badge/Go-1.23+-blue)](https://go.dev) [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE) [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.36+-blue)](https://kubernetes.io)
+[![Go](https://img.shields.io/badge/Go-1.23+-blue)](https://go.dev) [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE) [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.36+-blue)](https://kubernetes.io) [![SCORED 2026](https://img.shields.io/badge/SCORED-2026-orange)](https://scored.dev) [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20770308-blue)](https://doi.org/10.5281/zenodo.20770308)
+
+| # | Title | Venue | Status |
+|---|---|---|---|
+| 📖 Paper 1 | [Authentication Mechanisms in Kubernetes: A Systematic Review](https://doi.org/10.5281/zenodo.20734453) | Zenodo | Published |
+| 🔒 Paper 2 | [Threat Modeling and Security Analysis of Threshold-Based Token Signing](https://doi.org/10.5281/zenodo.20733863) | Zenodo | Published |
+| 🚀 Paper 3 | [frost-k8s: A FROST-Based Threshold Signing Proxy *(this repo)*](https://doi.org/10.5281/zenodo.20770308) | Zenodo + SCORED '26 | Under Review |
 
 ---
 
@@ -23,6 +29,53 @@ This project:
 ```
 
 The output is a **standard JWT** — kubectl, client-go, and all existing tools work without any changes.
+
+---
+
+## ⚡ Quick Start
+
+Get threshold-signed Kubernetes tokens running in under 5 minutes:
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/raahulkurmi/frost-k8s-threshold-signing.git
+cd frost-k8s-threshold-signing
+go mod tidy
+
+# 2. Generate keys and certs
+go run cmd/keygen/main.go
+go run cmd/genkey/main.go
+go run cmd/encrypt-keys/main.go
+# (see Section 6 for full cert generation)
+
+# 3. Start Minikube + all containers
+minikube start --driver=docker
+cd deploy && docker compose up -d && cd ..
+
+# 4. Configure FROST signing (one command)
+bash scripts/restart-frost.sh
+
+# 5. Verify — should show kid:frost-k8s-v1
+kubectl create token default | cut -d. -f1 | base64 -d
+```
+
+For first-time setup (generating certs, keys from scratch) see [Section 7](#7-installation--step-by-step).
+
+---
+
+## 📊 Benchmark Summary
+
+| Metric | Baseline RS256 | FROST 3-of-5 |
+|---|---|---|
+| Warm latency (P50) | 34ms | 34ms (**0% overhead**) |
+| Warm latency (avg) | 34ms | 36ms (+6%) |
+| Sequential throughput | 31 tok/s | 31 tok/s |
+| 50 concurrent overhead | — | +18% |
+| Failure tolerance | None | **2-of-5 signers** |
+| Signer recovery | N/A | 84ms |
+| Coordinator HA | None | **3 instances, auto-failover** |
+
+> Benchmarks on single-node Minikube, macOS Apple Silicon. See [Section 10](#10-benchmark-results) for full results.
 
 ---
 
