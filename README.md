@@ -244,8 +244,10 @@ cd deploy && docker compose up -d && cd ..
 mkdir -p /tmp/frost-k8s
 minikube mount /tmp/frost-k8s:/var/run/frost-k8s &
 
-# Patch apiserver
-bash scripts/setup-minikube.sh
+# Patch apiserver and configure proxy socket path
+# restart-frost.sh works on Linux too — or run setup-minikube.sh directly
+bash scripts/restart-frost.sh
+# Note: restart-frost.sh also works on Linux and handles proxy socket configuration
 
 # Verify
 kubectl create token default | cut -d. -f1 | base64 -d
@@ -396,6 +398,7 @@ minikube mount /tmp/frost-k8s:/var/run/frost-k8s &
 
 # Patch apiserver
 bash scripts/setup-minikube.sh
+# Note: restart-frost.sh also works on Linux and handles proxy socket configuration
 ```
 
 ---
