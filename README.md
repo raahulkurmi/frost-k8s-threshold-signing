@@ -237,12 +237,11 @@ kubectl create token default | cut -d. -f1 | base64 -d
 # Start Minikube
 minikube start --driver=docker
 
-# Start containers
+# Start ALL 9 containers (signers, proxies, nginx, Vault)
 cd deploy && docker compose up -d && cd ..
 
-# Mount socket directly (no socat needed)
-SOCKET_PATH=/tmp/frost-k8s/signer.sock KEY_ID=frost-k8s-v1 \
-  docker compose -f deploy/docker-compose.yml up -d grpc-proxy
+# Mount socket directly into Minikube (no socat needed on Linux)
+mkdir -p /tmp/frost-k8s
 minikube mount /tmp/frost-k8s:/var/run/frost-k8s &
 
 # Patch apiserver
@@ -373,20 +372,33 @@ This starts **9 containers**:
 
 ### Step 8: Start Minikube and Configure FROST
 
-**macOS:**
+---
+
+**🍎 macOS users — run this:**
 ```bash
 cd .. && minikube start --driver=docker
 bash scripts/restart-frost.sh
+# socat bridge is set up automatically
 ```
 
-**Linux:**
+---
+
+**🐧 Linux users — run this:**
 ```bash
 cd .. && minikube start --driver=docker
-SOCKET_PATH=/tmp/frost-k8s/signer.sock KEY_ID=frost-k8s-v1 \
-  docker compose -f deploy/docker-compose.yml up -d grpc-proxy
+
+# Start ALL containers
+cd deploy && docker compose up -d && cd ..
+
+# Mount socket directly (no socat needed)
+mkdir -p /tmp/frost-k8s
 minikube mount /tmp/frost-k8s:/var/run/frost-k8s &
+
+# Patch apiserver
 bash scripts/setup-minikube.sh
 ```
+
+---
 
 ### Step 9: Verify
 
