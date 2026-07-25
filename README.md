@@ -6,8 +6,8 @@
 
 | # | Title | Venue | Status |
 |---|---|---|---|
-| 📖 Paper 1 | [Authentication Mechanisms in Kubernetes: A Systematic Review](https://doi.org/10.5281/zenodo.20734453) | Zenodo | Published |
-| 🔒 Paper 2 | [Threat Modeling and Security Analysis of Threshold-Based Token Signing](https://doi.org/10.5281/zenodo.20733863) | Zenodo | Published |
+| 📖 Paper 1 | [Authentication Mechanisms in Kubernetes: A Systematic Review](https://doi.org/10.5281/zenodo.20734453) | Zenodo | Preprint |
+| 🔒 Paper 2 | [Threat Modeling and Security Analysis of Threshold-Based Token Signing](https://doi.org/10.5281/zenodo.20733863) | Zenodo | Preprint |
 | 🚀 Paper 3 | [frost-k8s: A FROST-Based Threshold Signing Proxy *(this repo)*](https://doi.org/10.5281/zenodo.20770308) | Zenodo + SCORED '26 | Under Review |
 
 ---
