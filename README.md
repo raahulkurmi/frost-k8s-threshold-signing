@@ -2,7 +2,7 @@
 
 **First working implementation of FROST threshold signing integrated with the Kubernetes ExternalJWTSigner API (KEP-740, stable v1.36)**
 
-[![Go](https://img.shields.io/badge/Go-1.23+-blue)](https://go.dev) [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE) [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.36+-blue)](https://kubernetes.io) [![SCORED 2026](https://img.shields.io/badge/SCORED-2026-orange)](https://scored.dev) [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20770308-blue)](https://doi.org/10.5281/zenodo.20770308)
+[![Go](https://img.shields.io/badge/Go-1.23+-blue)](https://go.dev) [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE) [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.36+-blue)](https://kubernetes.io) [![. 2026](https://img.shields.io/badge/.-2026-orange)](https://..dev) [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20770308-blue)](https://doi.org/10.5281/zenodo.20770308)
 
 | # | Title | Venue | Status |
 |---|---|---|---|
@@ -781,7 +781,7 @@ bash scripts/restart-frost.sh
 |---|---|---|---|
 | 📖 Paper 1 | [Authentication Mechanisms in Kubernetes: A Systematic Review](https://doi.org/10.5281/zenodo.20734453) | Zenodo | Published |
 | 🔒 Paper 2 | [Threat Modeling and Security Analysis of Threshold-Based Token Signing](https://doi.org/10.5281/zenodo.20733863) | Zenodo | Published |
-| 🚀 Paper 3 | [frost-k8s: A FROST-Based Threshold Signing Proxy *(this repo)*](https://doi.org/10.5281/zenodo.20770308) | Zenodo + SCORED '26 | Under Review |
+| 🚀 Paper 3 | [frost-k8s: A FROST-Based Threshold Signing Proxy *(this repo)*](https://doi.org/10.5281/zenodo.20770308) | Zenodo + . '26 | Under Review |
 
 ---
 
