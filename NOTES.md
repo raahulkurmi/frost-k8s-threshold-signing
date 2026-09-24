@@ -338,3 +338,37 @@ keys but not the five `share-<i>.json` files** (bare base64 has no rule). Fixes:
 the results directory first; `--keep` deliberately keeps them), `make e2e-down` wipes
 them too, and T11 gained `TestNoKeyMaterialFilesInTree`, a tree walk that includes
 ignored directories and catches share files regardless of gitleaks.
+
+## Phase 6 results: every e2e run and the commit it used
+
+| Run | Commit | Outcome |
+|---|---|---|
+| 1 | `2e05943` | **Failed closed at `kind create`.** The guarded kubeadm patch's `test` op found an unexpected flag at index 24 (N28). No cluster was created. Log: `reports/gates/gate6-e2e-run1-2e05943-patch-guard-failed-closed.log` |
+| 2 | `f077169` | SETUP, E1–E7, REQ-a/b/c PASS; **harness hung** at E8 (bare `wait`, N31). Log: `…run2-f077169-harness-hang.log` |
+| 3 | `2f2d7bc` | SETUP, E1–E8, REQ-a/b/c PASS; **harness crashed** at REQ-d (`jq` on prefixed compose logs). Log: `…run3-2f2d7bc-harness-crash.log` |
+| 4 | `ab2de56` | **E2E: PASS** (all 13 checks). A later `make test` failed T11 because `secrets/` outlived the run (N32). Log: `…run4-ab2de56.log` |
+| 5 (Gate 6) | **`152941b`** | **E2E: PASS** (13/13), then **`make test` PASS** on the post-e2e tree, then **`make check-images` PASS**. Logs: `reports/gates/gate6-final-152941b.log`, `gate6-e2e-final-152941b.log`, `gate6-test-suite-T1-T12-152941b.log` |
+
+Observations from the passing runs:
+- **REQ-a:** the kubelet-projected token (pod `e3-client` on `tk8s-worker`) has
+  `exp − iat = 7200 s` and `warnafter − iat = 3607 s`, and it passes TokenReview.
+  This matches N27.
+- **REQ-b:** a non-allowlisted audience is refused by all 5 signers. The apiserver
+  returns `Internal error occurred: failed to generate token: … threshold not met: 0
+  valid shares, need 3; failures: [signer-3: refused (HTTP 403 policy): aud: audience
+  "not-allowlisted" is not allowed; …]`. **The signer policy reason reaches the token
+  requester.** Operators benefit, but callers learn which rule fired; this goes into
+  THREAT_MODEL.md (Phase 8).
+- **E6:** with 3 signers down, refusal takes 67–136 ms, not the 2 s deadline, because
+  a stopped signer fails immediately (DNS `server misbehaving` / connection refused).
+  A signer that hangs instead would hit the deadline (T10).
+- **E7:** docker start → first successful token took 380–636 ms across runs. This
+  includes one `kubectl` process start per attempt.
+- **E4:** the scheduler uses an x509 client cert (N29). The controller-manager's
+  `deployment-controller` and `replicaset-controller` tokens were allowed by all 5
+  signers.
+- **E6 log line:** the harness grepped for `threshold not met`, which appears only in the
+  returned error (shown in full in kubectl's output), not in the coordinator's log line
+  (`"msg":"sign failed"`). The grep is fixed in `152941b`.
+- **Not done:** the optional v1.37.x re-run (the prompt says "at the very end"). The
+  apiserver path deleted `sa.key` and nothing broke, but that is not a formal test.

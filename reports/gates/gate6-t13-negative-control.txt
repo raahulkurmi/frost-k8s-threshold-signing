@@ -1,0 +1,16 @@
+T13 negative control (VM tk8s, 2026-09-24): scripts/check-images.sh run against a
+deliberately bad signer image built FROM frost-k8s/signer:dev that COPYs a fake
+share-1.json and a tls.key, then deletes the key in a later layer. Expected: FAIL.
+
+  FAIL [signer] layer sha256/2e7931c0...: secret-like path tmp/tls.key
+  FAIL [signer] layer sha256/dd2d4760...: secret-like path tmp/.wh.tls.key
+  FAIL [signer] layer sha256/ed7f253c...: secret-like path run/frost/share-1.json
+  layers inspected: 6
+  FAIL [signer] files: run/frost/share-1.json
+  FAIL [signer] secret-like content in: run/frost/share-1.json
+  FAIL [signer] build history references secret material: RUN /bin/sh -c rm /tmp/tls.key
+  check-images: FAIL
+  negative-control exit=1
+
+The key deleted in a later layer is still caught (layer scan + whiteout), as is the
+share by path, name and content.
