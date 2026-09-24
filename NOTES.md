@@ -183,7 +183,8 @@ which the plugin merges in via `mergeClaims(p.iss, ...)`.
   returns `"share": {"xi","c","z"}` (base64 std) plus `signer_id`. The share's index is
   never taken from the payload: the coordinator uses the mTLS-authenticated signer
   identity (R-b).
-- **N14. Policy decoding is case- and duplicate-strict.** Go's `encoding/json` struct
+- > ⚠️ **HIGHLIGHTED FINDING N14 (security): JSON parser differential between signer policy and apiserver verifier.**
+  **Policy decoding is case- and duplicate-strict.** Go's `encoding/json` struct
   decoding is case-insensitive and last-wins. go-jose v2 uses a case-sensitive fork.
   Decoding `{"iss":"evil","ISS":"good"}` into a struct would let a coordinator pass
   the policy with one value while the apiserver verifies the other. The policy
