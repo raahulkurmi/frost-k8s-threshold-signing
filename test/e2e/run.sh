@@ -48,7 +48,7 @@ tokenreview() { # token [audience]
   jq -n --arg t "$1" --argjson a "$aud" '{apiVersion:"authentication.k8s.io/v1",kind:"TokenReview",spec:{token:$t,audiences:$a}}' \
     | K create -o json -f -
 }
-coord_logs() { "${COMPOSE[@]}" logs --no-color grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 2>/dev/null; }
+coord_logs() { "${COMPOSE[@]}" logs --no-color --no-log-prefix grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 2>/dev/null; }
 
 teardown() {
   kind delete cluster --name "$CLUSTER" >/dev/null 2>&1 || true
@@ -283,7 +283,13 @@ if [[ $SAME == 1 && $E8A == 1 && $FAILS == 0 ]]; then
 else fail E8 "identical=$SAME twoDown=$E8A rollingFails=$FAILS/$N"; fi
 
 section "(d) strategy used by every coordinator"
-coord_logs | grep '"coordinator ready"' | jq -rc '{strategy, deadline, signers, kid}' | sort | uniq -c
+READY_LINES="$(coord_logs | grep '"msg":"coordinator ready"' || true)"
+jq -rc '{strategy, deadline, signers, kid}' <<<"$READY_LINES" | sort | uniq -c
+N_READY="$(grep -c . <<<"$READY_LINES" || true)"
+N_STRICT="$(jq -r 'select(.strategy=="strict" and .deadline=="2s" and .kid=="'"$KID"'") | .strategy' <<<"$READY_LINES" | grep -c strict || true)"
+if [[ "$N_READY" -ge 3 && "$N_READY" == "$N_STRICT" ]]; then
+  pass REQ-d "all $N_READY coordinator starts (incl. restarts) ran strategy=strict, deadline=2s, kid=$KID"
+else fail REQ-d "$N_STRICT of $N_READY coordinator starts were strict"; fi
 
 section "Signer policy decisions (all signers, from audit logs)"
 cat audit/signer-*/audit.log | jq -r '.decision' | sort | uniq -c
