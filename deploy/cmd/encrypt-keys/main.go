@@ -10,8 +10,8 @@ import (
 func main() {
 	password := os.Getenv("FROST_KEY_PASSWORD")
 	if password == "" {
-		password = "frost-dev-password"
-		fmt.Println("[encrypt] Using default password — set FROST_KEY_PASSWORD in production")
+		fmt.Fprintln(os.Stderr, "ERROR: FROST_KEY_PASSWORD is not set")
+		os.Exit(1)
 	}
 
 	if err := keystore.SaveEncryptedKeys(

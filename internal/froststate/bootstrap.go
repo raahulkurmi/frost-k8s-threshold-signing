@@ -46,39 +46,38 @@ func loadShareFromVault(vaultAddr, vaultToken string, signerID int) (string, err
 	return result.Data.Data.Share, nil
 }
 
-// loadKeysData loads frost-keys data from encrypted file, plain file, or Vault
-func loadKeysData(signerID int) ([]byte, string, error) {
+// requirePassword returns FROST_KEY_PASSWORD or an error. There is no default:
+// a missing password aborts startup (fail closed).
+func requirePassword() (string, error) {
 	password := os.Getenv("FROST_KEY_PASSWORD")
 	if password == "" {
-		password = "frost-dev-password"
+		return "", fmt.Errorf("FROST_KEY_PASSWORD is not set")
 	}
+	return password, nil
+}
 
-	// Try Vault first
-	vaultAddr := os.Getenv("VAULT_ADDR")
-	vaultToken := os.Getenv("VAULT_TOKEN")
-	if vaultAddr != "" && vaultToken != "" {
+// loadKeysData loads frost-keys data from Vault (if VAULT_ADDR is set) or the
+// encrypted file. Every failure is fatal; there is no fallback.
+func loadKeysData(signerID int) ([]byte, string, error) {
+	if vaultAddr := os.Getenv("VAULT_ADDR"); vaultAddr != "" {
+		vaultToken := os.Getenv("VAULT_TOKEN")
+		if vaultToken == "" {
+			return nil, "", fmt.Errorf("VAULT_ADDR is set but VAULT_TOKEN is not")
+		}
 		share, err := loadShareFromVault(vaultAddr, vaultToken, signerID)
-		if err == nil {
-			return nil, share, nil
+		if err != nil {
+			return nil, "", fmt.Errorf("vault: %w", err)
 		}
-		fmt.Printf("[vault] Failed, trying local: %v\n", err)
+		return nil, share, nil
 	}
 
-	// Try encrypted file
-	if _, err := os.Stat("data/frost-keys.enc"); err == nil {
-		data, err := keystore.LoadDecryptedKeys("data/frost-keys.enc", password)
-		if err == nil {
-			fmt.Println("[keystore] Loaded encrypted key file")
-			return data, "", nil
-		}
-		fmt.Printf("[keystore] Failed to decrypt: %v\n", err)
-	}
-
-	// Fallback to plain file
-	fmt.Println("[signer] Loading key share from plain file (not recommended for production)")
-	data, err := os.ReadFile("data/frost-keys.json")
+	password, err := requirePassword()
 	if err != nil {
-		return nil, "", fmt.Errorf("open frost-keys.json: %w", err)
+		return nil, "", err
+	}
+	data, err := keystore.LoadDecryptedKeys("data/frost-keys.enc", password)
+	if err != nil {
+		return nil, "", fmt.Errorf("load encrypted key file: %w", err)
 	}
 	return data, "", nil
 }
@@ -98,17 +97,13 @@ func Init() error {
 
 	if directShare != "" {
 		// Share came from Vault directly — still need full config from file
-		data, err := os.ReadFile("data/frost-keys.json")
+		password, err := requirePassword()
 		if err != nil {
-			// Try encrypted
-			password := os.Getenv("FROST_KEY_PASSWORD")
-			if password == "" {
-				password = "frost-dev-password"
-			}
-			data, err = keystore.LoadDecryptedKeys("data/frost-keys.enc", password)
-			if err != nil {
-				return fmt.Errorf("load config: %w", err)
-			}
+			return err
+		}
+		data, err := keystore.LoadDecryptedKeys("data/frost-keys.enc", password)
+		if err != nil {
+			return fmt.Errorf("load config: %w", err)
 		}
 		if err := json.Unmarshal(data, &stored); err != nil {
 			return fmt.Errorf("decode json: %w", err)

@@ -91,3 +91,75 @@ Tracked. Added in `f91807b`. 8,600,559 bytes, 296,571 lines. Every line is
 markers, 0 JWTs, 0 hex runs of 64+ characters, 0 password mentions, 0 Vault tokens,
 and 0 share/secret mentions. `gitleaks dir` reported no leaks. It is not a secret.
 It goes on the Phase 1 cleanup list and into `reports/HISTORY_PURGE.md` as repo bloat.
+
+## Decisions carried from Gate 0 review (2026-09-24)
+
+- **License (N6):** pin `github.com/niclabs/tcrsa` at exactly **v0.0.5** (MIT) in the main
+  `go.mod` and never upgrade to master. Phase 8 adds a `NOTICE` file and a README
+  "Licensing and patents" section. It will say only that the dependency is tcrsa v0.0.5
+  under MIT, later upstream versions reference US patent 10735188, this repository is an
+  open-source research prototype, and any commercial use needs independent legal review.
+- **Verifier (N1):** go-jose **v2.6.3** is the primary verifier in all tests. v4 is secondary.
+- **R-a (Phase 2/4):** test the FetchKeys path end to end:
+  `x509.MarshalPKIXPublicKey` → `x509.ParsePKIXPublicKey` → go-jose v2 verify of a
+  threshold-signed token.
+- **R-b (Phase 4):** before Join, always bounds-check `Id ∈ [1,n]`, check that `Id` matches
+  the responding signer's mTLS identity, and dedupe by `Id`. Add a spike-style test of
+  Join's behavior with out-of-range Ids.
+- **R-c (Phase 4/7):** support two verification strategies behind a config flag and benchmark both:
+  - `strict`: verify every share in parallel goroutines, Join, verify the final signature.
+  - `optimistic`: Join the first t well-formed shares and verify the final signature. Only if
+    that fails, verify each share to find and exclude the bad signers, then retry.
+
+  Both must attribute bad shares (I7) and both must verify the final signature. The default
+  is `strict`.
+- **R-d (Phase 8):** THREAT_MODEL.md states that tcrsa is unaudited and unmaintained since
+  2020, lists the N5 hazards, and states how the coordinator mitigates each one.
+- **R-e:** `spike/` and `spike/gate0-output.txt` are permanent evidence. Never delete them.
+- **nohup.out:** remove it from the tree in Phase 1, add it to `.gitignore`, and list it in
+  HISTORY_PURGE.md under "bloat", not "leaks".
+
+## Upstream facts gathered for Phases 3–4 (k8s v1.36.5)
+
+### N8. Proto version: **v1**
+`pkg/serviceaccount/externaljwt/plugin/plugin.go` imports
+`externaljwtv1 "k8s.io/externaljwt/apis/v1"`. The proto is
+`staging/src/k8s.io/externaljwt/apis/v1/api.proto` (proto package `v1`, service
+`v1.ExternalJWTSigner`). The repo's current stubs are labelled `v1alpha1` but declare
+`package v1`.
+- `SignJWTRequest.claims` is "URL-safe base64 wrapped payload to be signed. Exactly as it
+  appears in the second segment of the JWT". It is already base64url, so we must not
+  re-encode it.
+- `SignJWTResponse.header` and `.signature` are already base64url. The header may contain
+  only alg/kid/typ.
+- `FetchKeysResponse.refresh_hint_seconds <= 0` is a misconfiguration. `data_timestamp` is
+  "when this data was pulled from the authoritative source".
+- `Key.key` is PKIX. The supported algorithms listed are "RSA 256 or ECDSA 256/384/521".
+- `MetadataResponse.max_token_expiration_seconds` must be at least 600. The extended
+  expiration is `min(1 year, max)`. A `--service-account-max-token-expiration` greater
+  than max is fatal.
+
+### N9. `sub` form (the prompt's regex is wrong)
+`pkg/serviceaccount/claims.go` `Claims()` always sets `sub = MakeUsername(ns, name)` =
+`system:serviceaccount:<ns>:<name>`. No node or other subject form is issued, and node
+binding only adds `kubernetes.io.node`. However:
+- namespace = `NameIsDNSLabel`: `[a-z0-9]([-a-z0-9]*[a-z0-9])?`, at most 63 characters.
+- SA name = `NameIsDNSSubdomain`: DNS-1123 subdomain, which **may contain dots**, at most 253 characters.
+
+The prompt's regex `^system:serviceaccount:[a-z0-9-]+:[a-z0-9-]+$` would reject valid SA
+names that contain dots (and would accept leading or trailing hyphens). The signer policy
+uses the upstream validation rules instead.
+Other claims: `iat == nbf == now`, `exp = now + expirationSeconds`, `jti` (UUID),
+`kubernetes.io.{namespace, serviceaccount{name,uid}, pod|secret|node, warnafter}`, and `iss`,
+which the plugin merges in via `mergeClaims(p.iss, ...)`.
+
+### N10. More fail-open and weak-auth paths found in the old code (beyond D1–D12)
+- `cmd/signer/main.go` falls back to **plain HTTP** when the CA file is missing, and uses
+  `ClientAuth: tls.RequestClientCert`, which **never verifies** the client cert.
+- `deploy/docker-compose.yml` and `scripts/vault-init.sh` hardcode the Vault dev root token
+  `frost-dev-token`.
+- `internal/keystore` derives the AES key as a single unsalted SHA-256 of the password (no KDF).
+- The compiled Mach-O binaries `grpc-proxy` and `signer` are committed at the repo root.
+  They contain the `frost-dev-password` default string.
+- `deploy/ nginx-grpc.conf` (with a leading space) duplicates `deploy/nginx-grpc.conf`.
+  `deploy/cmd/encrypt-keys` and `deploy/internal/keystore` duplicate top-level code.

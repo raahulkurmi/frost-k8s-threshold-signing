@@ -12,10 +12,6 @@ RUN go mod tidy && go build -o /bin/signer ./cmd/signer/
 FROM alpine:3.20
 
 COPY --from=builder /bin/signer /bin/signer
-COPY --from=builder /app/data/frost-keys.enc /app/data/frost-keys.enc
-COPY --from=builder /app/certs/signer.crt /app/certs/signer.crt
-COPY --from=builder /app/certs/signer.key /app/certs/signer.key
-COPY --from=builder /app/certs/ca.crt /app/certs/ca.crt
 
 WORKDIR /app
 

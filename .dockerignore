@@ -1,0 +1,15 @@
+# Keep secret material and bulky artifacts out of every build context.
+.git
+secrets/
+out/
+certs/
+data/
+**/*.key
+**/*.pem
+**/*.enc
+**/*.csr
+**/share-*.json
+benchmark/results/
+reports/
+spike/
+nohup.out

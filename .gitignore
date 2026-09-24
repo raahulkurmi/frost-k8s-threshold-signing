@@ -1,6 +1,10 @@
 # binaries
 bin/
 dist/
+/grpc-proxy
+/signer
+/coordinator
+/dealer
 
 # mac
 .DS_Store
@@ -11,5 +15,16 @@ dist/
 
 # logs
 *.log
-data/frost-keys.json
-data/ecdsa-signing.pem
+nohup.out
+
+# secret material: never commit (I10)
+certs/
+data/
+secrets/
+out/
+*.key
+*.pem
+*.enc
+*.csr
+*.srl
+share-*.json

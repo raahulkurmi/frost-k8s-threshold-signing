@@ -203,7 +203,7 @@ Startup
   ▼
 [Tier 1] HashiCorp Vault
   VAULT_ADDR=http://vault:8200
-  VAULT_TOKEN=frost-dev-token
+  VAULT_TOKEN=<required, no default>
   GET /v1/frost/data/signer-{id}
   │
   ├── Success → use Vault share ✅
@@ -214,7 +214,7 @@ Startup
       [Tier 2] AES-256-GCM Encrypted File
         data/frost-keys.enc
         Password: FROST_KEY_PASSWORD env var
-        (default: "frost-dev-password" for dev)
+        (required; no default)
         │
         ├── Success → use decrypted share ✅
         │
@@ -1045,7 +1045,7 @@ bash scripts/restart-frost.sh
 | `PORT` | signer | required | HTTP port (8081–8085) |
 | `VAULT_ADDR` | signer | — | Vault URL e.g. `http://vault:8200` |
 | `VAULT_TOKEN` | signer | — | Vault authentication token |
-| `FROST_KEY_PASSWORD` | signer | `frost-dev-password` | AES-256-GCM decryption password |
+| `FROST_KEY_PASSWORD` | signer | — (required) | AES-256-GCM decryption password |
 | `TLS_CERT` | signer | `certs/signer.crt` | Signer TLS certificate |
 | `TLS_KEY` | signer | `certs/signer.key` | Signer TLS private key |
 | `TLS_CA` | signer | `certs/ca.crt` | CA certificate for client verification |
