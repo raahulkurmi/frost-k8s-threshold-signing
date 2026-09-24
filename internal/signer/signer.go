@@ -179,6 +179,7 @@ func (s *Server) SignShare(req wire.SignShareRequest, client string) (*wire.Sign
 	if err != nil {
 		return nil, reject(http.StatusInternalServerError, "internal", "sign: %v", err)
 	}
+	ss = tamper(s.cfg.ID, ss)
 	s.cfg.Logger.Info("sign-share", "request_id", req.RequestID, "sub", decision.Subject,
 		"client", client, "latency_ms", float64(time.Since(start).Microseconds())/1000)
 	return &wire.SignShareResponse{SignerID: s.cfg.ID, Share: wire.FromTcrsa(ss), RequestID: req.RequestID}, nil

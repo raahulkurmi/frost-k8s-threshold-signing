@@ -63,6 +63,21 @@ func TestPolicyAccepts(t *testing.T) {
 		"pod-bound token": func(c map[string]any) {
 			c["kubernetes.io"].(map[string]any)["pod"] = map[string]any{"name": "p", "uid": "x"}
 		},
+		// Shape of a kubelet-projected token under --service-account-extend-token-expiration
+		// (pkg/registry/core/serviceaccount/storage/token.go): pod + node binding and warnafter.
+		"kubelet projected, extended, pod+node+warnafter": func(c map[string]any) {
+			k := c["kubernetes.io"].(map[string]any)
+			k["pod"] = map[string]any{"name": "web-0", "uid": "11111111-2222-3333-4444-555555555555"}
+			k["node"] = map[string]any{"name": "tk8s-control-plane", "uid": "66666666-7777-8888-9999-000000000000"}
+			k["warnafter"] = now.Unix() + 3000
+			c["exp"] = now.Unix() + 3600
+		},
+		"secret-bound token": func(c map[string]any) {
+			c["kubernetes.io"].(map[string]any)["secret"] = map[string]any{"name": "s", "uid": "y"}
+		},
+		"node-bound token": func(c map[string]any) {
+			c["kubernetes.io"].(map[string]any)["node"] = map[string]any{"name": "n", "uid": "z"}
+		},
 	}
 	for name, mut := range cases {
 		t.Run(name, func(t *testing.T) {

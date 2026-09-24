@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -164,11 +165,15 @@ func CorruptShare(h http.Handler) http.Handler {
 // client goes away).
 func Delay(d time.Duration, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Read the body first: net/http only detects a client disconnect
+		// (and cancels r.Context()) once the request body has been consumed.
+		body, _ := io.ReadAll(r.Body)
 		select {
 		case <-time.After(d):
 		case <-r.Context().Done():
 			return
 		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
 		h.ServeHTTP(w, r)
 	})
 }
