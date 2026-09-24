@@ -1,0 +1,93 @@
+# NOTES
+
+Pins, and discrepancies between the task prompt, the libraries, and upstream
+Kubernetes. Newest entries are appended per phase.
+
+## Environment (recorded 2026-09-24)
+
+| Item | Value | Source |
+|---|---|---|
+| Kubernetes target | **v1.36.5** (latest v1.36 patch), commit `ad950d1cc78b0183c476bd4d3f1934c104229727` | GitHub releases API, `repos/kubernetes/kubernetes/commits/v1.36.5` |
+| Kubernetes optional re-run | v1.37.1 (latest v1.37 patch at time of writing) | GitHub releases API |
+| Go | **go1.27.1** darwin/arm64 (latest stable; via `GOTOOLCHAIN=go1.27.1`, local install is go1.26.3) | `https://go.dev/dl/?mode=json` |
+| kind | v0.31.0 (built with go1.25.5) | `kind version` |
+| kubectl client | v1.35.1 (one minor behind the v1.36 control plane; within supported skew) | `kubectl version --client` |
+| gitleaks | 8.30.1 | `gitleaks version` |
+| jq | 1.8.1 | `jq --version` |
+| Docker | 28.3.2, Docker Desktop | `docker info` |
+| Host (Phases 0–5) | macOS Darwin 25.6.0, arm64. Phases 6–7 run on a Linux VM that the user will provide. | `uname -a` |
+| tcrsa | `github.com/niclabs/tcrsa` **v0.0.5** (2020-12-07) | proxy.golang.org |
+
+## Discrepancies and findings
+
+### N1. kube-apiserver uses go-jose **v2**, not v4 (Phase 0)
+The prompt says to verify with `github.com/go-jose/go-jose/v4`. In k8s v1.36.5,
+`go.mod` pins `gopkg.in/go-jose/go-jose.v2 v2.6.3`. Every jose import in
+`pkg/serviceaccount` is `gopkg.in/go-jose/go-jose.v2` (5 imports) or `.../jwt` (6).
+The spike verifies with **both** v2.6.3 (what the apiserver actually runs) and
+go-jose v4.1.5, plus `rsa.VerifyPKCS1v15`.
+
+### N2. Header constraints enforced by the apiserver (Phase 0)
+`pkg/serviceaccount/externaljwt/plugin/plugin.go` `validateJWTHeader` at v1.36.5
+decodes the header with `DisallowUnknownFields` into `{alg,kid,typ}`. It requires
+`typ == "JWT"`, a non-empty `kid` of at most 1024 bytes, and `alg` in
+{`RS256`,`ES256`,`ES384`,`ES512`}. The plugin has no RSA key size check.
+`FetchKeys` keys are parsed with `x509.ParsePKIXPublicKey` (`keycache.go`).
+
+### N3. tcrsa `NewKey(b)` yields a (b−1)-bit modulus (Phase 0)
+`key.go` sets `pPrimeSize=(b+1)/2` and `qPrimeSize=b-pPrimeSize-1`. Go's
+`crypto/rand.Prime` sets the top two bits of every candidate, so the modulus is
+exactly `b-1` bits. `NewKey(2048)` would give a 2047-bit key. The spike and the
+dealer call **`NewKey(2049)`**, which gives a 2048-bit modulus (1025-bit p, 1023-bit q).
+The test `TestTcrsaModulusIsBitSizeMinusOne` checks this at 512 bits.
+
+### N4. tcrsa API facts (confirmed in source, v0.0.5)
+- `NewKey(bitSize int, k, l uint16, args *KeyMetaArgs) (KeyShareList, *KeyMeta, error)`.
+  It requires `l/2+1 <= k <= l` (honest majority), so 3-of-5 is allowed. e = 65537.
+- `KeyShare{Si []byte; Id uint16}`, where Id is 1-based.
+  `KeyMeta{PublicKey *rsa.PublicKey; K, L uint16; VerificationKey *VerificationKey{V,U []byte; I [][]byte}}`.
+- `PrepareDocumentHash(size, crypto.SHA256, digest)` produces the EMSA-PKCS1-v1_5 encoding.
+  `KeyShare.Sign` expects an already padded document. Our signers must call
+  `PrepareDocumentHash` themselves (I8).
+- `SigShare{Xi, C, Z []byte; Id uint16}`. `SigShare.Verify(doc, meta)` checks
+  Shoup's proof of correctness.
+- `SigShareList.Join(doc, meta)`: rejects fewer than K shares. It does **not** verify
+  shares, does **not** dedupe Ids, and uses only the first K entries.
+- `KeyShare.Sign` has no shared mutable state (it reads `meta`, uses `crypto/rand`),
+  so signers don't need a mutex.
+
+### N5. tcrsa hazards the coordinator must guard (Phase 0, tested in `TestLibraryHazards`)
+- `SigShare.Verify` **panics** when `Id == 0` or `Id > L` (it indexes
+  `VerificationKey.I[Id-1]`). The coordinator must bounds-check `Id` in `[1,n]`
+  and match it to the responding signer before calling Verify.
+- `Join` with duplicate Ids returns no error and an invalid signature. The coordinator
+  must dedupe by Id.
+- `Join` with an unverified bad share returns no error and an invalid signature.
+  The coordinator must verify each share and then the final signature (already
+  required by the Phase 4 design).
+- A share with `Xi' = n − Xi` also passes `Verify`. This is harmless: Join uses only
+  even powers of Xi, so the combined signature is the same.
+
+### N6. tcrsa LICENSE changed after v0.0.5: patent notice (Phase 0), needs your decision
+- v0.0.5 (the tagged version we depend on, 2020-12-07) ships the **MIT** license.
+- The master commit `f8ebd8f` (2021-01-11, "Update LICENSE", the only change after
+  v0.0.5) replaces it with a custom license. That license states the threshold
+  signing process is protected by **US patent 10735188** (and Chile 2015003766), and
+  that commercial use must be cleared with Universidad de Chile. It grants use only
+  in Open Source Software, and only if the use "does not infringe the patent".
+- A patent claim applies regardless of which copyright license a given code
+  version carries. **This needs legal review before any commercial or non-OSS use.**
+  It doesn't block the research prototype, but it has to be recorded.
+
+### N7. ExternalJWTSigner proto versions present at v1.36.5
+Both `staging/src/k8s.io/externaljwt/apis/v1alpha1/api.proto` and `.../v1/api.proto`
+exist. Phase 4 will confirm which version the apiserver client dials.
+
+## Repository housekeeping
+
+### `nohup.out`
+Tracked. Added in `f91807b`. 8,600,559 bytes, 296,571 lines. Every line is
+`sh: socat: command not found`. The pattern scan found 0 PEM blocks, 0 private-key
+markers, 0 JWTs, 0 hex runs of 64+ characters, 0 password mentions, 0 Vault tokens,
+and 0 share/secret mentions. `gitleaks dir` reported no leaks. It is not a secret.
+It goes on the Phase 1 cleanup list and into `reports/HISTORY_PURGE.md` as repo bloat.

@@ -1,0 +1,52 @@
+=== RUN   TestTcrsaModulusIsBitSizeMinusOne
+    threshold_rsa_test.go:230: NewKey(512) -> 511-bit modulus (3/3 runs); so NewKey(2049) is used for a 2048-bit modulus
+--- PASS: TestTcrsaModulusIsBitSizeMinusOne (0.89s)
+=== RUN   TestKeygen
+    threshold_rsa_test.go:236: keygen: tcrsa.NewKey(2049, k=3, l=5) took 18.713s; modulus = 2048 bits, e = 65537
+--- PASS: TestKeygen (18.71s)
+=== RUN   TestRS256JWTVerifies
+    threshold_rsa_test.go:257: token verified by rsa.VerifyPKCS1v15, go-jose v2.6.3, go-jose v4 (sig 256 bytes)
+--- PASS: TestRS256JWTVerifies (0.04s)
+=== RUN   TestAllThresholdSubsetsIdentical
+    threshold_rsa_test.go:279: subset [1 2 3]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [1 2 4]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [1 2 5]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [1 3 4]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [1 3 5]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [1 4 5]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [2 3 4]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [2 3 5]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [2 4 5]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:279: subset [3 4 5]: sha256(sig)=3f4b22390b655cd08471463caa6c8d4d70056941d44d545bfe0fcf800252f047
+    threshold_rsa_test.go:287: all 10 subsets byte-identical
+--- PASS: TestAllThresholdSubsetsIdentical (0.47s)
+=== RUN   TestBelowThresholdFails
+    threshold_rsa_test.go:320: all 10 pairs: Join refuses; forced K=2 combine yields invalid signature
+--- PASS: TestBelowThresholdFails (0.13s)
+=== RUN   TestTamperedShareRejected
+    threshold_rsa_test.go:353: zero Xi: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: share for other input: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: flipped Xi: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: flipped C: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: flipped Z: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: relabelled Id 2->3: rejected (invalid signature share with id 3)
+    threshold_rsa_test.go:370: Join with an unverified tampered share: no error from Join, final signature INVALID (library does not self-check)
+    threshold_rsa_test.go:387: bad share from id 2 excluded; ids {1,3,4} -> valid signature
+--- PASS: TestTamperedShareRejected (0.09s)
+=== RUN   TestLibraryHazards
+    threshold_rsa_test.go:408: HAZARD: SigShare.Verify panics on out-of-range Id=0 -> coordinator must bounds-check Id in [1,n] before Verify
+    threshold_rsa_test.go:408: HAZARD: SigShare.Verify panics on out-of-range Id=6 -> coordinator must bounds-check Id in [1,n] before Verify
+    threshold_rsa_test.go:417: HAZARD: Join accepts duplicate Ids {1,1,2} (err=<nil>) and yields an invalid signature -> coordinator must dedupe by Id
+--- PASS: TestLibraryHazards (0.01s)
+=== RUN   TestTimings
+    threshold_rsa_test.go:468: TIMINGS (modulus 2048 bits, N=20, single goroutine, darwin/arm64, 10 CPUs, go1.27.1):
+    threshold_rsa_test.go:469:   keygen (safe primes, trusted dealer): 18.713s
+    threshold_rsa_test.go:470:   per-share sign:                       6.567ms
+    threshold_rsa_test.go:471:   per-share verify:                     5.263ms
+    threshold_rsa_test.go:472:   combine (Join, 3 shares):             217µs
+    threshold_rsa_test.go:473:   final verify rsa.VerifyPKCS1v15:      23µs
+    threshold_rsa_test.go:474:   final verify go-jose v2 parse+verify: 39µs
+--- PASS: TestTimings (0.72s)
+PASS
+ok  	github.com/raahulkurmi/frost-k8s-threshold-signing/spike	21.267s
+exit=0
