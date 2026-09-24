@@ -1,0 +1,12 @@
+# TEST-ONLY image for e2e network-isolation checks (N1–N3, E8). Never deployed.
+FROM golang:1.27.1-alpine3.24 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY test/e2e/probe/ test/e2e/probe/
+RUN CGO_ENABLED=0 go build -trimpath -o /out/probe ./test/e2e/probe
+
+FROM alpine:3.24
+COPY --from=builder /out/probe /usr/local/bin/probe
+USER 65534
+ENTRYPOINT ["/usr/local/bin/probe"]

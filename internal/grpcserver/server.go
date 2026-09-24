@@ -50,19 +50,35 @@ func New(s Signer, meta *keymeta.Meta, maxTokenSeconds, refreshHint int64) (*Ser
 	return &Server{signer: s, meta: meta, maxTokenSeconds: maxTokenSeconds, refreshHint: refreshHint}, nil
 }
 
+// Generic errors returned to the caller (kube-apiserver, which relays them to
+// the token requester). They deliberately carry no per-signer detail and no
+// policy reason (NOTES.md N33): which rule refused a claim, and which signers
+// are down, stay in the coordinator log and the signers' audit logs.
+const (
+	ErrMsgThreshold      = "token signing failed: threshold not met"
+	ErrMsgInvalidRequest = "token signing failed: invalid request"
+	ErrMsgInternal       = "token signing failed"
+)
+
 // Sign returns the base64url header and signature. On any failure it returns
-// a gRPC error and never a token.
+// a gRPC error with a generic message and never a token.
 func (s *Server) Sign(ctx context.Context, req *externaljwtv1.SignJWTRequest) (*externaljwtv1.SignJWTResponse, error) {
 	if req.GetClaims() == "" {
-		return nil, status.Error(codes.InvalidArgument, "claims is empty")
+		return nil, status.Error(codes.InvalidArgument, ErrMsgInvalidRequest)
 	}
 	res, err := s.signer.Sign(ctx, req.GetClaims())
 	if err != nil {
+		// The coordinator has already logged the detailed failure (per-signer
+		// reasons, request_id); only the class of failure leaves this process.
 		var te *coordinator.ThresholdError
-		if errors.As(err, &te) {
-			return nil, status.Error(codes.Unavailable, err.Error())
+		switch {
+		case errors.As(err, &te):
+			return nil, status.Error(codes.Unavailable, ErrMsgThreshold)
+		case errors.Is(err, coordinator.ErrInvalidClaims):
+			return nil, status.Error(codes.InvalidArgument, ErrMsgInvalidRequest)
+		default:
+			return nil, status.Error(codes.Internal, ErrMsgInternal)
 		}
-		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &externaljwtv1.SignJWTResponse{Header: res.Header, Signature: res.Signature}, nil
 }

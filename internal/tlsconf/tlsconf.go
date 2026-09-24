@@ -109,3 +109,39 @@ func CoordinatorClient(certFile, keyFile, caFile string, i int) (*tls.Config, er
 		},
 	}, nil
 }
+
+// LBName is the only client identity a coordinator's TCP gRPC listener
+// accepts: the nginx load balancer in front of the coordinators.
+const LBName = "lb"
+
+// CoordinatorGRPCName is the server identity of a coordinator's TCP gRPC
+// listener, verified by nginx (grpc_ssl_name).
+const CoordinatorGRPCName = "coordinator-grpc"
+
+// CoordinatorGRPCServer returns the TLS config for a coordinator's TCP gRPC
+// listener: its own cert must be exactly DNS:coordinator-grpc; clients must
+// present a cert chaining to caFile with exactly DNS:lb and clientAuth EKU.
+// A Unix-socket listener (kube-apiserver dialling locally) does not use TLS.
+func CoordinatorGRPCServer(certFile, keyFile, caFile string) (*tls.Config, error) {
+	own, err := loadLeaf(certFile, keyFile, CoordinatorGRPCName)
+	if err != nil {
+		return nil, err
+	}
+	pool, err := loadPool(caFile)
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		Certificates: []tls.Certificate{own},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    pool,
+		NextProtos:   []string{"h2"},
+		VerifyConnection: func(cs tls.ConnectionState) error {
+			if len(cs.PeerCertificates) == 0 {
+				return errors.New("no client certificate")
+			}
+			return exactlyOneSAN(cs.PeerCertificates[0], LBName)
+		},
+	}, nil
+}

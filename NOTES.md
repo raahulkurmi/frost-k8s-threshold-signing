@@ -372,3 +372,44 @@ Observations from the passing runs:
   (`"msg":"sign failed"`). The grep is fixed in `152941b`.
 - **Not done:** the optional v1.37.x re-run (the prompt says "at the very end"). The
   apiserver path deleted `sa.key` and nothing broke, but that is not a formal test.
+
+## Phase 6.5 notes
+
+### N33. Requesters see only generic signing errors (fixed)
+Gate 6 showed kube-apiserver relaying the coordinator's detailed error to the token
+requester: per-signer reasons and the refused audience value. `internal/grpcserver`
+now returns fixed messages (`token signing failed: threshold not met` / `…: invalid
+request` / `token signing failed`). The details stay in the coordinator log and the signer
+audit logs. Tests: `TestSignErrorIsGeneric`, e2e REQ-b and E6. See THREAT_MODEL §2.
+
+### N34. Who can call Sign: design choice (Phase 6.5)
+Gate 6's stack exposed nginx on TCP 9090 (published to the host's loopback) and
+coordinators on unauthenticated gRPC. Now:
+- **Network:** two `internal` bridges, `lb-net` (nginx + coordinators) and `signer-net`
+  (coordinators + signers), both with `com.docker.network.bridge.inhibit_ipv4=true`.
+  A probe in the VM showed that `internal: true` **alone does not stop the host**
+  connecting: Docker gives the host the bridge gateway IP. `inhibit_ipv4` removes that
+  address, so the host's route to those subnets leads nowhere. Nothing is published.
+  nginx listens only on the Unix socket.
+- **Identity:** mTLS nginx→coordinator. The coordinator's TCP listener requires a
+  client cert with exactly `DNS:lb`, and it presents `DNS:coordinator-grpc`. There is
+  **no plaintext TCP mode** (T8: `TCP_ADDR` without `GRPC_TLS_*` refuses to start).
+- **Why mTLS rather than network isolation alone:** isolation depends on Docker's
+  iptables and bridge options being right, a single misconfiguration (for example a
+  future `ports:` line) away from exposure. mTLS keeps authentication independent of
+  topology and carries over unchanged to multi-host (Phase 7B), where the
+  nginx→coordinator or coordinator→signer hops cross real networks. The alternative
+  considered was coordinators listening on Unix sockets in a volume shared with nginx.
+  That also avoids TCP, but it is filesystem ACLs only, doesn't extend to multi-host,
+  and differs from the signer hop.
+- **Separate certs per role:** `coordinator` (clientAuth → signers), `coordinator-grpc`
+  (serverAuth ← nginx) and `lb` (clientAuth → coordinators). Signers reject `lb`, and
+  coordinators reject `coordinator` and signer certs as gRPC clients (N1).
+- **Retries:** see THREAT_MODEL §1. The worst case is extra audit entries and rate-limit
+  hits; the signature is deterministic, so no second token can result.
+
+### N35. The e2e probe is test-only
+`test/e2e/probe` (FetchKeys / Sign / TCP connect) and `test/e2e/Dockerfile.probe`
+replace `fetchkeys`. The probe runs as throwaway `docker run` containers attached to a
+compose network or to nginx's network namespace (`--network container:…`). No compose
+override is needed, and the default compose file contains no test services.

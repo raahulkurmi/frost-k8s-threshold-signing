@@ -5,7 +5,9 @@
 #   secrets/ca/ca.key              CA private key. Never mounted, never copied into an image.
 #   secrets/ca/ca.crt              CA certificate
 #   secrets/tls/ca.crt             public copy of the CA cert for mounting
-#   secrets/tls/coordinator/       tls.crt + tls.key, SAN DNS:coordinator, EKU clientAuth
+#   secrets/tls/coordinator/       tls.crt + tls.key, SAN DNS:coordinator, EKU clientAuth (coordinator -> signers)
+#   secrets/tls/coordinator-grpc/  tls.crt + tls.key, SAN DNS:coordinator-grpc, EKU serverAuth (coordinator gRPC listener)
+#   secrets/tls/lb/                tls.crt + tls.key, SAN DNS:lb, EKU clientAuth (nginx -> coordinators)
 #   secrets/tls/signer-<i>/        tls.crt + tls.key, SAN DNS:signer-<i>, EKU serverAuth
 #
 # Usage: scripts/gen-certs.sh [--force] [--signers N] [--out DIR]
@@ -81,6 +83,8 @@ EOF
 }
 
 issue coordinator clientAuth
+issue coordinator-grpc serverAuth
+issue lb clientAuth
 for i in $(seq 1 "$SIGNERS"); do
   issue "signer-$i" serverAuth
 done

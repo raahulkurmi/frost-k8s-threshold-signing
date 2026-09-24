@@ -29,6 +29,7 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 	fx := testutil.Key(t)
 	pki := testutil.NewPKI(t)
 	coord := pki.Coordinator(t)
+	grpcCert := pki.CoordinatorGRPC(t)
 	s1 := pki.Signer(t, 1)
 	work := t.TempDir()
 	base := func() map[string]string {
@@ -40,6 +41,9 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 			"TLS_KEY":          coord.Key,
 			"TLS_CA":           pki.CA,
 			"TCP_ADDR":         "127.0.0.1:0",
+			"GRPC_TLS_CERT":    grpcCert.Cert,
+			"GRPC_TLS_KEY":     grpcCert.Key,
+			"GRPC_TLS_CA":      pki.CA,
 			"HOME":             work,
 		}
 	}
@@ -74,6 +78,9 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 		"no listener":                 {func(e map[string]string) { delete(e, "TCP_ADDR") }, "exactly one of SOCKET_PATH or TCP_ADDR"},
 		"bad strategy":                {func(e map[string]string) { e["VERIFY_STRATEGY"] = "none" }, "unknown verify strategy"},
 		"bad deadline":                {func(e map[string]string) { e["SIGN_DEADLINE"] = "-1s" }, "SIGN_DEADLINE"},
+		"TCP without gRPC mTLS cert":  {func(e map[string]string) { delete(e, "GRPC_TLS_CERT") }, "TCP_ADDR requires mTLS: GRPC_TLS_CERT is not set"},
+		"TCP without gRPC client CA":  {func(e map[string]string) { delete(e, "GRPC_TLS_CA") }, "TCP_ADDR requires mTLS: GRPC_TLS_CA is not set"},
+		"gRPC cert with wrong SAN":    {func(e map[string]string) { e["GRPC_TLS_CERT"], e["GRPC_TLS_KEY"] = coord.Cert, coord.Key }, "not exactly DNS:coordinator-grpc"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

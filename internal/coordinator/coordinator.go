@@ -118,6 +118,10 @@ func New(cfg Config) (*Coordinator, error) {
 	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr}, nil
 }
 
+// ErrInvalidClaims marks a Sign request whose claims are not a well-formed
+// base64url JWT payload segment.
+var ErrInvalidClaims = errors.New("invalid claims")
+
 // SignerFailure attributes one signer's failure.
 type SignerFailure struct {
 	SignerID int    `json:"signer_id"`
@@ -170,11 +174,11 @@ func newRequestID() string {
 func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) {
 	start := time.Now()
 	if err := jwtfmt.CheckSegment(claims); err != nil {
-		return nil, fmt.Errorf("claims: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidClaims, err)
 	}
 	input := c.headerSeg + "." + claims
 	if len(input) > jwtfmt.MaxSigningInput {
-		return nil, fmt.Errorf("claims too large")
+		return nil, fmt.Errorf("%w: too large", ErrInvalidClaims)
 	}
 	digest := sha256.Sum256([]byte(input))
 	doc, err := tcrsa.PrepareDocumentHash(c.meta.PublicKey.Size(), crypto.SHA256, digest[:])
@@ -318,6 +322,7 @@ collect:
 				if err != nil {
 					// All joined shares individually verified; a bad combined
 					// signature means the key metadata or library is broken.
+					c.log.Error("combined signature failed final verification", "request_id", reqID, "combined", ids, "err", err.Error())
 					return nil, fmt.Errorf("combined signature from verified shares %v failed verification: %w", ids, err)
 				}
 				sig, used = s, ids

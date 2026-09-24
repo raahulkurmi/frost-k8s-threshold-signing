@@ -48,6 +48,22 @@ tokenreview() { # token [audience]
   jq -n --arg t "$1" --argjson a "$aud" '{apiVersion:"authentication.k8s.io/v1",kind:"TokenReview",spec:{token:$t,audiences:$a}}' \
     | K create -o json -f -
 }
+PROBE_IMG=frost-k8s/probe:dev
+LBNET=tk8s_lb-net
+SIGNET=tk8s_signer-net
+LB_TLS=(-cert /tls/lb/tls.crt -key /tls/lb/tls.key -ca /tls/ca.crt)
+# probe_on <network> <probe args...>: run the test-only probe in a throwaway
+# container attached to <network> ("bridge", a compose network, or
+# "container:<name>" to share another container's network namespace).
+probe_on() { local net="$1"; shift; docker run --rm --network "$net" --user "$FROST_UID" -v "$REPO/secrets/tls:/tls:ro" "$PROBE_IMG" "$@"; }
+# replica_keys <lb-net ip>: FetchKeys on one coordinator replica, as nginx would (mTLS "lb").
+replica_keys() { probe_on "$LBNET" fetchkeys "$1:9090" "${LB_TLS[@]}"; }
+# sa_claims: a valid, policy-compliant claims segment (so a reachable Sign WOULD succeed).
+sa_claims() {
+  local now; now=$(date +%s)
+  jq -cn --argjson now "$now" '{aud:["https://kubernetes.default.svc.cluster.local"],exp:($now+600),iat:$now,nbf:$now,iss:"https://kubernetes.default.svc.cluster.local",sub:"system:serviceaccount:default:default","kubernetes.io":{namespace:"default",serviceaccount:{name:"default",uid:"00000000-0000-0000-0000-000000000000"}}}' \
+    | base64 -w0 | tr '+/' '-_' | tr -d '='
+}
 coord_logs() { "${COMPOSE[@]}" logs --no-color --no-log-prefix grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 2>/dev/null; }
 
 teardown() {
@@ -83,14 +99,15 @@ mkdir -p run bin/e2e
 for i in 1 2 3 4 5; do mkdir -p "audit/signer-$i"; done
 scripts/gen-certs.sh --out secrets
 go build -o bin/e2e/dealer ./cmd/dealer
-go build -o bin/e2e/fetchkeys ./test/e2e/fetchkeys
+go build -o bin/e2e/probe ./test/e2e/probe
+docker build -q -f test/e2e/Dockerfile.probe -t "$PROBE_IMG" . >/dev/null
 bin/e2e/dealer --out secrets/keys
 KID="$(jq -r .kid secrets/keys/public-meta.json)"
 echo "kid: $KID"
 "${COMPOSE[@]}" build -q
 "${COMPOSE[@]}" up -d
-for _ in $(seq 1 60); do [[ -S "$SOCK" ]] && bin/e2e/fetchkeys "unix://$SOCK" >/dev/null 2>&1 && break; sleep 1; done
-bin/e2e/fetchkeys "unix://$SOCK" || die "signer stack did not come up"
+for _ in $(seq 1 60); do [[ -S "$SOCK" ]] && bin/e2e/probe fetchkeys "unix://$SOCK" >/dev/null 2>&1 && break; sleep 1; done
+bin/e2e/probe fetchkeys "unix://$SOCK" || die "signer stack did not come up"
 "${COMPOSE[@]}" ps --format 'table {{.Service}}\t{{.State}}'
 
 section "Setup: kind cluster (apiserver signs only via $SOCK)"
@@ -201,11 +218,16 @@ fi
 BAD_OUT="$(K create token default --audience not-allowlisted 2>&1)" && BOK=1 || BOK=0
 echo "not allowlisted: kubectl exit=$(( 1 - BOK )) output: $BAD_OUT"
 sleep 1
-BAD_LOG="$(coord_logs | grep 'not-allowlisted' | grep 'is not allowed' | head -1 || true)"
-echo "coordinator log: $BAD_LOG"
-if [[ $AOK == 1 && $BOK == 0 && -n "$BAD_LOG" ]]; then
-  pass REQ-b "allowlisted audience issued; non-allowlisted refused, coordinator log names the signer policy rule"
-else fail REQ-b "allowed=$AOK refused=$(( 1 - BOK )) log=${BAD_LOG:-none}"; fi
+BAD_LOG="$(coord_logs | grep '"msg":"sign failed"' | grep 'not-allowlisted' | grep 'is not allowed' | head -1 || true)"
+BAD_AUDIT="$(cat audit/signer-*/audit.log | jq -c 'select(.decision=="deny" and (.reason|test("not-allowlisted")))' | head -1)"
+echo "coordinator log: $(cut -c1-400 <<<"$BAD_LOG")"
+echo "signer audit:    $BAD_AUDIT"
+# N33: the requester sees only the generic error; the reason is only in logs.
+LEAK=0
+for w in not-allowlisted "aud:" "signer-" policy "403" "valid shares"; do grep -qF -- "$w" <<<"$BAD_OUT" && { echo "requester-visible error leaks: $w"; LEAK=1; }; done
+if [[ $AOK == 1 && $BOK == 0 && $LEAK == 0 && "$BAD_OUT" == *"token signing failed: threshold not met"* && -n "$BAD_LOG" && -n "$BAD_AUDIT" ]]; then
+  pass REQ-b "allowlisted audience issued; non-allowlisted refused with generic error only (N33); reason in coordinator log and signer audit"
+else fail REQ-b "allowed=$AOK refused=$(( 1 - BOK )) leak=$LEAK log=${BAD_LOG:+yes} audit=${BAD_AUDIT:+yes}"; fi
 
 section "E4: Deployment with 20 replicas; controllers keep working"
 KCM_RESTARTS0="$(K get pod -n kube-system -l component=kube-controller-manager -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}')"
@@ -249,7 +271,7 @@ echo "coordinator log: $(coord_logs | grep '"msg":"sign failed"' | tail -1 | cut
 OLD_REVIEW="$(tokenreview "$TOKEN1" | jq -r .status.authenticated)"
 PROJ_REVIEW="$(tokenreview "$PTOKEN" | jq -r .status.authenticated)"
 echo "previously issued tokens with 3 signers down: E1 token authenticated=$OLD_REVIEW, projected token authenticated=$PROJ_REVIEW"
-if [[ $E6A == 1 && $E6B == 0 && "$OLD_REVIEW" == true && "$PROJ_REVIEW" == true ]]; then
+if [[ $E6A == 1 && $E6B == 0 && "$E6B_OUT" == *"token signing failed: threshold not met"* && "$E6B_OUT" != *"signer-"* && "$OLD_REVIEW" == true && "$PROJ_REVIEW" == true ]]; then
   pass E6 "2 down: issued; 3 down: refused with threshold error (${E6B_MS}ms); old tokens still authenticate"
 else fail E6 "2down=$E6A 3down=$E6B old=$OLD_REVIEW proj=$PROJ_REVIEW"; fi
 
@@ -265,11 +287,11 @@ echo "signer-3 last 'signer ready' log: $READY_TS"
 if (( TRIES <= 600 )); then pass E7 "issuance recovered ${E7_MS}ms after docker start"; else fail E7 "did not recover within 60s"; fi
 
 section "E8: coordinator replicas and nginx failover"
-REF="$(bin/e2e/fetchkeys "unix://$SOCK")"
+REF="$(bin/e2e/probe fetchkeys "unix://$SOCK")"
 echo "via socket:   $REF"
 SAME=1
-for ip in 172.30.0.11 172.30.0.12 172.30.0.13; do
-  R="$(bin/e2e/fetchkeys "$ip:9090")"; echo "replica $ip: $R"; [[ "$R" == "$REF" ]] || SAME=0
+for ip in 172.30.1.11 172.30.1.12 172.30.1.13; do
+  R="$(replica_keys "$ip")"; echo "replica $ip (mTLS lb, from lb-net): $R"; [[ "$R" == "$REF" ]] || SAME=0
 done
 docker stop tk8s-grpc-proxy-1-1 tk8s-grpc-proxy-2-1 >/dev/null
 T8A="$(K create token default --duration=10m 2>&1)" && E8A=1 || E8A=0
@@ -287,12 +309,62 @@ for r in 1 2 3; do
   sleep 1
 done
 echo "rolling restart of all 3 replicas: $FAILS/$N token requests failed"
-for ip in 172.30.0.11 172.30.0.12 172.30.0.13; do
-  [[ "$(bin/e2e/fetchkeys "$ip:9090")" == "$REF" ]] || SAME=0
+for ip in 172.30.1.11 172.30.1.12 172.30.1.13; do
+  [[ "$(replica_keys "$ip")" == "$REF" ]] || SAME=0
 done
 if [[ $SAME == 1 && $E8A == 1 && $FAILS == 0 ]]; then
   pass E8 "3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/$N failed)"
 else fail E8 "identical=$SAME twoDown=$E8A rollingFails=$FAILS/$N"; fi
+
+section "N1: nothing but nginx (mTLS lb) can call Sign / FetchKeys"
+CL="$(sa_claims)"
+N1_OK=1
+expect_fail() { # description, probe args...
+  local d="$1"; shift
+  if out="$(probe_on "$@" 2>&1)"; then echo "  UNEXPECTED SUCCESS: $d: $out"; N1_OK=0; else echo "  refused: $d: $(tail -1 <<<"$out" | cut -c1-160)"; fi
+}
+echo "control (lb-net, lb cert): $(probe_on "$LBNET" sign 172.30.1.11:9090 "$CL" "${LB_TLS[@]}" 2>&1 | cut -c1-120)"
+for ip in 172.30.1.11 172.30.1.12 172.30.1.13; do
+  expect_fail "default bridge -> $ip Sign (lb cert)"      bridge   sign "$ip:9090" "$CL" "${LB_TLS[@]}"
+  expect_fail "default bridge -> $ip FetchKeys (lb cert)" bridge   fetchkeys "$ip:9090" "${LB_TLS[@]}"
+  expect_fail "lb-net, no client cert -> $ip Sign"         "$LBNET" sign "$ip:9090" "$CL" -ca /tls/ca.crt
+  expect_fail "lb-net, no client cert -> $ip FetchKeys"    "$LBNET" fetchkeys "$ip:9090" -ca /tls/ca.crt
+  expect_fail "lb-net, coordinator cert -> $ip Sign"       "$LBNET" sign "$ip:9090" "$CL" -cert /tls/coordinator/tls.crt -key /tls/coordinator/tls.key -ca /tls/ca.crt
+  expect_fail "lb-net, signer-1 cert -> $ip FetchKeys"     "$LBNET" fetchkeys "$ip:9090" -cert /tls/signer-1/tls.crt -key /tls/signer-1/tls.key -ca /tls/ca.crt
+  expect_fail "lb-net, plaintext gRPC -> $ip Sign"         "$LBNET" sign "$ip:9090" "$CL"
+done
+for i in 1 2 3 4 5; do
+  expect_fail "lb-net -> signer-$i 172.30.2.2$i:8443 TCP" "$LBNET" connect "172.30.2.2$i:8443"
+done
+if [[ $N1_OK == 1 ]]; then pass N1 "default-bridge and lb-net containers without the lb cert cannot call Sign/FetchKeys; lb-net cannot reach signers"
+else fail N1 "an unauthorised caller reached Sign/FetchKeys"; fi
+
+section "N2: no component port accepts a TCP connection from the host"
+echo "published ports of tk8s containers:"; docker ps --filter label=com.docker.compose.project=tk8s --format '  {{.Names}}: ports=[{{.Ports}}]'
+echo "\$ sudo ss -tlnp (VM host):"; sudo ss -tlnp | sed 's/^/  /'
+N2_OK=1; N2_N=0
+for c in $(docker ps --filter label=com.docker.compose.project=tk8s --format '{{.Names}}'); do
+  ports="$(docker exec "$c" cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | awk 'NR>1 && $4=="0A" {split($2,a,":"); print a[2]}' | while read -r h; do echo $((16#$h)); done | sort -un | tr '\n' ' ')"
+  ips="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "$c")"
+  echo "  $c listens on [${ports:-none}] at [$ips]"
+  for ip in $ips; do for port in $ports; do
+    N2_N=$((N2_N + 1))
+    if bin/e2e/probe connect "$ip:$port" -timeout 2s >/dev/null 2>&1; then echo "    ACCEPTED from host: $ip:$port"; N2_OK=0; fi
+  done; done
+done
+[[ -S "$SOCK" ]] && echo "  (the only entry point is the Unix socket $SOCK, owned by $(stat -c '%U:%G %a' "$SOCK"))"
+if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published"
+else fail N2 "host reached a component port (tried $N2_N)"; fi
+
+section "N3: nginx cannot open a TCP connection to any signer"
+N3_OK=1
+for i in 1 2 3 4 5; do
+  for tgt in "172.30.2.2$i:8443" "signer-$i:8443"; do
+    if out="$(probe_on container:tk8s-coordinator-lb-1 connect "$tgt" -timeout 2s 2>&1)"; then echo "  REACHABLE from nginx netns: $tgt"; N3_OK=0; else echo "  nginx netns -> $tgt: $(cut -c1-110 <<<"$out")"; fi
+  done
+done
+echo "  nginx networks: $(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' tk8s-coordinator-lb-1)"
+if [[ $N3_OK == 1 ]]; then pass N3 "nginx (its network namespace) reaches no signer by IP or name"; else fail N3 "nginx reached a signer"; fi
 
 section "(d) strategy used by every coordinator"
 READY_LINES="$(coord_logs | grep '"msg":"coordinator ready"' || true)"

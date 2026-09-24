@@ -88,6 +88,16 @@ func (p *PKI) Coordinator(t testing.TB) CertPaths {
 	return p.Issue(t, "coordinator", []string{"coordinator"}, x509.ExtKeyUsageClientAuth)
 }
 
+// LB issues the nginx client cert used towards coordinators.
+func (p *PKI) LB(t testing.TB) CertPaths {
+	return p.Issue(t, "lb", []string{"lb"}, x509.ExtKeyUsageClientAuth)
+}
+
+// CoordinatorGRPC issues a coordinator's gRPC server cert.
+func (p *PKI) CoordinatorGRPC(t testing.TB) CertPaths {
+	return p.Issue(t, "coordinator-grpc", []string{"coordinator-grpc"}, x509.ExtKeyUsageServerAuth)
+}
+
 // Signer issues signer-<i>'s server cert.
 func (p *PKI) Signer(t testing.TB, i int) CertPaths {
 	name := "signer-" + itoa(i)

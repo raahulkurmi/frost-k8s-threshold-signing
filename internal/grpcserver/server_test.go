@@ -3,16 +3,19 @@ package grpcserver_test
 import (
 	"context"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	externaljwtv1 "k8s.io/externaljwt/apis/v1"
@@ -20,6 +23,7 @@ import (
 	"frost-k8s-threshold-signing/internal/coordinator"
 	"frost-k8s-threshold-signing/internal/grpcserver"
 	"frost-k8s-threshold-signing/internal/testutil"
+	"frost-k8s-threshold-signing/internal/tlsconf"
 )
 
 // serve starts the ExternalJWTSigner on a Unix socket, as kube-apiserver
@@ -106,6 +110,106 @@ func TestFetchKeysPKIXRoundTrip(t *testing.T) {
 	}
 	t.Logf("FetchKeys kid=%s (%d-byte PKIX), data_timestamp=%s, refresh=%ds; Sign() token verified by go-jose v2 with that key only",
 		k.KeyId, len(k.Key), keys.DataTimestamp.AsTime().Format(time.RFC3339), keys.RefreshHintSeconds)
+}
+
+// TestSignErrorIsGeneric (N33): the error the token requester sees names no
+// signer, no policy rule and no claim value; the coordinator log has them.
+func TestSignErrorIsGeneric(t *testing.T) {
+	c := testutil.StartCluster(t, testutil.ClusterOpts{})
+	var logs testutil.LogBuffer
+	client := serve(t, c, c.NewCoordinator(t, coordinator.Strict, 5*time.Second, logs.Logger()))
+	m := testutil.SAClaims("default", "default", time.Now(), time.Hour)
+	m["aud"] = []string{"not-allowlisted"}
+	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: testutil.Payload(t, m)})
+	if err == nil || resp != nil {
+		t.Fatalf("resp=%v err=%v", resp, err)
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.Unavailable || st.Message() != grpcserver.ErrMsgThreshold {
+		t.Fatalf("caller got %v %q, want Unavailable %q", st.Code(), st.Message(), grpcserver.ErrMsgThreshold)
+	}
+	for _, leak := range []string{"signer", "policy", "aud", "not-allowlisted", "403", "refused", "valid shares"} {
+		if strings.Contains(st.Message(), leak) {
+			t.Fatalf("caller-visible error %q leaks %q", st.Message(), leak)
+		}
+	}
+	l := logs.String()
+	if !strings.Contains(l, `aud: audience \"not-allowlisted\" is not allowed`) || !strings.Contains(l, `"msg":"sign failed"`) {
+		t.Fatalf("coordinator log lacks the specific reason:\n%s", l)
+	}
+	// Malformed claims: generic InvalidArgument.
+	_, err = client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: "not base64!"})
+	if st, _ := status.FromError(err); st.Code() != codes.InvalidArgument || st.Message() != grpcserver.ErrMsgInvalidRequest {
+		t.Fatalf("malformed claims: %v", err)
+	}
+	t.Logf("caller sees: %s / %q; coordinator log keeps the policy reason", st.Code(), st.Message())
+}
+
+// TestTCPListenerRequiresLBClientCert: a coordinator's TCP gRPC listener
+// accepts only a client cert with SAN exactly "lb" from the deployment CA.
+func TestTCPListenerRequiresLBClientCert(t *testing.T) {
+	c := testutil.StartCluster(t, testutil.ClusterOpts{})
+	srv, err := grpcserver.New(c.NewCoordinator(t, coordinator.Strict, 5*time.Second, nil), c.Fx.Meta, 3600, 3600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gc := c.PKI.CoordinatorGRPC(t)
+	tc, err := tlsconf.CoordinatorGRPCServer(gc.Cert, gc.Key, c.PKI.CA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := grpcserver.NewGRPC(srv, grpc.Creds(credentials.NewTLS(tc)))
+	go g.Serve(lis)
+	t.Cleanup(g.Stop)
+
+	dial := func(cert *testutil.CertPaths, caPath string) error {
+		pool := x509.NewCertPool()
+		pem, _ := os.ReadFile(caPath)
+		pool.AppendCertsFromPEM(pem)
+		cfg := &tls.Config{RootCAs: pool, ServerName: tlsconf.CoordinatorGRPCName, MinVersion: tls.VersionTLS13}
+		if cert != nil {
+			kp, err := tls.LoadX509KeyPair(cert.Cert, cert.Key)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cfg.Certificates = []tls.Certificate{kp}
+		}
+		conn, err := grpc.NewClient(lis.Addr().String(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_, err = externaljwtv1.NewExternalJWTSignerClient(conn).FetchKeys(ctx, &externaljwtv1.FetchKeysRequest{})
+		return err
+	}
+	lb := c.PKI.LB(t)
+	if err := dial(&lb, c.PKI.CA); err != nil {
+		t.Fatalf("lb client rejected: %v", err)
+	}
+	other := testutil.NewPKI(t)
+	foreignLB := other.LB(t)
+	coord := c.CoordinatorCert()
+	signer1 := c.PKI.Signer(t, 1)
+	attacker := c.PKI.Issue(t, "attacker", []string{"attacker"}, x509.ExtKeyUsageClientAuth)
+	for name, cert := range map[string]*testutil.CertPaths{
+		"no client cert":                   nil,
+		"coordinator cert (signer-facing)": &coord,
+		"signer-1 cert":                    &signer1,
+		"SAN attacker, same CA":            &attacker,
+		"SAN lb, foreign CA":               &foreignLB,
+	} {
+		err := dial(cert, c.PKI.CA)
+		if err == nil {
+			t.Fatalf("%s: FetchKeys succeeded", name)
+		}
+		t.Logf("%s: rejected (%v)", name, status.Code(err))
+	}
 }
 
 func TestSignBelowThresholdReturnsErrorNoToken(t *testing.T) {

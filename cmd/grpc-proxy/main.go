@@ -12,6 +12,10 @@
 //	TLS_CERT, TLS_KEY  coordinator client cert (SAN exactly DNS:coordinator)
 //	TLS_CA             CA that issued the signers' server certs
 //	SOCKET_PATH | TCP_ADDR  exactly one listener
+//	GRPC_TLS_CERT, GRPC_TLS_KEY, GRPC_TLS_CA  required with TCP_ADDR: the
+//	                   listener is mTLS only (own SAN exactly DNS:coordinator-grpc,
+//	                   clients must present SAN exactly DNS:lb). There is no
+//	                   plaintext TCP mode. SOCKET_PATH (local) uses no TLS.
 //	SIGN_DEADLINE      optional, Go duration, default 2s
 //	VERIFY_STRATEGY    optional, strict (default) | optimistic
 //	REFRESH_HINT_SECONDS optional, default 3600
@@ -31,6 +35,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"frost-k8s-threshold-signing/internal/coordinator"
 	"frost-k8s-threshold-signing/internal/grpcserver"
@@ -56,6 +63,9 @@ type settings struct {
 	RefreshHint int64
 	Socket      string
 	TCP         string
+	GRPCCert    string
+	GRPCKey     string
+	GRPCCA      string
 }
 
 func require(getenv func(string) string, name string) (string, error) {
@@ -179,6 +189,16 @@ func load(getenv func(string) string) (*settings, error) {
 	if (s.Socket == "") == (s.TCP == "") {
 		return nil, errors.New("set exactly one of SOCKET_PATH or TCP_ADDR")
 	}
+	if s.TCP != "" {
+		for _, p := range []struct {
+			dst  *string
+			name string
+		}{{&s.GRPCCert, "GRPC_TLS_CERT"}, {&s.GRPCKey, "GRPC_TLS_KEY"}, {&s.GRPCCA, "GRPC_TLS_CA"}} {
+			if *p.dst, err = require(getenv, p.name); err != nil {
+				return nil, fmt.Errorf("TCP_ADDR requires mTLS: %w", err)
+			}
+		}
+	}
 	return &s, nil
 }
 
@@ -196,22 +216,28 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	var lis net.Listener
+	var opts []grpc.ServerOption
 	if s.Socket != "" {
 		lis, err = grpcserver.ListenUnix(s.Socket)
 	} else {
+		tc, terr := tlsconf.CoordinatorGRPCServer(s.GRPCCert, s.GRPCKey, s.GRPCCA)
+		if terr != nil {
+			return terr
+		}
+		opts = append(opts, grpc.Creds(credentials.NewTLS(tc)))
 		lis, err = net.Listen("tcp", s.TCP)
 	}
 	if err != nil {
 		return err
 	}
-	g := grpcserver.NewGRPC(srv)
+	g := grpcserver.NewGRPC(srv, opts...)
 	ids := make([]int, len(s.Endpoints))
 	for i, ep := range s.Endpoints {
 		ids[i] = ep.ID
 	}
 	logger.Info("coordinator ready", "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
 		"signers", ids, "listen", lis.Addr().String(), "deadline", s.Deadline.String(), "strategy", s.Strategy,
-		"max_token_seconds", s.MaxToken)
+		"max_token_seconds", s.MaxToken, "grpc_mtls", s.TCP != "")
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
