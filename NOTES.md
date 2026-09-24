@@ -414,12 +414,19 @@ replace `fetchkeys`. The probe runs as throwaway `docker run` containers attache
 compose network or to nginx's network namespace (`--network container:…`). No compose
 override is needed, and the default compose file contains no test services.
 
-### N36. Socket was world-writable (found in Phase 6.5 run 1, fixed)
+### N36. Socket was world-writable (found in Phase 6.5 run 1, fixed in two steps)
 The first Phase 6.5 e2e run passed N1–N3, but N2's output showed
-`run/signer.sock` as `root:root 666`: any local user on the VM could call Sign. nginx
-now starts with `umask 077`, so the socket is `0600 root:root` and only root (the host,
-or kube-apiserver in the kind node) can connect. N2 now asserts the mode and that a
-non-root connect is refused. Host-side e2e calls on the socket use `sudo`. Also
-recorded from that run: the random high TCP ports inside every container are Docker's
+`run/signer.sock` as `root:root 666`: any local user on the VM could call Sign.
+- **The first fix was wrong:** starting nginx with `umask 077`. The Gate 6.5 attempt at
+  `b2179f0` **failed N2**: `UNEXPECTED: non-root user ubuntu called FetchKeys on the
+  socket`, mode still `666`. The cause is in nginx 1.29.8 `src/core/ngx_connection.c:662-664`,
+  which always `chmod`s a unix listening socket to
+  `S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH`, so no umask can restrict it.
+- **The actual fix:** the parent directory `run/` is created `root:root 0700`
+  (`sudo install -d`). Non-root users can't traverse it. Root (the nginx master, and
+  kube-apiserver in the kind node) can. N2 asserts the directory mode and that a non-root
+  connect is refused, and reports the forced 0666 socket mode as-is.
+
+Also from that run: the random high TCP ports inside every container are Docker's
 embedded DNS resolver, and nginx's `80/tcp` in `docker ps` is `EXPOSE` metadata, not a
 published port. Both were included in N2's connect attempts and refused.

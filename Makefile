@@ -35,7 +35,8 @@ e2e-keep:
 e2e-down:
 	-kind delete cluster --name tk8s
 	-FROST_UID=$$(id -u) docker compose -p tk8s -f deploy/docker-compose.yml down -v --remove-orphans
-	rm -rf secrets run audit bin/e2e
+	rm -rf secrets audit bin/e2e
+	-sudo rm -rf run
 
 ## The abandoned FROST prototype still compiles behind its tag.
 legacy:

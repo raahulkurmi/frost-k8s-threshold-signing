@@ -74,7 +74,8 @@ teardown() {
 # run in the working tree (I10, T11). Audit logs are kept with the results.
 wipe_secrets() {
   [[ -d audit ]] && cp -r audit "$RESULTS/audit" 2>/dev/null || true
-  rm -rf secrets run audit bin/e2e
+  rm -rf secrets audit bin/e2e
+  sudo rm -rf run
 }
 on_exit() {
   local rc=$?
@@ -93,9 +94,12 @@ echo "verify strategy: $VERIFY_STRATEGY, sign deadline: $SIGN_DEADLINE"
 
 section "Setup: fresh certs, key ceremony, signer stack"
 teardown
-rm -rf secrets run audit bin/e2e
+rm -rf secrets audit bin/e2e; sudo rm -rf run
 trap on_exit EXIT
-mkdir -p run bin/e2e
+# run/ holds the signer socket. It must be root:root 0700: nginx forces the
+# socket itself to 0666, so the directory is the access control (N36).
+sudo install -d -o root -g root -m 0700 run
+mkdir -p bin/e2e
 for i in 1 2 3 4 5; do mkdir -p "audit/signer-$i"; done
 scripts/gen-certs.sh --out secrets
 go build -o bin/e2e/dealer ./cmd/dealer
@@ -355,11 +359,12 @@ for c in $(docker ps --filter label=com.docker.compose.project=tk8s --format '{{
 done
 echo "  (unlisted high ports are Docker's embedded DNS resolver for 127.0.0.11 inside each container; 'ports=[80/tcp]' on nginx is image EXPOSE metadata, not a published port)"
 SOCK_MODE="$(sudo stat -c '%U:%G %a' "$SOCK")"
-echo "  the only entry point is the Unix socket $SOCK: $SOCK_MODE"
+DIR_MODE="$(sudo stat -c '%U:%G %a' "$(dirname "$SOCK")")"
+echo "  the only entry point is the Unix socket $SOCK: socket $SOCK_MODE (nginx forces 0666), directory $DIR_MODE"
 if NR_OUT="$(bin/e2e/probe fetchkeys "unix://$SOCK" 2>&1)"; then echo "  UNEXPECTED: non-root user $(id -un) called FetchKeys on the socket"; N2_OK=0
 else echo "  non-root user $(id -un) -> socket: refused ($(tail -1 <<<"$NR_OUT" | cut -c1-120))"; fi
-[[ "$SOCK_MODE" == "root:root 600" ]] || { echo "  socket mode is not root:root 600"; N2_OK=0; }
-if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket root:root 0600, non-root refused"
+[[ "$DIR_MODE" == "root:root 700" ]] || { echo "  socket directory is not root:root 700"; N2_OK=0; }
+if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused"
 else fail N2 "host reached a component port or the socket is not root-only (tried $N2_N)"; fi
 
 section "N3: nginx cannot open a TCP connection to any signer"

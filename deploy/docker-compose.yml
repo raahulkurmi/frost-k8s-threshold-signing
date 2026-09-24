@@ -204,10 +204,11 @@ services:
   coordinator-lb:
     image: nginx:1.29-alpine
     restart: unless-stopped
-    # umask 077: the socket is created 0600 root:root, so only root on the
-    # host / kind node (kube-apiserver) can connect. Also remove a socket left
-    # by an unclean exit, or nginx cannot bind it.
-    entrypoint: ["/bin/sh", "-c", "umask 077 && rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
+    # Remove a socket left by an unclean exit, or nginx cannot bind it.
+    # Access control is the PARENT DIRECTORY: ../run must be root:root 0700.
+    # nginx always chmods a unix listening socket to 0666
+    # (src/core/ngx_connection.c), so the socket mode cannot restrict callers.
+    entrypoint: ["/bin/sh", "-c", "rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
     depends_on: [grpc-proxy-1, grpc-proxy-2, grpc-proxy-3]
     volumes:
       - ./nginx-grpc.conf:/etc/nginx/nginx.conf:ro
