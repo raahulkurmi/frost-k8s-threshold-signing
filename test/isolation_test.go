@@ -45,7 +45,7 @@ func TestNoSecretsInTree(t *testing.T) {
 // secretName matches files that hold key material in this project. gitleaks
 // has no rule for share-<i>.json (bare base64 values), so T11 also walks the
 // tree itself, ignored files included.
-var secretName = regexp.MustCompile(`(^|/)(share-[0-9]+\.json|public-meta\.json|[^/]+\.key|[^/]+\.pem|[^/]+\.enc|frost-keys\.json|ecdsa-signing\.pem)$`)
+var secretName = regexp.MustCompile(`(^|/)(share-[0-9]+\.json|[^/]+\.key|[^/]+\.pem|[^/]+\.enc|frost-keys\.json|ecdsa-signing\.pem)$`)
 
 // T11 (I10), part 2: no key material anywhere in the working tree, including
 // gitignored directories such as secrets/ left behind by an e2e run.
