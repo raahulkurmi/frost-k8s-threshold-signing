@@ -163,3 +163,37 @@ which the plugin merges in via `mergeClaims(p.iss, ...)`.
   They contain the `frost-dev-password` default string.
 - `deploy/ nginx-grpc.conf` (with a leading space) duplicates `deploy/nginx-grpc.conf`.
   `deploy/cmd/encrypt-keys` and `deploy/internal/keystore` duplicate top-level code.
+
+## Phase 3 notes
+
+- **N11. The FROST move happened at the start of Phase 3, not Phase 5.** The old
+  `cmd/signer` and `cmd/grpc-proxy` are FROST code. They had to be relocated before
+  being rewritten, or they would have been silently deleted (rule 4). Every FROST and
+  legacy file now lives in `legacy/frost/`, a **separate Go module**
+  (`frost-k8s-threshold-signing/legacy/frost`), with `//go:build legacy` on every `.go`
+  file. It still compiles with `cd legacy/frost && go build -tags legacy ./...`. The
+  separate module is what lets `go mod tidy` drop bytemare from the main `go.mod`:
+  tidy ignores build tags, so a build tag alone would have kept the dependency.
+  Gate 5 checks still run at Phase 5.
+- **N12. `internal/signing/ecdsa.go` was moved into `legacy/frost/internal/signing`,
+  not deleted.** The legacy `grpc-proxy` (the D1 evidence) imports it, so the legacy
+  tree would not compile without it. `cmd/genkey` (pure ECDSA keygen, D3) was deleted
+  outright. Neither is reachable from any runtime binary (Gate 4 grep, Gate 5 deps).
+- **N13. Wire format.** The prompt shows `"share": "..."` as a string. The signer
+  returns `"share": {"xi","c","z"}` (base64 std) plus `signer_id`. The share's index is
+  never taken from the payload: the coordinator uses the mTLS-authenticated signer
+  identity (R-b).
+- **N14. Policy decoding is case- and duplicate-strict.** Go's `encoding/json` struct
+  decoding is case-insensitive and last-wins. go-jose v2 uses a case-sensitive fork.
+  Decoding `{"iss":"evil","ISS":"good"}` into a struct would let a coordinator pass
+  the policy with one value while the apiserver verifies the other. The policy
+  therefore decodes exact keys and rejects duplicate or case-variant keys, at the top
+  level and inside `kubernetes.io` (tested in `TestPolicyRejects`).
+- **N15. The header is checked byte-for-byte.** The signer requires the header segment
+  to equal `base64url({"alg":"RS256","typ":"JWT","kid":"<kid>"})` exactly, after
+  giving specific reasons for alg none/ES256/other, a wrong kid and extra fields.
+- **N16. The signer requires `kubernetes.io.namespace` and `.serviceaccount.name` to
+  match `sub`.** Upstream always emits them (`claims.go`).
+- **N17. Dependency:** `golang.org/x/time/rate` v0.16.0 provides the per-signer token bucket.
+- **N18. No mutex around signing.** `tcrsa.KeyShare.Sign` (v0.0.5 `key_share.go`) keeps
+  no shared mutable state: it reads `KeyMeta` and draws randomness from `crypto/rand`.

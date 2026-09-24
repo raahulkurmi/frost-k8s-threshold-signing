@@ -1,0 +1,145 @@
+$ go version && go test -count=1 -v ./internal/policy ./internal/signer ./cmd/signer
+go version go1.27.1 darwin/arm64
+--- PASS: TestPolicyAccepts (0.00s)
+    --- PASS: TestPolicyAccepts/apiserver-shaped_SA_token (0.00s)
+    --- PASS: TestPolicyAccepts/aud_as_a_single_string (0.00s)
+    --- PASS: TestPolicyAccepts/two_allowed_audiences (0.00s)
+    --- PASS: TestPolicyAccepts/iat_at_+skew (0.00s)
+    --- PASS: TestPolicyAccepts/SA_name_with_dots_(subdomain) (0.00s)
+    --- PASS: TestPolicyAccepts/pod-bound_token (0.00s)
+    --- PASS: TestPolicyAccepts/exactly_max_lifetime (0.00s)
+    --- PASS: TestPolicyAccepts/iat_at_-skew (0.00s)
+    --- PASS: TestPolicyAccepts/no_nbf (0.00s)
+--- PASS: TestPolicyRejects (0.00s)
+    --- PASS: TestPolicyRejects/wrong_iss (0.00s)
+    --- PASS: TestPolicyRejects/missing_iss (0.00s)
+    --- PASS: TestPolicyRejects/non-string_iss (0.00s)
+    --- PASS: TestPolicyRejects/disallowed_aud (0.00s)
+    --- PASS: TestPolicyRejects/one_disallowed_aud_among_allowed (0.00s)
+    --- PASS: TestPolicyRejects/missing_aud (0.00s)
+    --- PASS: TestPolicyRejects/empty_aud (0.00s)
+    --- PASS: TestPolicyRejects/numeric_aud (0.00s)
+    --- PASS: TestPolicyRejects/lifetime_above_max (0.00s)
+    --- PASS: TestPolicyRejects/one-year_token (0.00s)
+    --- PASS: TestPolicyRejects/exp_before_iat (0.00s)
+    --- PASS: TestPolicyRejects/missing_exp (0.00s)
+    --- PASS: TestPolicyRejects/fractional_exp (0.00s)
+    --- PASS: TestPolicyRejects/string_exp (0.00s)
+    --- PASS: TestPolicyRejects/missing_iat (0.00s)
+    --- PASS: TestPolicyRejects/iat_too_far_in_future (0.00s)
+    --- PASS: TestPolicyRejects/iat_too_far_in_past_(backdated) (0.00s)
+    --- PASS: TestPolicyRejects/nbf_far_from_iat (0.00s)
+    --- PASS: TestPolicyRejects/node_subject (0.00s)
+    --- PASS: TestPolicyRejects/user_subject (0.00s)
+    --- PASS: TestPolicyRejects/uppercase_namespace (0.00s)
+    --- PASS: TestPolicyRejects/namespace_with_dot (0.00s)
+    --- PASS: TestPolicyRejects/leading_hyphen (0.00s)
+    --- PASS: TestPolicyRejects/extra_colon (0.00s)
+    --- PASS: TestPolicyRejects/empty_name (0.00s)
+    --- PASS: TestPolicyRejects/63+_char_namespace (0.00s)
+    --- PASS: TestPolicyRejects/missing_sub (0.00s)
+    --- PASS: TestPolicyRejects/sub_disagrees_with_kubernetes.io (0.00s)
+    --- PASS: TestPolicyRejects/missing_kubernetes.io (0.00s)
+    --- PASS: TestPolicyRejects/denied_namespace (0.00s)
+    --- PASS: TestPolicyRejects/denied_service_account (0.00s)
+    --- PASS: TestPolicyRejects/duplicate_iss_key (0.00s)
+    --- PASS: TestPolicyRejects/case-variant_ISS_key (0.00s)
+    --- PASS: TestPolicyRejects/case-variant_nested_namespace (0.00s)
+    --- PASS: TestPolicyRejects/trailing_garbage (0.00s)
+    --- PASS: TestPolicyRejects/second_object (0.00s)
+    --- PASS: TestPolicyRejects/not_an_object (0.00s)
+--- PASS: TestPolicyConfigFailsClosed (0.00s)
+PASS
+ok  	frost-k8s-threshold-signing/internal/policy	0.304s
+--- PASS: TestSignShareProducesVerifiableShare (22.58s)
+--- PASS: TestSignerRejectsBadHeaders (0.03s)
+    --- PASS: TestSignerRejectsBadHeaders/alg_none (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/alg_HS256 (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/alg_PS256 (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/missing_kid (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/typ_JWS (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/extra_crit_field (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/whitespace (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/duplicate_alg (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/alg_ES256 (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/different_kid (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/extra_jku_field (0.00s)
+    --- PASS: TestSignerRejectsBadHeaders/non-canonical_order (0.00s)
+--- PASS: TestSignerRejectsPrehashedInput (0.04s)
+    --- PASS: TestSignerRejectsPrehashedInput/full_JWT_(3_segments) (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/padded_base64_segments (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/empty (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/raw_digest,_hex (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/raw_digest,_base64_std (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/padded_block_as_payload (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/digest_as_payload (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/raw_digest,_base64url (0.00s)
+    --- PASS: TestSignerRejectsPrehashedInput/padded_block,_base64url (0.00s)
+--- PASS: TestSignerAppliesPolicy (0.04s)
+--- PASS: TestSignerRateLimit (0.05s)
+--- PASS: TestSignerAuditLog (0.04s)
+--- PASS: TestSignerRefusesWhenAuditFails (0.03s)
+--- PASS: TestSignerNewRejectsForeignShare (0.04s)
+    signer_test.go:343: coordinator SAN, serverAuth EKU: rejected at TLS: Post "https://127.0.0.1:58376/v1/sign-share": remote error: tls: bad certificate
+    signer_test.go:343: coordinator SAN, foreign CA: rejected at TLS: Post "https://127.0.0.1:58376/v1/sign-share": remote error: tls: unknown certificate authority
+    signer_test.go:343: no client cert: rejected at TLS: Post "https://127.0.0.1:58376/v1/sign-share": remote error: tls: certificate required
+    signer_test.go:343: signer-2 cert (same CA): rejected at TLS: Post "https://127.0.0.1:58376/v1/sign-share": remote error: tls: bad certificate
+    signer_test.go:343: SAN attacker (same CA): rejected at TLS: Post "https://127.0.0.1:58376/v1/sign-share": remote error: tls: bad certificate
+    signer_test.go:343: SANs coordinator+signer-1: rejected at TLS: Post "https://127.0.0.1:58376/v1/sign-share": remote error: tls: bad certificate
+--- PASS: TestTLSRejectsClientWithoutCoordinatorSAN (0.05s)
+--- PASS: TestTLSSignerOwnCertMustMatchID (0.00s)
+PASS
+ok  	frost-k8s-threshold-signing/internal/signer	23.512s
+--- PASS: TestLoadValid (18.28s)
+    main_test.go:85: refused: keyshare: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestWrongShareIndexRejected917948925/001/share-2.json: share is for signer 2, this is signer 1
+    main_test.go:89: refused: keyshare: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestWrongShareIndexRejected917948925/005/share.json: share does not match its verification key (wrong key, index or corrupted)
+--- PASS: TestWrongShareIndexRejected (0.04s)
+    main_test.go:97: refused: keyshare: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestWrongKidRejected3574489677/005/share.json: share kid "AAAAAAAAAAAAAAAAAAAAAA" does not match meta kid "pJiyvn_VLRfxlV3dnyI2jw"
+--- PASS: TestWrongKidRejected (0.03s)
+    main_test.go:108: refused: keyshare: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestCorruptedShareRejected2011125294/005/share.json: share does not match its verification key (wrong key, index or corrupted)
+--- PASS: TestCorruptedShareRejected (0.04s)
+    main_test.go:119: refused: keyshare: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestMultiShareFileRejected1998906685/005/all.json: trailing data after JSON object (a share file holds exactly one share)
+--- PASS: TestMultiShareFileRejected (0.03s)
+    main_test.go:129: refused: SIGNER_ID is not set
+    main_test.go:129: refused: META_FILE is not set
+    main_test.go:129: refused: POLICY_FILE is not set
+    main_test.go:129: refused: AUDIT_LOG is not set
+    main_test.go:129: refused: TLS_CERT is not set
+    main_test.go:129: refused: TLS_KEY is not set
+    main_test.go:129: refused: TLS_CA is not set
+    main_test.go:158: refused: SIGNER_ID "one" is not an integer
+    main_test.go:158: refused: keymeta: open /nonexistent/public-meta.json: no such file or directory
+    main_test.go:158: refused: keymeta: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestSignerFailsClosed2919322313/002/f.json: decode: unexpected EOF
+    main_test.go:158: refused: policy: open /nonexistent/policy.json: no such file or directory
+    main_test.go:158: refused: no share source: set SHARE_FILE or VAULT_ADDR
+    main_test.go:158: refused: keyshare: open /nonexistent/share-1.json: no such file or directory
+    main_test.go:158: refused: both SHARE_FILE and VAULT_ADDR are set; configure exactly one share source
+    main_test.go:158: refused: keyshare: vault request: Get "http://127.0.0.1:1/v1/secret/data/frost-k8s/signer-1": dial tcp 127.0.0.1:1: connect: connection refused
+    main_test.go:158: refused: keymeta: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestSignerFailsClosed2919322313/003/f.json: decode: json: unknown field "private_key"
+    main_test.go:158: refused: policy: /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/TestSignerFailsClosed2919322313/004/f.json: issuer is required
+    main_test.go:158: refused: VAULT_ADDR is set but VAULT_TOKEN is not set
+    main_test.go:158: refused: SIGNER_ID 0 outside [1,5]
+    main_test.go:158: refused: SIGNER_ID 6 outside [1,5]
+--- PASS: TestSignerFailsClosed (0.07s)
+    --- PASS: TestSignerFailsClosed/missing_SIGNER_ID (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_META_FILE (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_POLICY_FILE (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_AUDIT_LOG (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_TLS_CERT (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_TLS_KEY (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_TLS_CA (0.00s)
+    --- PASS: TestSignerFailsClosed/signer_id_not_a_number (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_meta (0.00s)
+    --- PASS: TestSignerFailsClosed/corrupt_meta (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_policy_file (0.00s)
+    --- PASS: TestSignerFailsClosed/no_share_source (0.00s)
+    --- PASS: TestSignerFailsClosed/missing_share_file (0.00s)
+    --- PASS: TestSignerFailsClosed/both_share_sources (0.00s)
+    --- PASS: TestSignerFailsClosed/vault_unreachable (0.00s)
+    --- PASS: TestSignerFailsClosed/meta_with_extra_field (0.00s)
+    --- PASS: TestSignerFailsClosed/corrupt_policy (0.00s)
+    --- PASS: TestSignerFailsClosed/vault_without_token (0.00s)
+    --- PASS: TestSignerFailsClosed/signer_id_0 (0.00s)
+    --- PASS: TestSignerFailsClosed/signer_id_6 (0.00s)
+PASS
+ok  	frost-k8s-threshold-signing/cmd/signer	18.945s

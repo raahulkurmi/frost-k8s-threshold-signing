@@ -1,212 +1,181 @@
+// Command signer is one threshold RSA signer. It loads exactly one secret
+// share (its own), the public key metadata and a claims policy, and serves
+// POST /v1/sign-share over mTLS to the coordinator only.
+//
+// Environment (all required unless noted; anything missing aborts startup):
+//
+//	SIGNER_ID      1..n
+//	META_FILE      public-meta.json
+//	SHARE_FILE     share-<SIGNER_ID>.json         (exactly one of SHARE_FILE / VAULT_ADDR)
+//	VAULT_ADDR     Vault address; share read from <VAULT_MOUNT>/frost-k8s/signer-<SIGNER_ID>
+//	VAULT_TOKEN    required with VAULT_ADDR
+//	VAULT_MOUNT    optional, default "secret"
+//	POLICY_FILE    claims policy JSON
+//	AUDIT_LOG      audit log path (JSON lines)
+//	TLS_CERT, TLS_KEY   this signer's cert (SAN exactly DNS:signer-<SIGNER_ID>)
+//	TLS_CA         CA that issued the coordinator's client cert
+//	LISTEN_ADDR    optional, default ":8443"
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/json"
+	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
-	"sync"
+	"syscall"
+	"time"
 
-	"github.com/bytemare/frost"
+	"github.com/niclabs/tcrsa"
 
-	"frost-k8s-threshold-signing/internal/api"
-	"frost-k8s-threshold-signing/internal/config"
-	"frost-k8s-threshold-signing/internal/dkg"
-	"frost-k8s-threshold-signing/internal/froststate"
+	"frost-k8s-threshold-signing/internal/audit"
+	"frost-k8s-threshold-signing/internal/keymeta"
+	"frost-k8s-threshold-signing/internal/keyshare"
+	"frost-k8s-threshold-signing/internal/policy"
+	"frost-k8s-threshold-signing/internal/signer"
+	"frost-k8s-threshold-signing/internal/tlsconf"
 )
-
-var (
-	dkgMu          sync.Mutex
-	dkgParticipant *dkg.Participant
-	dkgCommitment  *dkg.Commitment
-	allCommitments []*dkg.Commitment
-)
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "signer alive")
-}
-
-func commitHandler(w http.ResponseWriter, r *http.Request) {
-	froststate.Mu.Lock()
-	defer froststate.Mu.Unlock()
-	commitment := froststate.Signer.Commit()
-	froststate.Commitments[commitment.CommitmentID] = commitment
-	resp := api.CommitmentResponse{
-		CommitmentID: commitment.CommitmentID,
-		SignerID:     commitment.SignerID,
-		Commitment:   commitment.Hex(),
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
-
-func signHandler(w http.ResponseWriter, r *http.Request) {
-	froststate.Mu.Lock()
-	defer froststate.Mu.Unlock()
-	var req api.SignRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	var commitments frost.CommitmentList
-	for _, item := range req.Commitments {
-		commitment := &frost.Commitment{}
-		if err := commitment.DecodeHex(item.Commitment); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		commitments = append(commitments, commitment)
-	}
-	commitments.Sort()
-	sigShare, err := froststate.Signer.Sign([]byte(req.Message), commitments)
-	if err != nil {
-		fmt.Printf("[dkg] ERROR: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	resp := api.SignatureShareResponse{
-		SignerID: sigShare.SignerIdentifier,
-		Share:    sigShare.Hex(),
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
-
-func dkgRound1Handler(w http.ResponseWriter, r *http.Request) {
-	dkgMu.Lock()
-	defer dkgMu.Unlock()
-	signerID, _ := strconv.Atoi(config.SignerID())
-	dkgParticipant = dkg.NewParticipant(uint16(signerID), 3, 5)
-	commitment, err := dkgParticipant.Round1()
-	if err != nil {
-		fmt.Printf("[dkg] ERROR: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	dkgCommitment = commitment
-	fmt.Printf("[dkg] Round1 complete — signer-%d commitment ready\n", signerID)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(commitment)
-}
-
-func dkgCommitmentsHandler(w http.ResponseWriter, r *http.Request) {
-	dkgMu.Lock()
-	defer dkgMu.Unlock()
-	var commitments []*dkg.Commitment
-	if err := json.NewDecoder(r.Body).Decode(&commitments); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	allCommitments = commitments
-	fmt.Printf("[dkg] Received %d commitments\n", len(commitments))
-	w.WriteHeader(http.StatusOK)
-}
-
-func dkgRound2Handler(w http.ResponseWriter, r *http.Request) {
-	dkgMu.Lock()
-	defer dkgMu.Unlock()
-	path := r.URL.Path
-	toIDStr := path[len("/dkg/round2/"):]
-	toID64, err := strconv.ParseUint(toIDStr, 10, 16)
-	if err != nil {
-		http.Error(w, "invalid toID", http.StatusBadRequest)
-		return
-	}
-	pkg, err := dkgParticipant.Round2(uint16(toID64))
-	if err != nil {
-		fmt.Printf("[dkg] ERROR: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pkg)
-}
-
-func dkgFinalizeHandler(w http.ResponseWriter, r *http.Request) {
-	dkgMu.Lock()
-	defer dkgMu.Unlock()
-	var shares []*dkg.SharePackage
-	if err := json.NewDecoder(r.Body).Decode(&shares); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	cs := frost.Default
-	g := cs.Group()
-	groupPubKey, err := dkg.ComputeGroupPublicKey(g, allCommitments)
-	if err != nil {
-		fmt.Printf("[dkg] ERROR: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	keyShare, err := dkgParticipant.Finalize(shares, allCommitments, groupPubKey, nil)
-	if err != nil {
-		fmt.Printf("[dkg] ERROR: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	fmt.Printf("[dkg] ✅ Signer-%d DKG complete! Share: %s...\n", dkgParticipant.ID, keyShare.Hex()[:16])
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
-		"signer": fmt.Sprintf("%d", dkgParticipant.ID),
-	})
-}
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
 
 func main() {
-	if err := froststate.Init(); err != nil {
-		panic(err)
-	}
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/commit", commitHandler)
-	mux.HandleFunc("/sign", signHandler)
-	mux.HandleFunc("/dkg/round1", dkgRound1Handler)
-	mux.HandleFunc("/dkg/commitments", dkgCommitmentsHandler)
-	mux.HandleFunc("/dkg/round2/", dkgRound2Handler)
-	mux.HandleFunc("/dkg/finalize", dkgFinalizeHandler)
-
-	port := config.Port()
-	certFile := getEnv("TLS_CERT", "certs/signer.crt")
-	keyFile := getEnv("TLS_KEY", "certs/signer.key")
-	caFile := getEnv("TLS_CA", "certs/ca.crt")
-
-	caCert, err := os.ReadFile(caFile)
-	if err != nil {
-		fmt.Printf("Signer listening on :%s (plain HTTP)\n", port)
-		if err := http.ListenAndServe(":"+port, mux); err != nil {
-			panic(err)
-		}
-		return
-	}
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	tlsConfig := &tls.Config{
-		ClientCAs:  caCertPool,
-		ClientAuth: tls.RequestClientCert,
-	}
-
-	server := &http.Server{
-		Addr:      ":" + port,
-		TLSConfig: tlsConfig,
-		Handler:   mux,
-	}
-
-	fmt.Printf("Signer listening on :%s (mTLS enabled)\n", port)
-	if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
-		panic(err)
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	if err := run(context.Background(), os.Getenv, logger); err != nil {
+		logger.Error("signer failed", "err", err.Error())
+		os.Exit(1)
 	}
 }
-// This is handled in main() already
+
+// settings is the validated startup configuration.
+type settings struct {
+	ID     int
+	Meta   *keymeta.Meta
+	Share  *tcrsa.KeyShare
+	Policy *policy.Policy
+	Audit  string
+	Listen string
+	Cert   string
+	Key    string
+	CA     string
+}
+
+func require(getenv func(string) string, name string) (string, error) {
+	v := getenv(name)
+	if v == "" {
+		return "", fmt.Errorf("%s is not set", name)
+	}
+	return v, nil
+}
+
+// load reads and validates all configuration. It is the only place a share
+// is loaded, and it loads exactly one: SIGNER_ID's.
+func load(ctx context.Context, getenv func(string) string) (*settings, error) {
+	var s settings
+	idStr, err := require(getenv, "SIGNER_ID")
+	if err != nil {
+		return nil, err
+	}
+	if s.ID, err = strconv.Atoi(idStr); err != nil {
+		return nil, fmt.Errorf("SIGNER_ID %q is not an integer", idStr)
+	}
+	metaPath, err := require(getenv, "META_FILE")
+	if err != nil {
+		return nil, err
+	}
+	if s.Meta, err = keymeta.Load(metaPath); err != nil {
+		return nil, err
+	}
+	if s.ID < 1 || s.ID > s.Meta.Parties {
+		return nil, fmt.Errorf("SIGNER_ID %d outside [1,%d]", s.ID, s.Meta.Parties)
+	}
+
+	shareFile, vaultAddr := getenv("SHARE_FILE"), getenv("VAULT_ADDR")
+	switch {
+	case shareFile != "" && vaultAddr != "":
+		return nil, errors.New("both SHARE_FILE and VAULT_ADDR are set; configure exactly one share source")
+	case vaultAddr != "":
+		token, err := require(getenv, "VAULT_TOKEN")
+		if err != nil {
+			return nil, fmt.Errorf("VAULT_ADDR is set but %w", err)
+		}
+		mount := getenv("VAULT_MOUNT")
+		if mount == "" {
+			mount = "secret"
+		}
+		if s.Share, err = keyshare.LoadFromVault(ctx, vaultAddr, token, mount, s.Meta, s.ID); err != nil {
+			return nil, err
+		}
+	case shareFile != "":
+		if s.Share, err = keyshare.Load(shareFile, s.Meta, s.ID); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("no share source: set SHARE_FILE or VAULT_ADDR")
+	}
+
+	policyPath, err := require(getenv, "POLICY_FILE")
+	if err != nil {
+		return nil, err
+	}
+	if s.Policy, err = policy.Load(policyPath); err != nil {
+		return nil, err
+	}
+	for _, p := range []struct {
+		dst  *string
+		name string
+	}{{&s.Audit, "AUDIT_LOG"}, {&s.Cert, "TLS_CERT"}, {&s.Key, "TLS_KEY"}, {&s.CA, "TLS_CA"}} {
+		if *p.dst, err = require(getenv, p.name); err != nil {
+			return nil, err
+		}
+	}
+	s.Listen = getenv("LISTEN_ADDR")
+	if s.Listen == "" {
+		s.Listen = ":8443"
+	}
+	return &s, nil
+}
+
+func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) error {
+	s, err := load(ctx, getenv)
+	if err != nil {
+		return err
+	}
+	tlsCfg, err := tlsconf.SignerServer(s.Cert, s.Key, s.CA, s.ID)
+	if err != nil {
+		return err
+	}
+	auditLog, err := audit.Open(s.Audit)
+	if err != nil {
+		return err
+	}
+	defer auditLog.Close()
+	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger})
+	if err != nil {
+		return err
+	}
+	hs := &http.Server{
+		Addr:              s.Listen,
+		Handler:           srv.Handler(),
+		TLSConfig:         tlsCfg,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	logger.Info("signer ready", "signer_id", s.ID, "kid", s.Meta.KID, "threshold", s.Meta.Threshold,
+		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds())
+
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	errc := make(chan error, 1)
+	go func() { errc <- hs.ListenAndServeTLS("", "") }()
+	select {
+	case err := <-errc:
+		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return hs.Shutdown(shutdownCtx)
+	}
+}

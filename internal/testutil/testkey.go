@@ -25,6 +25,7 @@ import (
 	"frost-k8s-threshold-signing/internal/dealer"
 	"frost-k8s-threshold-signing/internal/keymeta"
 	"frost-k8s-threshold-signing/internal/keyshare"
+	"frost-k8s-threshold-signing/internal/policy"
 )
 
 const (
@@ -180,4 +181,30 @@ func VerifyRS256(token string, pub *rsa.PublicKey) (*jwtv2.Claims, error) {
 func VerifyPKCS1(pub *rsa.PublicKey, input string, sig []byte) error {
 	sum := sha256.Sum256([]byte(input))
 	return rsa.VerifyPKCS1v15(pub, crypto.SHA256, sum[:], sig)
+}
+
+// PolicyConfig is the default test policy: issuer/audience Issuer, 1h max,
+// 60s skew, generous rate limit.
+func PolicyConfig() policy.Config {
+	return policy.Config{
+		Issuer:           Issuer,
+		AllowedAudiences: []string{Issuer},
+		MaxTokenSeconds:  3600,
+		ClockSkewSeconds: 60,
+		RateLimit:        policy.Rate{RequestsPerSecond: 10000, Burst: 10000},
+	}
+}
+
+// PolicyFile writes cfg as JSON into dir and returns its path.
+func PolicyFile(t testing.TB, dir string, cfg policy.Config) string {
+	t.Helper()
+	b, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(dir, "policy.json")
+	if err := os.WriteFile(p, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return p
 }
