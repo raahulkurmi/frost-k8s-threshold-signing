@@ -31,8 +31,15 @@ exec > >(tee "$RES/multihost-e2e.log") 2>&1
 
 # on: run a command on a VM with stdin from /dev/null (so it never swallows the
 # caller's input, e.g. inside `while read`); on_pipe: deliberately pass stdin.
-on() { local vm="$1"; shift; multipass exec "$vm" -- "$@" </dev/null; }
-on_pipe() { local vm="$1"; shift; multipass exec "$vm" -- "$@"; }
+# Every remote call has a 300s alarm: a hung `multipass exec` becomes a visible
+# failure (exit 142), never a silent stall. (macOS has no `timeout`.)
+alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
+on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null; }
+on_pipe() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@"; }
+# rc_on VM CMD: run CMD in bash on VM and print ONLY its exit code, as seen on
+# the VM. Needed because `multipass exec -- sudo -u USER cmd` can hang on the
+# client when cmd fails (NOTES N38); a timeout must never pass as "denied".
+rc_on() { local vm="$1"; shift; on "$vm" bash -c "$* >/dev/null 2>&1; echo rc=\$?" | tr -d '\r' | grep -o 'rc=[0-9]*' || echo "rc=NONE"; }
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
 id_port() { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { echo "${s##*:}"; return; }; done; }
 vm_ids()  { local s out=""; for s in $SIGNERS; do local r="${s#*:}"; [[ "${r%%:*}" == "$1" ]] && out="$out ${s%%:*}"; done; echo "$out"; }
@@ -99,11 +106,17 @@ L3_OK=1
 for vm in $SIGNER_VMS; do
   ids="$(vm_ids "$vm")"
   for a in $ids; do
-    if on "$vm" sudo -u "frost-signer-$a" test -r "/etc/frost-signer-$a/share.json"; then echo "  $vm frost-signer-$a reads own share: yes (control)"; else echo "  CONTROL FAILED: frost-signer-$a cannot read its own share"; L3_OK=0; fi
+    r="$(rc_on "$vm" "sudo -n -u frost-signer-$a test -r /etc/frost-signer-$a/share.json")"
+    if [[ "$r" == rc=0 ]]; then echo "  $vm frost-signer-$a reads own share: yes (control, $r)"; else echo "  CONTROL FAILED: frost-signer-$a cannot read its own share ($r)"; L3_OK=0; fi
     for b in $ids; do
       [[ "$a" == "$b" ]] && continue
       for f in share.json tls.key; do
-        if on "$vm" sudo -u "frost-signer-$a" cat "/etc/frost-signer-$b/$f" >/dev/null 2>&1; then echo "  UNEXPECTED: frost-signer-$a read /etc/frost-signer-$b/$f"; L3_OK=0; else echo "  $vm frost-signer-$a -> /etc/frost-signer-$b/$f: permission denied"; fi
+        r="$(rc_on "$vm" "sudo -n -u frost-signer-$a cat /etc/frost-signer-$b/$f")"
+        case "$r" in
+          rc=1) echo "  $vm frost-signer-$a -> /etc/frost-signer-$b/$f: permission denied ($r)" ;;
+          rc=0) echo "  UNEXPECTED: frost-signer-$a read /etc/frost-signer-$b/$f"; L3_OK=0 ;;
+          *)    echo "  INCONCLUSIVE: frost-signer-$a -> /etc/frost-signer-$b/$f returned $r"; L3_OK=0 ;;
+        esac
       done
     done
   done

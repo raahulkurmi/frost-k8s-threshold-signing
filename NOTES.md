@@ -441,3 +441,14 @@ published port. Both were included in N2's connect attempts and refused.
 In N1 the probe on `lb-net` connected from `172.30.1.1`. With `inhibit_ipv4` the host
 holds no gateway address, so Docker IPAM assigns `.1` to a container. That's another
 sign the host has no presence on the network.
+
+## Phase 7B notes
+
+### N38. `multipass exec` client hang (test-harness finding)
+`multipass exec sig-a -- sudo -u frost-signer-1 cat /etc/frost-signer-2/share.json` (a
+command that fails with permission denied) **hung on the client** for 6+ minutes, with no
+process left on the VM. The same command wrapped in `bash -c` returned `rc=1`
+immediately. The orchestrator now (1) runs such checks through `rc_on`, which prints the
+**exit code as seen on the VM**, and accepts only an explicit `rc=1` as "denied", so a
+timeout or hang is counted as INCONCLUSIVE, never as a pass; and (2) gives every remote
+call a 300 s alarm, so a hang turns into a visible failure.
