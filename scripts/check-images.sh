@@ -86,10 +86,15 @@ check_image() {
   echo "  files in image: $(cd "$dir/fs" && find . -xdev -type f | wc -l | tr -d ' '), binaries: $(ls "$dir/fs/usr/local/bin" | tr '\n' ' ')"
 
   # 3. build history
-  if docker history --no-trunc --format '{{.CreatedBy}}' "$img" | grep -Ei 'frost-keys|ecdsa-signing|share-[0-9]|\.key|secrets/|certs/|out/'; then
-    echo "  FAIL [$role] build history references secret material"; FAIL=1
+  # Build-context paths only (the builder stage's own /out is not the dealer's out/).
+  local hist
+  hist=$(docker history --no-trunc --format '{{.CreatedBy}}' "$img" \
+    | grep -Ei 'frost-keys|ecdsa-signing|share-[0-9]|\.key\b|\.pem\b|\.enc\b|(^|[ =])(\./)?(secrets|certs|data|out)/' || true)
+  if [[ -n "$hist" ]]; then
+    echo "  FAIL [$role] build history references secret material: $hist"; FAIL=1
+  else
+    echo "  history: $(docker history -q "$img" | wc -l | tr -d ' ') entries, no secret references"
   fi
-  echo "  history: $(docker history -q "$img" | wc -l | tr -d ' ') entries, no secret references"
 }
 
 check_image "$COORD_IMG" coordinator
