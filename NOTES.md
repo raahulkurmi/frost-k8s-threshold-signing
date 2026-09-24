@@ -239,3 +239,77 @@ which the plugin merges in via `mergeClaims(p.iss, ...)`.
 - **N25. Keygen time varies widely:** 11 s, 18.7 s and 68 s observed for single
   2048-bit keys; 52–74 s with two running in parallel. Each test binary generates
   one key, so `go test ./...` takes about 1.5 minutes.
+
+## Phase 6 environment (Linux VM, driven from the Mac via `multipass exec`)
+
+| Item | Value |
+|---|---|
+| VM | Multipass 1.16.4 (macOS host), instance `tk8s`, Ubuntu 24.04.5 LTS, `Linux tk8s 6.8.0-139-generic #139-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug 1 03:32:48 UTC 2026 aarch64` |
+| Resources | 4 vCPU (arm64), 7.7 GiB RAM, no swap, 38 GB disk |
+| Docker | Docker Engine 29.8.1 (docker.com apt repo, not snap), cgroup v2 / systemd, Compose v5.5.1 |
+| kind | v0.31.0 (sha256 verified) |
+| kubectl | v1.36.5 (sha256 verified) |
+| gitleaks | 8.30.1 (checksums.txt verified) |
+| Go | go1.27.1 linux/arm64 (sha256 from go.dev verified) |
+| jq / openssl / git | 1.7 / 3.0.13 / 2.43.0 |
+| First `multipass launch` | Failed: the image download stopped at 70% and failed its hash check. The retry succeeded. |
+
+### N26. No published kind node image for v1.36.5
+Docker Hub `kindest/node` has v1.36.1 and v1.36.4 but no v1.36.5, and kind v0.31.0's
+default is `v1.35.0@sha256:452d707d…`. To keep the pinned patch, the node image was
+built in the VM from the official v1.36.5 release binaries:
+`kind build node-image --type release v1.36.5 --image kindest/node:v1.36.5-tk8s`
+→ image ID **`sha256:2c8e428b7d8141e273b8149bbcbccb9d21bebfe2a0bd3d98ede6a9c9cfe16286`**
+(arm64, built in 5m48s). The image is local and was not pulled, so the image ID is the
+reproducible identifier here. `kubeadm version` inside it prints `v1.36.5`.
+
+### N27. Requirement (a): token expiration at v1.36.5 (source)
+- `pkg/controlplane/apiserver/options/options.go` `(*Options).completeServiceAccountOptions`:
+  the signing endpoint calls `Metadata` at startup (10 s timeout). If
+  `max_token_expiration_seconds < validation.MinTokenAgeSec` it errors.
+  If `--service-account-max-token-expiration` is **unset**, it defaults to
+  `max_token_expiration_seconds`. If it is set **greater** than that, startup fails.
+  `MaxExtendedExpiration = min(maxExternalExpiration, ExpirationExtensionSeconds=1y)`.
+  If the flag is set explicitly it must also be within [1h, 2^32 s].
+- `pkg/registry/core/serviceaccount/storage/token.go` `(*TokenREST).Create`: a requested
+  `expirationSeconds` greater than max is **capped** to max (line 222, with a warning).
+  The extension applies only when `extendExpiration` is set, the token is pod-bound,
+  `expirationSeconds == WarnOnlyBoundTokenExpirationSeconds (3607)`, and the audiences
+  are the apiserver's own. Then `warnafter = 3607` and `exp = MaxExtendedExpiration`.
+- kubelet requests projected tokens with `expirationSeconds: 3607` by default. With a
+  max of 3600, the request is capped to 3600, the extension never fires, and there is no
+  `warnafter`. With a **max of 7200** (the deployed `deploy/policy.json`, reported
+  identically by `Metadata`), 3607 is below the max, so the extension fires:
+  **`exp − iat = 7200`, `warnafter − iat = 3607`**. The e2e measures this (REQ-a).
+- `ExternalServiceAccountTokenSigner` is **GA and LockToDefault=true** at 1.36
+  (`pkg/features/kube_features.go:1471`), so no feature gate flag is needed.
+
+### N28. kubeadm flags vs the signing endpoint (kind config)
+`pkg/kubeapiserver/options/authentication.go:623`: `--service-account-key-file` and
+`--service-account-signing-endpoint` are mutually exclusive. `options.go`:
+`--service-account-signing-key-file` and the endpoint are mutually exclusive too.
+kubeadm always emits both key flags and they can't be unset through `extraArgs`.
+A probe cluster showed their exact positions (apiserver command indices 23 and 24;
+kind's own `--runtime-config=` extra arg is appended **after** the sorted base flags,
+so extra args don't shift them). `test/e2e/kubeadm-patches/*.json` removes them with
+JSON patches guarded by `test` ops on the exact values, so a layout change fails
+`kind create` loudly. The same patch removes the controller-manager's
+`--service-account-private-key-file`. Otherwise the legacy token controller would keep
+an in-tree **single-key** signing path for `kubernetes.io/service-account-token`
+Secrets, violating I1 at the cluster level. After creation the e2e deletes
+`/etc/kubernetes/pki/sa.{key,pub}` from the node to prove nothing uses them.
+
+### N29. The scheduler does not use service account tokens
+The prompt says the E4 scheduler's "tokens are threshold-signed". kube-scheduler
+authenticates with the x509 client certificate in `/etc/kubernetes/scheduler.conf`, not
+an SA token, so E4 only checks that it keeps working (restart count unchanged). The
+controller-manager (`--use-service-account-credentials=true`) runs each controller as its
+own SA with TokenRequest tokens. E4 checks that the signer audit logs contain
+`kube-system:deployment-controller` and `replicaset-controller` allow decisions.
+
+### N30. `httptest` / net/http cancellation detail (test fixture)
+For HTTP/1.1, net/http only detects a client disconnect, and cancels `r.Context()`,
+after the handler has consumed the request body. `testutil.Delay` now reads the body
+first. Before that, cancelled requests to "slow" signers kept `httptest.Server.Close`
+blocked for the full delay. Production signers decode the body immediately, so the
+production path was never affected.
