@@ -1,0 +1,15 @@
+ok  	frost-k8s-threshold-signing/cmd/dealer	94.133s
+?   	frost-k8s-threshold-signing/cmd/grpc-proxy	[no test files]
+ok  	frost-k8s-threshold-signing/cmd/signer	70.371s
+?   	frost-k8s-threshold-signing/internal/audit	[no test files]
+ok  	frost-k8s-threshold-signing/internal/coordinator	92.456s
+?   	frost-k8s-threshold-signing/internal/dealer	[no test files]
+ok  	frost-k8s-threshold-signing/internal/grpcserver	22.900s
+?   	frost-k8s-threshold-signing/internal/jwtfmt	[no test files]
+?   	frost-k8s-threshold-signing/internal/keymeta	[no test files]
+?   	frost-k8s-threshold-signing/internal/keyshare	[no test files]
+ok  	frost-k8s-threshold-signing/internal/policy	3.129s
+ok  	frost-k8s-threshold-signing/internal/signer	44.877s
+?   	frost-k8s-threshold-signing/internal/testutil	[no test files]
+?   	frost-k8s-threshold-signing/internal/tlsconf	[no test files]
+?   	frost-k8s-threshold-signing/internal/wire	[no test files]

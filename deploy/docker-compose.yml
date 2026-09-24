@@ -1,177 +1,181 @@
-services:
-  vault:
-    image: hashicorp/vault:latest
-    environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_DEV_ROOT_TOKEN_ID:?set VAULT_DEV_ROOT_TOKEN_ID}
-      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
-    cap_add:
-      - IPC_LOCK
-    ports:
-      - "8200:8200"
-    volumes:
-      - vault-data:/vault/data
-    networks:
-      - minikube
-    healthcheck:
-      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+# frost-k8s threshold RSA deployment (validated on the Linux host in Phase 6).
+#
+# Inputs (all under ../secrets/, git- and docker-ignored):
+#   keys/public-meta.json, keys/share-<i>.json   from cmd/dealer
+#   tls/ca.crt, tls/<name>/tls.{crt,key}          from scripts/gen-certs.sh
+# Each signer mounts ONLY its own share and its own cert (I4). Coordinators
+# mount only public metadata, the policy, the CA cert and the coordinator
+# client cert (I3). The CA private key (secrets/ca/) is never mounted.
+# Files must be readable by FROST_UID (default 10001, the images' user).
+#
+# kube-apiserver dials nginx on ../run/signer.sock (bind-mounted into the
+# kind node); nginx load-balances to grpc-proxy-1..3 over the compose network.
 
+x-signer: &signer
+  build:
+    context: ..
+    dockerfile: deploy/docker/Dockerfile.signer
+  image: frost-k8s/signer:dev
+  user: "${FROST_UID:-10001}"
+  read_only: true
+  restart: unless-stopped
+  networks: [frost]
+
+x-coordinator: &coordinator
+  build:
+    context: ..
+    dockerfile: deploy/docker/Dockerfile.proxy
+  image: frost-k8s/coordinator:dev
+  user: "${FROST_UID:-10001}"
+  read_only: true
+  restart: unless-stopped
+  networks: [frost]
+  environment:
+    META_FILE: /etc/frost/public-meta.json
+    POLICY_FILE: /etc/frost/policy.json
+    SIGNER_ENDPOINTS: "1=https://signer-1:8443,2=https://signer-2:8443,3=https://signer-3:8443,4=https://signer-4:8443,5=https://signer-5:8443"
+    TLS_CERT: /etc/frost/tls/tls.crt
+    TLS_KEY: /etc/frost/tls/tls.key
+    TLS_CA: /etc/frost/ca.crt
+    TCP_ADDR: 0.0.0.0:9090
+    SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
+    VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+  volumes:
+    - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+    - ./policy.json:/etc/frost/policy.json:ro
+    - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+    - ../secrets/tls/coordinator:/etc/frost/tls:ro
+
+services:
   signer-1:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.signer
+    <<: *signer
     environment:
-      - SIGNER_ID=1
-      - PORT=8081
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=${VAULT_TOKEN:?set VAULT_TOKEN}
-    depends_on:
-      vault:
-        condition: service_healthy
-    networks:
-      - minikube
+      SIGNER_ID: "1"
+      META_FILE: /etc/frost/public-meta.json
+      SHARE_FILE: /run/frost/share.json
+      POLICY_FILE: /etc/frost/policy.json
+      AUDIT_LOG: /var/log/frost/audit.log
+      TLS_CERT: /etc/frost/tls/tls.crt
+      TLS_KEY: /etc/frost/tls/tls.key
+      TLS_CA: /etc/frost/ca.crt
+      LISTEN_ADDR: ":8443"
+    volumes:
+      - ../secrets/keys/share-1.json:/run/frost/share.json:ro
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/signer-1:/etc/frost/tls:ro
+      - signer-1-audit:/var/log/frost
 
   signer-2:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.signer
+    <<: *signer
     environment:
-      - SIGNER_ID=2
-      - PORT=8082
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=${VAULT_TOKEN:?set VAULT_TOKEN}
-    depends_on:
-      vault:
-        condition: service_healthy
-    networks:
-      - minikube
+      SIGNER_ID: "2"
+      META_FILE: /etc/frost/public-meta.json
+      SHARE_FILE: /run/frost/share.json
+      POLICY_FILE: /etc/frost/policy.json
+      AUDIT_LOG: /var/log/frost/audit.log
+      TLS_CERT: /etc/frost/tls/tls.crt
+      TLS_KEY: /etc/frost/tls/tls.key
+      TLS_CA: /etc/frost/ca.crt
+      LISTEN_ADDR: ":8443"
+    volumes:
+      - ../secrets/keys/share-2.json:/run/frost/share.json:ro
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/signer-2:/etc/frost/tls:ro
+      - signer-2-audit:/var/log/frost
 
   signer-3:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.signer
+    <<: *signer
     environment:
-      - SIGNER_ID=3
-      - PORT=8083
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=${VAULT_TOKEN:?set VAULT_TOKEN}
-    depends_on:
-      vault:
-        condition: service_healthy
-    networks:
-      - minikube
+      SIGNER_ID: "3"
+      META_FILE: /etc/frost/public-meta.json
+      SHARE_FILE: /run/frost/share.json
+      POLICY_FILE: /etc/frost/policy.json
+      AUDIT_LOG: /var/log/frost/audit.log
+      TLS_CERT: /etc/frost/tls/tls.crt
+      TLS_KEY: /etc/frost/tls/tls.key
+      TLS_CA: /etc/frost/ca.crt
+      LISTEN_ADDR: ":8443"
+    volumes:
+      - ../secrets/keys/share-3.json:/run/frost/share.json:ro
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/signer-3:/etc/frost/tls:ro
+      - signer-3-audit:/var/log/frost
 
   signer-4:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.signer
+    <<: *signer
     environment:
-      - SIGNER_ID=4
-      - PORT=8084
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=${VAULT_TOKEN:?set VAULT_TOKEN}
-    depends_on:
-      vault:
-        condition: service_healthy
-    networks:
-      - minikube
+      SIGNER_ID: "4"
+      META_FILE: /etc/frost/public-meta.json
+      SHARE_FILE: /run/frost/share.json
+      POLICY_FILE: /etc/frost/policy.json
+      AUDIT_LOG: /var/log/frost/audit.log
+      TLS_CERT: /etc/frost/tls/tls.crt
+      TLS_KEY: /etc/frost/tls/tls.key
+      TLS_CA: /etc/frost/ca.crt
+      LISTEN_ADDR: ":8443"
+    volumes:
+      - ../secrets/keys/share-4.json:/run/frost/share.json:ro
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/signer-4:/etc/frost/tls:ro
+      - signer-4-audit:/var/log/frost
 
   signer-5:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.signer
+    <<: *signer
     environment:
-      - SIGNER_ID=5
-      - PORT=8085
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=${VAULT_TOKEN:?set VAULT_TOKEN}
-    depends_on:
-      vault:
-        condition: service_healthy
-    networks:
-      - minikube
+      SIGNER_ID: "5"
+      META_FILE: /etc/frost/public-meta.json
+      SHARE_FILE: /run/frost/share.json
+      POLICY_FILE: /etc/frost/policy.json
+      AUDIT_LOG: /var/log/frost/audit.log
+      TLS_CERT: /etc/frost/tls/tls.crt
+      TLS_KEY: /etc/frost/tls/tls.key
+      TLS_CA: /etc/frost/ca.crt
+      LISTEN_ADDR: ":8443"
+    volumes:
+      - ../secrets/keys/share-5.json:/run/frost/share.json:ro
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/signer-5:/etc/frost/tls:ro
+      - signer-5-audit:/var/log/frost
 
   grpc-proxy-1:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.proxy
-    environment:
-      - SIGNER_1_ADDR=https://signer-1:8081
-      - SIGNER_2_ADDR=https://signer-2:8082
-      - SIGNER_3_ADDR=https://signer-3:8083
-      - SIGNER_4_ADDR=https://signer-4:8084
-      - SIGNER_5_ADDR=https://signer-5:8085
-      - TCP_ADDR=0.0.0.0:9090
-      - KEY_ID=frost-k8s-v1
-    depends_on:
-      - signer-1
-      - signer-2
-      - signer-3
-      - signer-4
-      - signer-5
-    networks:
-      - minikube
+    <<: *coordinator
+    depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
 
   grpc-proxy-2:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.proxy
-    environment:
-      - SIGNER_1_ADDR=https://signer-1:8081
-      - SIGNER_2_ADDR=https://signer-2:8082
-      - SIGNER_3_ADDR=https://signer-3:8083
-      - SIGNER_4_ADDR=https://signer-4:8084
-      - SIGNER_5_ADDR=https://signer-5:8085
-      - TCP_ADDR=0.0.0.0:9090
-      - KEY_ID=frost-k8s-v1
-    depends_on:
-      - signer-1
-      - signer-2
-      - signer-3
-      - signer-4
-      - signer-5
-    networks:
-      - minikube
+    <<: *coordinator
+    depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
 
   grpc-proxy-3:
-    build:
-      context: ../
-      dockerfile: deploy/docker/Dockerfile.proxy
-    environment:
-      - SIGNER_1_ADDR=https://signer-1:8081
-      - SIGNER_2_ADDR=https://signer-2:8082
-      - SIGNER_3_ADDR=https://signer-3:8083
-      - SIGNER_4_ADDR=https://signer-4:8084
-      - SIGNER_5_ADDR=https://signer-5:8085
-      - TCP_ADDR=0.0.0.0:9090
-      - KEY_ID=frost-k8s-v1
-    depends_on:
-      - signer-1
-      - signer-2
-      - signer-3
-      - signer-4
-      - signer-5
-    networks:
-      - minikube
+    <<: *coordinator
+    depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
 
   coordinator-lb:
-    image: nginx:alpine
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    depends_on: [grpc-proxy-1, grpc-proxy-2, grpc-proxy-3]
     volumes:
       - ./nginx-grpc.conf:/etc/nginx/nginx.conf:ro
+      - ../run:/var/run/frost-k8s
     ports:
-      - "9090:9090"
-    depends_on:
-      - grpc-proxy-1
-      - grpc-proxy-2
-      - grpc-proxy-3
-    networks:
-      - minikube
+      - "127.0.0.1:9090:9090"
+    networks: [frost]
 
 networks:
-  minikube:
-    external: true
+  frost: {}
 
 volumes:
-  vault-data:
+  signer-1-audit: {}
+  signer-2-audit: {}
+  signer-3-audit: {}
+  signer-4-audit: {}
+  signer-5-audit: {}

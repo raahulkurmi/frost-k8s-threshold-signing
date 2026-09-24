@@ -197,3 +197,44 @@ which the plugin merges in via `mergeClaims(p.iss, ...)`.
 - **N17. Dependency:** `golang.org/x/time/rate` v0.16.0 provides the per-signer token bucket.
 - **N18. No mutex around signing.** `tcrsa.KeyShare.Sign` (v0.0.5 `key_share.go`) keeps
   no shared mutable state: it reads `KeyMeta` and draws randomness from `crypto/rand`.
+
+## Phase 4 notes
+
+- **N19. Proto source.** The stubs are not regenerated. The coordinator imports
+  `k8s.io/externaljwt/apis/v1` from module **k8s.io/externaljwt v0.36.5**, which is the
+  published mirror of `kubernetes/kubernetes@ad950d1cc78b0183c476bd4d3f1934c104229727`
+  `staging/src/k8s.io/externaljwt/apis/v1/` (module origin
+  `kubernetes/externaljwt@c225e1714ecbc2ffbfe9e2c7ced8347e9c194463`, tag v0.36.5).
+  `api.proto`, `api.pb.go` and `api_grpc.pb.go` were checked **byte-identical** to the
+  v1.36.5 staging files, so these are the exact stubs kube-apiserver is compiled
+  against. Regenerating would only have added protoc-version drift. This deviates
+  from the prompt's "regenerate stubs"; the result is stricter.
+- **N20. FetchKeys fields.** Returns a single key `{key_id: kid, key: PKIX DER,
+  exclude_from_oidc_discovery: false}`. `data_timestamp` = `public-meta.json`
+  `created_at`, so every replica returns byte-identical output (E8) instead of
+  `time.Now()`. `refresh_hint_seconds` = 3600 (configurable, must be > 0).
+  `Metadata.max_token_expiration_seconds` comes from the same `policy.json` the
+  signers load, so the two values are equal by construction.
+- **N21. tcrsa Join with out-of-range Ids does not panic.** `TestJoinOutOfRangeIDs`
+  shows Ids 0, 6 and 65535 return no error and an invalid signature (Verify is the
+  call that panics, N5). `wire.ToTcrsa` rejects Ids outside `[1,n]` before tcrsa sees
+  them. The coordinator also checks that the peer's TLS cert is exactly
+  `DNS:signer-<id>` and that `signer_id` in the body matches (R-b).
+- **N22. Strategy results (in-process, 2048-bit, macOS; indicative only, Phase 7
+  measures properly).** Strict ≈ 15 ms per token, where share verification (~5–6 ms)
+  runs in parallel with fan-out. Optimistic ≈ 10 ms on the happy path. With one
+  corrupted share, both exclude and attribute it (`TestMaliciousShareExcludedAndAttributed`).
+- **N23. Deployment topology.** nginx listens on the Unix socket
+  (`listen unix:/var/run/frost-k8s/signer.sock http2`) that kube-apiserver dials, and
+  load-balances to 3 coordinator replicas over the compose network. This removes
+  socat from the primary (Linux) path. The nginx→coordinator hop is plaintext gRPC
+  on a private Docker network; upstream expects a local socket. That goes in
+  THREAT_MODEL.md.
+- **N24. The Gate 4 grep matches `crypto/ecdsa` in `internal/testutil/testpki.go`**
+  (throwaway TLS certs for tests). No runtime binary links testutil
+  (`go list -deps`, in `reports/gates/gate4.txt`). The runtime-only grep is empty.
+  `crypto/ecdsa` shows up in every binary's dependencies because `crypto/tls` and
+  `crypto/x509` import it for TLS; it is not a JWT signing path.
+- **N25. Keygen time varies widely:** 11 s, 18.7 s and 68 s observed for single
+  2048-bit keys; 52–74 s with two running in parallel. Each test binary generates
+  one key, so `go test ./...` takes about 1.5 minutes.

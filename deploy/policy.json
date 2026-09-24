@@ -1,0 +1,9 @@
+{
+  "issuer": "https://kubernetes.default.svc.cluster.local",
+  "allowed_audiences": ["https://kubernetes.default.svc.cluster.local"],
+  "max_token_expiration_seconds": 3600,
+  "clock_skew_seconds": 60,
+  "deny_namespaces": [],
+  "deny_service_accounts": [],
+  "rate_limit": {"requests_per_second": 200, "burst": 400}
+}

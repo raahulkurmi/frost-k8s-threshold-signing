@@ -1,23 +1,16 @@
-FROM golang:1.25-alpine AS builder
-
-WORKDIR /app
-
+# Threshold coordinator (ExternalJWTSigner v1). Holds no share and no private
+# key: public-meta.json, the policy file, the CA cert and its own client cert
+# are mounted at runtime (I3). Nothing secret is copied into any layer.
+FROM golang:1.27.1-alpine3.24 AS builder
+WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
+COPY cmd/ cmd/
+COPY internal/ internal/
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/grpc-proxy ./cmd/grpc-proxy
 
-COPY . .
-
-RUN go mod tidy && \
-    go build -o /bin/grpc-proxy ./cmd/grpc-proxy/ && \
-    go build -o /bin/dkg-coordinator ./cmd/dkg-coordinator/
-
-FROM alpine:3.20
-
-COPY --from=builder /bin/grpc-proxy /bin/grpc-proxy
-COPY --from=builder /bin/dkg-coordinator /bin/dkg-coordinator
-
-RUN chmod +x /bin/grpc-proxy /bin/dkg-coordinator
-
-WORKDIR /app
-
-ENTRYPOINT ["/bin/grpc-proxy"]
+FROM alpine:3.24
+RUN adduser -D -H -u 10001 coordinator
+COPY --from=builder /out/grpc-proxy /usr/local/bin/grpc-proxy
+USER 10001
+ENTRYPOINT ["/usr/local/bin/grpc-proxy"]

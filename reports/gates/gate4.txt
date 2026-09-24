@@ -1,0 +1,25 @@
+$ go version
+go version go1.27.1 darwin/arm64
+$ go build ./... && echo BUILD-OK
+BUILD-OK
+$ go vet ./... && echo VET-OK
+VET-OK
+
+$ grep -rn "SignES256\|ecdsa\|ecKey\|frost-keys" --include="*.go" cmd internal
+internal/testutil/testpki.go:4:	"crypto/ecdsa"
+internal/testutil/testpki.go:26:	caKey  *ecdsa.PrivateKey
+internal/testutil/testpki.go:33:	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+internal/testutil/testpki.go:59:	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+grep exit=0
+
+# runtime code only (excluding *_test.go and internal/testutil, which no binary links):
+$ grep -rn "SignES256\|ecdsa\|ecKey\|frost-keys" --include="*.go" --exclude="*_test.go" --exclude-dir=testutil cmd internal
+grep exit=1
+
+# proof testutil is not linked into any runtime binary:
+grpc-proxy  links: crypto/ecdsa 
+signer      links: crypto/ecdsa frost-k8s-threshold-signing/internal/keyshare 
+dealer      links: crypto/ecdsa frost-k8s-threshold-signing/internal/keyshare frost-k8s-threshold-signing/internal/dealer 
+
+$ grep -rn "ecdsa-signing.pem" cmd internal deploy
+grep exit=1
