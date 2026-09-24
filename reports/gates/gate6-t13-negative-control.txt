@@ -14,3 +14,7 @@ share-1.json and a tls.key, then deletes the key in a later layer. Expected: FAI
 
 The key deleted in a later layer is still caught (layer scan + whiteout), as is the
 share by path, name and content.
+
+Cleanup (added after NOTES N39): `docker rmi` does not remove BuildKit cache
+snapshots on Docker 29 (containerd image store); after a negative-control build run
+`docker builder prune -af` so no fake share survives in /var/lib/containerd.

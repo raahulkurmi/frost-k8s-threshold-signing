@@ -452,3 +452,15 @@ immediately. The orchestrator now (1) runs such checks through `rc_on`, which pr
 **exit code as seen on the VM**, and accepts only an explicit `rc=1` as "denied", so a
 timeout or hang is counted as INCONCLUSIVE, never as a pass; and (2) gives every remote
 call a 300 s alarm, so a hang turns into a visible failure.
+
+### N39. L4 found the T13 negative-control's fake share in Docker build cache
+Multihost e2e run 2's L4 scan of the coordinator host found two `share-1.json` files
+under `/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/{46,47}/`.
+Verified (without printing values): 52 bytes, `kid: "x"`, 4-character `si`, mtime
+2026-09-24 21:50:32, which is the **fake** share baked into the Phase 6 T13 negative-control
+image. `docker rmi` had removed the image, but Docker 29's containerd store kept the
+BuildKit cache snapshots. It isn't key material, but **L4 was right to fail**: any file
+shaped like a share on the coordinator host is a finding. Fix: `docker builder prune -af`
+after negative-control builds (now in the T13 negative-control procedure), and a full
+re-run of the multihost e2e.
+- Binary sha256 differs per commit (e.g. 34a2… at f39dd68, 3fd0… at 90a01bb) because Go stamps vcs.revision into the build; within a run L5 checks every host carries the identical, just-built binary.
