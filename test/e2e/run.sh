@@ -266,9 +266,13 @@ docker start tk8s-grpc-proxy-1-1 tk8s-grpc-proxy-2-1 >/dev/null
 sleep 2
 FAILS=0; N=0
 for r in 1 2 3; do
-  docker restart -t 1 "tk8s-grpc-proxy-$r-1" >/dev/null &
+  timeout 60 docker restart -t 1 "tk8s-grpc-proxy-$r-1" >/dev/null &
+  RPID=$!
   for _ in 1 2 3 4 5; do N=$((N + 1)); K create token default --duration=10m >/dev/null 2>&1 || FAILS=$((FAILS + 1)); done
-  wait; sleep 1
+  # Wait for THIS restart only: a bare `wait` also waits for the logging
+  # process substitution (exec > >(tee ...)) and never returns (bash >= 5.1).
+  wait "$RPID" || echo "restart of replica $r exited $?"
+  sleep 1
 done
 echo "rolling restart of all 3 replicas: $FAILS/$N token requests failed"
 for ip in 172.30.0.11 172.30.0.12 172.30.0.13; do

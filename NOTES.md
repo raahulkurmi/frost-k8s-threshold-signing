@@ -319,3 +319,11 @@ after the handler has consumed the request body. `testutil.Delay` now reads the 
 first. Before that, cancelled requests to "slow" signers kept `httptest.Server.Close`
 blocked for the full delay. Production signers decode the body immediately, so the
 production path was never affected.
+
+### N31. e2e harness hang (run 2)
+In run 2 (commit `f077169`), SETUP, E1–E7 and REQ-a/b/c passed, then the script hung
+at E8's rolling restart. A bare `wait` after `docker restart … &` also waits for the
+logging process substitution `exec > >(tee …)`, which never exits (bash ≥ 5.1
+behavior). This was a harness bug, not a system failure; the partial log is kept in
+the VM as `~/e2e-run2-hung.out`. Fixed by waiting on the restart's own PID with a
+60 s `timeout`. Gate 6 evidence comes from a complete clean rerun.
