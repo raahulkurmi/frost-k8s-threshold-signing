@@ -1,6 +1,6 @@
 [
-  {"op": "test",   "path": "/spec/containers/0/command/24", "value": "--service-account-signing-key-file=/etc/kubernetes/pki/sa.key"},
-  {"op": "remove", "path": "/spec/containers/0/command/24"},
-  {"op": "test",   "path": "/spec/containers/0/command/23", "value": "--service-account-key-file=/etc/kubernetes/pki/sa.pub"},
-  {"op": "remove", "path": "/spec/containers/0/command/23"}
+  {"op": "test",   "path": "/spec/containers/0/command/23", "value": "--service-account-signing-key-file=/etc/kubernetes/pki/sa.key"},
+  {"op": "remove", "path": "/spec/containers/0/command/23"},
+  {"op": "test",   "path": "/spec/containers/0/command/22", "value": "--service-account-key-file=/etc/kubernetes/pki/sa.pub"},
+  {"op": "remove", "path": "/spec/containers/0/command/22"}
 ]

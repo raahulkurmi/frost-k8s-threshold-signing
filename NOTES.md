@@ -289,9 +289,15 @@ reproducible identifier here. `kubeadm version` inside it prints `v1.36.5`.
 `--service-account-signing-endpoint` are mutually exclusive. `options.go`:
 `--service-account-signing-key-file` and the endpoint are mutually exclusive too.
 kubeadm always emits both key flags and they can't be unset through `extraArgs`.
-A probe cluster showed their exact positions (apiserver command indices 23 and 24;
-kind's own `--runtime-config=` extra arg is appended **after** the sorted base flags,
-so extra args don't shift them). `test/e2e/kubeadm-patches/*.json` removes them with
+Their exact positions came from probe clusters. kubeadm writes the sorted base flags
+first. Any `extraArgs` entry that **overrides** a base flag (our explicit
+`service-account-issuer`) is taken out of the sorted list and **appended** at the end,
+together with kind's `--runtime-config=`. New flags (`service-account-signing-endpoint`)
+are also appended. With our config, `--service-account-key-file` is at command index
+**22** and `--service-account-signing-key-file` at **23**. The first e2e run used the
+stock-layout indices 23/24; the `test` guard **failed `kind create` closed**
+(`testing value /spec/containers/0/command/24 failed`), and a retained probe with our
+exact extraArgs gave the real layout. `test/e2e/kubeadm-patches/*.json` removes them with
 JSON patches guarded by `test` ops on the exact values, so a layout change fails
 `kind create` loudly. The same patch removes the controller-manager's
 `--service-account-private-key-file`. Otherwise the legacy token controller would keep
