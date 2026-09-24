@@ -464,3 +464,14 @@ shaped like a share on the coordinator host is a finding. Fix: `docker builder p
 after negative-control builds (now in the T13 negative-control procedure), and a full
 re-run of the multihost e2e.
 - Binary sha256 differs per commit (e.g. 34a2… at f39dd68, 3fd0… at 90a01bb) because Go stamps vcs.revision into the build; within a run L5 checks every host carries the identical, just-built binary.
+
+### N40. kind node image deleted by my own cleanup; rebuilt
+While cleaning up N39 I also ran `docker image prune -af` on tk8s. That removed every
+unused image, including the locally built `kindest/node:v1.36.5-tk8s` (N26), which exists
+nowhere else. Multihost e2e run 3 at `4432322` then failed at `kind create` (`failed to
+pull image`). All five L-tests had passed before that. The image was rebuilt from the same
+official v1.36.5 release binaries (`kind build node-image --type release v1.36.5`, 158 s):
+new image ID **`sha256:531890316ebb0d1ac5d655bbf3f78421f3c83a9d6cc86d8fbfca7781ab9c41d7`**
+(a rebuild changes layer timestamps, so the ID differs from `2c8e428b…`). `kubeadm
+version` inside it still prints `v1.36.5`. Rule from now on: on tk8s, prune **only**
+`docker builder prune`, never unused images.
