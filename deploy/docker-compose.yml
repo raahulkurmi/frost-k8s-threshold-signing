@@ -6,7 +6,8 @@
 # Each signer mounts ONLY its own share and its own cert (I4). Coordinators
 # mount only public metadata, the policy, the CA cert and the coordinator
 # client cert (I3). The CA private key (secrets/ca/) is never mounted.
-# Files must be readable by FROST_UID (default 10001, the images' user).
+# Containers run as FROST_UID (required, e.g. FROST_UID=$(id -u)) so they can
+# read the 0600 share/key files the dealer and gen-certs.sh wrote.
 #
 # kube-apiserver dials nginx on ../run/signer.sock (bind-mounted into the
 # kind node); nginx load-balances to grpc-proxy-1..3 over the compose network.
@@ -16,7 +17,7 @@ x-signer: &signer
     context: ..
     dockerfile: deploy/docker/Dockerfile.signer
   image: frost-k8s/signer:dev
-  user: "${FROST_UID:-10001}"
+  user: "${FROST_UID:?set FROST_UID, e.g. FROST_UID=$(id -u)}"
   read_only: true
   restart: unless-stopped
   networks: [frost]
@@ -26,7 +27,7 @@ x-coordinator: &coordinator
     context: ..
     dockerfile: deploy/docker/Dockerfile.proxy
   image: frost-k8s/coordinator:dev
-  user: "${FROST_UID:-10001}"
+  user: "${FROST_UID:?set FROST_UID, e.g. FROST_UID=$(id -u)}"
   read_only: true
   restart: unless-stopped
   networks: [frost]
@@ -65,7 +66,7 @@ services:
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
       - ../secrets/tls/signer-1:/etc/frost/tls:ro
-      - signer-1-audit:/var/log/frost
+      - ../audit/signer-1:/var/log/frost
 
   signer-2:
     <<: *signer
@@ -85,7 +86,7 @@ services:
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
       - ../secrets/tls/signer-2:/etc/frost/tls:ro
-      - signer-2-audit:/var/log/frost
+      - ../audit/signer-2:/var/log/frost
 
   signer-3:
     <<: *signer
@@ -105,7 +106,7 @@ services:
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
       - ../secrets/tls/signer-3:/etc/frost/tls:ro
-      - signer-3-audit:/var/log/frost
+      - ../audit/signer-3:/var/log/frost
 
   signer-4:
     <<: *signer
@@ -125,7 +126,7 @@ services:
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
       - ../secrets/tls/signer-4:/etc/frost/tls:ro
-      - signer-4-audit:/var/log/frost
+      - ../audit/signer-4:/var/log/frost
 
   signer-5:
     <<: *signer
@@ -145,22 +146,33 @@ services:
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
       - ../secrets/tls/signer-5:/etc/frost/tls:ro
-      - signer-5-audit:/var/log/frost
+      - ../audit/signer-5:/var/log/frost
 
   grpc-proxy-1:
     <<: *coordinator
     depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
+    networks:
+      frost:
+        ipv4_address: 172.30.0.11
 
   grpc-proxy-2:
     <<: *coordinator
     depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
+    networks:
+      frost:
+        ipv4_address: 172.30.0.12
 
   grpc-proxy-3:
     <<: *coordinator
     depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
+    networks:
+      frost:
+        ipv4_address: 172.30.0.13
 
   coordinator-lb:
     image: nginx:1.29-alpine
+    # Remove a socket left by an unclean exit, or nginx cannot bind it.
+    entrypoint: ["/bin/sh", "-c", "rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
     restart: unless-stopped
     depends_on: [grpc-proxy-1, grpc-proxy-2, grpc-proxy-3]
     volumes:
@@ -171,11 +183,8 @@ services:
     networks: [frost]
 
 networks:
-  frost: {}
+  frost:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
 
-volumes:
-  signer-1-audit: {}
-  signer-2-audit: {}
-  signer-3-audit: {}
-  signer-4-audit: {}
-  signer-5-audit: {}

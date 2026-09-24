@@ -29,3 +29,6 @@ out/
 *.srl
 share-*.json
 run/
+audit/
+test/e2e/results/*/kind-config.yaml
+bin/

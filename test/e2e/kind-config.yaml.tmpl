@@ -1,0 +1,40 @@
+# kind cluster for the frost-k8s e2e suite (Linux host only).
+# Rendered by test/e2e/run.sh: __REPO__ is replaced with the repo path.
+#
+# kube-apiserver signs service account tokens ONLY through the external
+# signer: --service-account-signing-endpoint is added, and kubeadm's
+# --service-account-signing-key-file / --service-account-key-file (mutually
+# exclusive with the endpoint) are removed by guarded JSON patches, as is the
+# controller-manager's --service-account-private-key-file (legacy token
+# controller). Each patch `test`s the exact flag before removing it, so a
+# kubeadm layout change fails cluster creation instead of misconfiguring it.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: tk8s
+nodes:
+- role: control-plane
+  image: kindest/node:v1.36.5-tk8s
+  extraMounts:
+  - hostPath: __REPO__/run
+    containerPath: /var/run/frost-k8s
+  - hostPath: __REPO__/test/e2e/kubeadm-patches
+    containerPath: /etc/frost-kubeadm-patches
+    readOnly: true
+- role: worker
+  image: kindest/node:v1.36.5-tk8s
+kubeadmConfigPatches:
+- |
+  kind: ClusterConfiguration
+  apiServer:
+    extraArgs:
+      service-account-signing-endpoint: /var/run/frost-k8s/signer.sock
+      service-account-issuer: https://kubernetes.default.svc.cluster.local
+    extraVolumes:
+    - name: frost-socket
+      hostPath: /var/run/frost-k8s
+      mountPath: /var/run/frost-k8s
+      pathType: Directory
+- |
+  kind: InitConfiguration
+  patches:
+    directory: /etc/frost-kubeadm-patches

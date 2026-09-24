@@ -1,0 +1,4 @@
+[
+  {"op": "test",   "path": "/spec/containers/0/command/15", "value": "--service-account-private-key-file=/etc/kubernetes/pki/sa.key"},
+  {"op": "remove", "path": "/spec/containers/0/command/15"}
+]
