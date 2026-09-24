@@ -106,8 +106,9 @@ KID="$(jq -r .kid secrets/keys/public-meta.json)"
 echo "kid: $KID"
 "${COMPOSE[@]}" build -q
 "${COMPOSE[@]}" up -d
-for _ in $(seq 1 60); do [[ -S "$SOCK" ]] && bin/e2e/probe fetchkeys "unix://$SOCK" >/dev/null 2>&1 && break; sleep 1; done
-bin/e2e/probe fetchkeys "unix://$SOCK" || die "signer stack did not come up"
+# The socket is 0600 root:root (nginx umask 077), so host-side calls need root.
+for _ in $(seq 1 60); do sudo test -S "$SOCK" && sudo bin/e2e/probe fetchkeys "unix://$SOCK" >/dev/null 2>&1 && break; sleep 1; done
+sudo bin/e2e/probe fetchkeys "unix://$SOCK" || die "signer stack did not come up"
 "${COMPOSE[@]}" ps --format 'table {{.Service}}\t{{.State}}'
 
 section "Setup: kind cluster (apiserver signs only via $SOCK)"
@@ -287,7 +288,7 @@ echo "signer-3 last 'signer ready' log: $READY_TS"
 if (( TRIES <= 600 )); then pass E7 "issuance recovered ${E7_MS}ms after docker start"; else fail E7 "did not recover within 60s"; fi
 
 section "E8: coordinator replicas and nginx failover"
-REF="$(bin/e2e/probe fetchkeys "unix://$SOCK")"
+REF="$(sudo bin/e2e/probe fetchkeys "unix://$SOCK")"
 echo "via socket:   $REF"
 SAME=1
 for ip in 172.30.1.11 172.30.1.12 172.30.1.13; do
@@ -352,9 +353,14 @@ for c in $(docker ps --filter label=com.docker.compose.project=tk8s --format '{{
     if bin/e2e/probe connect "$ip:$port" -timeout 2s >/dev/null 2>&1; then echo "    ACCEPTED from host: $ip:$port"; N2_OK=0; fi
   done; done
 done
-[[ -S "$SOCK" ]] && echo "  (the only entry point is the Unix socket $SOCK, owned by $(stat -c '%U:%G %a' "$SOCK"))"
-if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published"
-else fail N2 "host reached a component port (tried $N2_N)"; fi
+echo "  (unlisted high ports are Docker's embedded DNS resolver for 127.0.0.11 inside each container; 'ports=[80/tcp]' on nginx is image EXPOSE metadata, not a published port)"
+SOCK_MODE="$(sudo stat -c '%U:%G %a' "$SOCK")"
+echo "  the only entry point is the Unix socket $SOCK: $SOCK_MODE"
+if NR_OUT="$(bin/e2e/probe fetchkeys "unix://$SOCK" 2>&1)"; then echo "  UNEXPECTED: non-root user $(id -un) called FetchKeys on the socket"; N2_OK=0
+else echo "  non-root user $(id -un) -> socket: refused ($(tail -1 <<<"$NR_OUT" | cut -c1-120))"; fi
+[[ "$SOCK_MODE" == "root:root 600" ]] || { echo "  socket mode is not root:root 600"; N2_OK=0; }
+if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket root:root 0600, non-root refused"
+else fail N2 "host reached a component port or the socket is not root-only (tried $N2_N)"; fi
 
 section "N3: nginx cannot open a TCP connection to any signer"
 N3_OK=1

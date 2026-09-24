@@ -14,12 +14,16 @@ So the set of callers must be as small as the deployment allows.
 
 | Hop | Transport | Authentication | Who else could connect | Evidence |
 |---|---|---|---|---|
-| kube-apiserver → nginx | Unix socket `run/signer.sock`, bind-mounted into the kind control-plane node at `/var/run/frost-k8s/signer.sock` | Filesystem access to the socket. It is created by nginx (root) inside the container | Any process on the VM host or the control-plane node that can open the socket file. There is **no TCP listener** | N2, `deploy/nginx-grpc.conf` (only `listen unix:`) |
+| kube-apiserver → nginx | Unix socket `run/signer.sock`, bind-mounted into the kind control-plane node at `/var/run/frost-k8s/signer.sock` | Filesystem permissions: nginx starts with `umask 077`, so the socket is **`0600 root:root`** | **Only root** on the VM host or on the control-plane node (kube-apiserver runs as root). Non-root users are refused. There is **no TCP listener** | N2 (mode check plus a non-root connect attempt), `deploy/nginx-grpc.conf` (only `listen unix:`) |
 | nginx → coordinator (×3) | TCP 9090 on `lb-net` (`172.30.1.0/24`) | **mTLS**. nginx presents SAN `lb` (clientAuth). Each coordinator presents SAN `coordinator-grpc` (serverAuth). The coordinator accepts **only** a client cert with exactly `DNS:lb` from the deployment CA | Only containers attached to `lb-net`: nginx, the coordinators and e2e probe containers. Even on `lb-net`, a caller without the `lb` key is refused at TLS | N1, `TestTCPListenerRequiresLBClientCert`, T8 (no plaintext TCP mode exists) |
 | coordinator → signer (×5) | TCP 8443 on `signer-net` (`172.30.2.0/24`) | mTLS. The coordinator presents SAN `coordinator`, and each signer presents `signer-<i>`, pinned per endpoint | Only containers on `signer-net`: coordinators and signers. **nginx is not on `signer-net`** | N3, `TestTLSRejectsClientWithoutCoordinatorSAN`, `TestShareIDBoundToMTLSIdentity` |
 | VM host → any container | none | n/a | Nobody. Both networks are `internal` with `com.docker.network.bridge.inhibit_ipv4=true`, so the host has no address on either bridge and **no port is published** | N2 (`ss -tlnp` plus a connect attempt to every listening port of every container) |
 
 **Remaining reachability (stated plainly):**
+- The kind cluster's own API server is published by kind on `127.0.0.1:<random>` of the
+  VM host (`docker-proxy` in `ss -tlnp`). That is the Kubernetes API, which requires
+  Kubernetes authentication. It is not a path to the signer, although a caller with
+  RBAC to create tokens can obtain them through the normal TokenRequest API.
 - **Root on the VM host, or on the kind control-plane node**, can open the Unix socket, or
   exec into a coordinator and use its `lb`-facing listener with the mounted certs. Root on
   the host is also root over every container, share and key on this single host. This is

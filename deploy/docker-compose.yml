@@ -204,8 +204,10 @@ services:
   coordinator-lb:
     image: nginx:1.29-alpine
     restart: unless-stopped
-    # Remove a socket left by an unclean exit, or nginx cannot bind it.
-    entrypoint: ["/bin/sh", "-c", "rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
+    # umask 077: the socket is created 0600 root:root, so only root on the
+    # host / kind node (kube-apiserver) can connect. Also remove a socket left
+    # by an unclean exit, or nginx cannot bind it.
+    entrypoint: ["/bin/sh", "-c", "umask 077 && rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
     depends_on: [grpc-proxy-1, grpc-proxy-2, grpc-proxy-3]
     volumes:
       - ./nginx-grpc.conf:/etc/nginx/nginx.conf:ro
