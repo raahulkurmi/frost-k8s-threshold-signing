@@ -1,0 +1,20 @@
+$ go build ./... && echo BUILD-OK
+BUILD-OK
+$ go list ./... | grep -c legacy   # packages the root build sees under legacy/
+0
+$ go list -deps ./cmd/... | grep bytemare; echo "grep exit=$?"
+grep exit=1
+$ go list -deps -test ./... | grep -c bytemare   # including tests
+0
+$ grep -c bytemare go.mod go.sum
+go.mod:0
+go.sum:0
+$ grep -rL "^//go:build legacy" --include="*.go" legacy/frost | wc -l   # legacy .go files missing the tag
+       0
+$ find legacy/frost -name "*.go" | wc -l
+      36
+$ (cd legacy/frost && go build ./...)   # no tag: nothing compiles
+go: warning: "./..." matched no packages
+exit=0
+$ (cd legacy/frost && go build -tags legacy ./... && echo LEGACY-TAGGED-BUILD-OK)
+LEGACY-TAGGED-BUILD-OK
