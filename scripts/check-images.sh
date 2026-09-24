@@ -17,8 +17,8 @@ cd "$(dirname "$0")/.."
 BUILD=1
 [[ "${1:-}" == "--no-build" ]] && BUILD=0
 
-COORD_IMG=frost-k8s/coordinator:dev
-SIGNER_IMG=frost-k8s/signer:dev
+COORD_IMG=${COORD_IMG:-frost-k8s/coordinator:dev}
+SIGNER_IMG=${SIGNER_IMG:-frost-k8s/signer:dev}
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 FAIL=0
