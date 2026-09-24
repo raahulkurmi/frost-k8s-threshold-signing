@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	josev2 "gopkg.in/go-jose/go-jose.v2"
 	jwtv2 "gopkg.in/go-jose/go-jose.v2/jwt"
 	externaljwtv1 "k8s.io/externaljwt/apis/v1"
@@ -25,6 +27,7 @@ import (
 	"github.com/niclabs/tcrsa"
 
 	"frost-k8s-threshold-signing/internal/coordinator"
+	"frost-k8s-threshold-signing/internal/grpcserver"
 	"frost-k8s-threshold-signing/internal/testutil"
 	"frost-k8s-threshold-signing/internal/wire"
 )
@@ -123,15 +126,27 @@ func TestBelowThresholdFails(t *testing.T) {
 	for _, id := range []int{3, 4, 5} {
 		c.Servers[id].Close()
 	}
-	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, nil))
+	var logs testutil.LogBuffer
+	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, logs.Logger()))
 	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
 	if err == nil || resp != nil {
 		t.Fatalf("resp=%v err=%v", resp, err)
 	}
-	if !strings.Contains(err.Error(), "2 valid shares, need 3") {
-		t.Fatalf("error does not report the share count: %v", err)
+	// The caller sees only the generic error (N33) ...
+	if st, _ := status.FromError(err); st.Code() != codes.Unavailable || st.Message() != grpcserver.ErrMsgThreshold {
+		t.Fatalf("caller error %v, want Unavailable %q", err, grpcserver.ErrMsgThreshold)
 	}
-	t.Log(err)
+	// ... and the coordinator log records the share count and each failed signer.
+	l := logs.String()
+	if !strings.Contains(l, `"msg":"sign failed"`) || !strings.Contains(l, `"valid_shares":2`) {
+		t.Fatalf("coordinator log lacks the share count:\n%s", l)
+	}
+	for _, id := range []string{`"signer_id":3`, `"signer_id":4`, `"signer_id":5`} {
+		if !strings.Contains(l, id) {
+			t.Fatalf("coordinator log does not name failed %s:\n%s", id, l)
+		}
+	}
+	t.Logf("caller: %v; coordinator log: valid_shares=2, signers 3,4,5 named", err)
 }
 
 // T4 (I5): an attacker holding 2 real shares cannot forge, whatever they do
