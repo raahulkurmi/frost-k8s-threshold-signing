@@ -430,3 +430,14 @@ The first Phase 6.5 e2e run passed N1–N3, but N2's output showed
 Also from that run: the random high TCP ports inside every container are Docker's
 embedded DNS resolver, and nginx's `80/tcp` in `docker ps` is `EXPOSE` metadata, not a
 published port. Both were included in N2's connect attempts and refused.
+
+### N37. Phase 6.5 run history
+| Run | Commit | Outcome |
+|---|---|---|
+| 1 | `c8abdf3` | **E2E: PASS** (SETUP, E1–E8, REQ-a–d, N1–N3). Review of N2's output found the socket at `666` (N36) |
+| 2 (attempt) | `b2179f0` | **E2E: FAIL, N2**: `UNEXPECTED: non-root user ubuntu called FetchKeys`. The umask fix doesn't work, because nginx forces 0666 (N36). The run was stopped during `make test` (exit 143 = my SIGTERM). Log: `reports/gates/gate6.5-attempt1-b2179f0-N2-fail.log` |
+| 3 (Gate 6.5) | **`468cd1c`** | **E2E: PASS** (19/19 checks), then **`make test` PASS**, then **`make check-images` PASS**. Logs: `reports/gates/gate6.5-final-468cd1c.log`, `gate6.5-e2e-final-468cd1c.log` |
+
+In N1 the probe on `lb-net` connected from `172.30.1.1`. With `inhibit_ipv4` the host
+holds no gateway address, so Docker IPAM assigns `.1` to a container. That's another
+sign the host has no presence on the network.
