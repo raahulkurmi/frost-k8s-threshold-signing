@@ -4,6 +4,7 @@
 //	probe fetchkeys <target> [tls flags]      print a canonical FetchKeys+Metadata summary
 //	probe sign <target> <claims-b64> [tls]    call Sign; print the header kid or the error
 //	probe connect <host:port> [-timeout 2s]   exit 0 iff a TCP connection is accepted
+//	probe https <host:port> [tls flags]       GET /healthz over TLS; exit 0 iff HTTP 200
 //
 // <target> is unix:///path/signer.sock or host:port. TLS flags: -cert -key -ca
 // -servername (plaintext if -ca is empty).
@@ -20,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -85,6 +87,32 @@ func main() {
 	defer cancel()
 
 	switch cmd {
+	case "https":
+		pem, err := os.ReadFile(*ca)
+		if err != nil {
+			die("https needs -ca: %v", err)
+		}
+		pool := x509.NewCertPool()
+		pool.AppendCertsFromPEM(pem)
+		cfg := &tls.Config{RootCAs: pool, ServerName: *sn, MinVersion: tls.VersionTLS13}
+		if *cert != "" {
+			kp, err := tls.LoadX509KeyPair(*cert, *key)
+			if err != nil {
+				die("load client cert: %v", err)
+			}
+			cfg.Certificates = []tls.Certificate{kp}
+		}
+		hc := &http.Client{Timeout: *timeout, Transport: &http.Transport{TLSClientConfig: cfg}}
+		resp, err := hc.Get("https://" + target + "/healthz")
+		if err != nil {
+			fmt.Printf("https %s: refused (%v)\n", target, err)
+			os.Exit(1)
+		}
+		resp.Body.Close()
+		fmt.Printf("https %s: HTTP %d\n", target, resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			os.Exit(1)
+		}
 	case "connect":
 		c, err := net.DialTimeout("tcp", target, *timeout)
 		if err != nil {

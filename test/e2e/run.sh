@@ -9,6 +9,12 @@
 # are never printed (header and claims only).
 #
 # Usage: test/e2e/run.sh [--keep]   (--keep leaves the cluster running)
+#
+# TOPOLOGY=single (default): signers are containers on this host.
+# TOPOLOGY=multihost: signers run on other hosts (deploy/multihost/deploy.sh has
+#   already placed public-meta + coordinator certs in secrets/); the operator's
+#   orchestrator (test/e2e/multihost.sh) serves signer stop/start/audit requests
+#   written to $CTL, because only the operator can reach the signer hosts.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 REPO="$(pwd)"
@@ -26,10 +32,18 @@ mkdir -p "$RESULTS"
 exec > >(tee "$RESULTS/e2e.log") 2>&1
 
 export FROST_UID="$(id -u)" GOTOOLCHAIN=go1.27.1 VERIFY_STRATEGY=strict SIGN_DEADLINE=2s
+TOPOLOGY="${TOPOLOGY:-single}"
+[[ "$TOPOLOGY" == single || "$TOPOLOGY" == multihost ]] || die "TOPOLOGY must be single or multihost"
+CTL=/tmp/frost-ctl
+CTL_SEQ=0
 CLUSTER=tk8s
 KCTX="kind-$CLUSTER"
 K() { kubectl --context "$KCTX" "$@"; }
-COMPOSE=(docker compose -p tk8s -f deploy/docker-compose.yml)
+if [[ "$TOPOLOGY" == multihost ]]; then
+  COMPOSE=(docker compose -p tk8s -f deploy/docker-compose.multihost.yml)
+else
+  COMPOSE=(docker compose -p tk8s -f deploy/docker-compose.yml)
+fi
 SOCK="$REPO/run/signer.sock"
 
 declare -a RESULT_LINES=()
@@ -64,6 +78,28 @@ sa_claims() {
   jq -cn --argjson now "$now" '{aud:["https://kubernetes.default.svc.cluster.local"],exp:($now+600),iat:$now,nbf:$now,iss:"https://kubernetes.default.svc.cluster.local",sub:"system:serviceaccount:default:default","kubernetes.io":{namespace:"default",serviceaccount:{name:"default",uid:"00000000-0000-0000-0000-000000000000"}}}' \
     | base64 -w0 | tr '+/' '-_' | tr -d '='
 }
+# signer_ctl stop|start ID... | audit: control signers wherever they run.
+signer_ctl() {
+  if [[ "$TOPOLOGY" == single ]]; then
+    local verb="$1"; shift
+    case "$verb" in
+      stop|start) for i in "$@"; do docker "$verb" "tk8s-signer-$i-1" >/dev/null; done ;;
+      audit) : ;;  # audit logs are already under audit/ via bind mounts
+    esac
+    return 0
+  fi
+  CTL_SEQ=$((CTL_SEQ + 1))
+  local n=$CTL_SEQ
+  echo "$*" > "$CTL/req-$n.tmp" && mv "$CTL/req-$n.tmp" "$CTL/req-$n"
+  for _ in $(seq 1 1200); do
+    if [[ -f "$CTL/done-$n" ]]; then
+      grep -q '^ok' "$CTL/done-$n" || die "control request $n ($*) failed: $(cat "$CTL/done-$n")"
+      return 0
+    fi
+    sleep 0.1
+  done
+  die "control request $n ($*) was not served within 120s (is test/e2e/multihost.sh running?)"
+}
 coord_logs() { "${COMPOSE[@]}" logs --no-color --no-log-prefix grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 2>/dev/null; }
 
 teardown() {
@@ -94,19 +130,36 @@ echo "verify strategy: $VERIFY_STRATEGY, sign deadline: $SIGN_DEADLINE"
 
 section "Setup: fresh certs, key ceremony, signer stack"
 teardown
-rm -rf secrets audit bin/e2e; sudo rm -rf run
+if [[ "$TOPOLOGY" == multihost ]]; then
+  # deploy.sh placed ONLY public-meta, coordinator certs and multihost.env here.
+  [[ -f secrets/keys/public-meta.json && -f secrets/multihost.env ]] || die "run deploy/multihost/deploy.sh first"
+  [[ -z "$(find secrets -name 'share*' -o -name 'ca.key' -o -path '*signer-*')" ]] || die "coordinator host holds share/CA/signer material"
+  rm -rf audit bin/e2e; sudo rm -rf run
+  set -a; . secrets/multihost.env; set +a
+  rm -rf "$CTL"; mkdir -p "$CTL"
+else
+  rm -rf secrets audit bin/e2e; sudo rm -rf run
+fi
 trap on_exit EXIT
 # run/ holds the signer socket. It must be root:root 0700: nginx forces the
 # socket itself to 0666, so the directory is the access control (N36).
 sudo install -d -o root -g root -m 0700 run
 mkdir -p bin/e2e
 for i in 1 2 3 4 5; do mkdir -p "audit/signer-$i"; done
-scripts/gen-certs.sh --out secrets
+if [[ "$TOPOLOGY" == single ]]; then scripts/gen-certs.sh --out secrets; fi
 go build -o bin/e2e/dealer ./cmd/dealer
 go build -o bin/e2e/probe ./test/e2e/probe
 docker build -q -f test/e2e/Dockerfile.probe -t "$PROBE_IMG" . >/dev/null
-bin/e2e/dealer --out secrets/keys
+if [[ "$TOPOLOGY" == single ]]; then bin/e2e/dealer --out secrets/keys; fi
 KID="$(jq -r .kid secrets/keys/public-meta.json)"
+if [[ "$TOPOLOGY" == multihost ]]; then
+  SIGNER_ADDRS=()
+  IFS=, read -r -a _eps <<<"$SIGNER_ENDPOINTS"
+  for e in "${_eps[@]}"; do SIGNER_ADDRS+=("${e#*=https://}"); done
+else
+  SIGNER_ADDRS=(172.30.2.21:8443 172.30.2.22:8443 172.30.2.23:8443 172.30.2.24:8443 172.30.2.25:8443)
+fi
+echo "topology: $TOPOLOGY; signer addresses: ${SIGNER_ADDRS[*]}"
 echo "kid: $KID"
 "${COMPOSE[@]}" build -q
 "${COMPOSE[@]}" up -d
@@ -224,6 +277,7 @@ BAD_OUT="$(K create token default --audience not-allowlisted 2>&1)" && BOK=1 || 
 echo "not allowlisted: kubectl exit=$(( 1 - BOK )) output: $BAD_OUT"
 sleep 1
 BAD_LOG="$(coord_logs | grep '"msg":"sign failed"' | grep 'not-allowlisted' | grep 'is not allowed' | head -1 || true)"
+signer_ctl audit
 BAD_AUDIT="$(cat audit/signer-*/audit.log | jq -c 'select(.decision=="deny" and (.reason|test("not-allowlisted")))' | head -1)"
 echo "coordinator log: $(cut -c1-400 <<<"$BAD_LOG")"
 echo "signer audit:    $BAD_AUDIT"
@@ -242,6 +296,7 @@ K rollout status deployment/e4-web --timeout=300s
 READY="$(K get deployment e4-web -o jsonpath='{.status.readyReplicas}')"
 KCM_RESTARTS1="$(K get pod -n kube-system -l component=kube-controller-manager -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}')"
 SCHED_RESTARTS1="$(K get pod -n kube-system -l component=kube-scheduler -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}')"
+signer_ctl audit
 CTRL_SUBS="$(cat audit/signer-*/audit.log | jq -r 'select(.decision=="allow") | .sub' | grep -E 'kube-system:(deployment|replicaset)-controller' | sort | uniq -c || true)"
 echo "readyReplicas=$READY; controller-manager restarts $KCM_RESTARTS0->$KCM_RESTARTS1; scheduler restarts $SCHED_RESTARTS0->$SCHED_RESTARTS1"
 echo "threshold-signed controller tokens (signer audit logs, allow decisions):"; echo "$CTRL_SUBS"
@@ -263,10 +318,10 @@ if [[ "$(jq '.keys|length' <<<"$JWKS")" == 1 && "$(jq -r '.keys[0].kid' <<<"$JWK
 else fail E5 "jwks mismatch"; fi
 
 section "E6: signer failures"
-docker stop tk8s-signer-4-1 tk8s-signer-5-1 >/dev/null
+signer_ctl stop 4 5
 T6A="$(K create token default --duration=10m 2>&1)" && E6A=1 || E6A=0
 echo "2 signers down: issue ok=$E6A kid=$( [[ $E6A == 1 ]] && jwt_header "$T6A" | jq -r .kid)"
-docker stop tk8s-signer-3-1 >/dev/null
+signer_ctl stop 3
 S=$(now_ms)
 E6B_OUT="$(K create token default --duration=10m 2>&1)" && E6B=1 || E6B=0
 E6B_MS=$(( $(now_ms) - S ))
@@ -281,15 +336,15 @@ if [[ $E6A == 1 && $E6B == 0 && "$E6B_OUT" == *"token signing failed: threshold 
 else fail E6 "2down=$E6A 3down=$E6B old=$OLD_REVIEW proj=$PROJ_REVIEW"; fi
 
 section "E7: signer restart -> issuance recovers"
-S=$(now_ms)
-docker start tk8s-signer-3-1 tk8s-signer-4-1 tk8s-signer-5-1 >/dev/null
+signer_ctl_start_t0() { S=$(now_ms); signer_ctl start 3 4 5; }
+signer_ctl_start_t0
 TRIES=0
 until K create token default --duration=10m >/dev/null 2>&1; do TRIES=$((TRIES + 1)); (( TRIES > 600 )) && break; sleep 0.1; done
 E7_MS=$(( $(now_ms) - S ))
-READY_TS="$(docker logs tk8s-signer-3-1 2>&1 | grep '"signer ready"' | tail -1 | jq -r .time)"
-echo "docker start -> first successful token: ${E7_MS}ms ($TRIES failed attempts; includes kubectl process start per attempt)"
+if [[ "$TOPOLOGY" == single ]]; then READY_TS="$(docker logs tk8s-signer-3-1 2>&1 | grep '"signer ready"' | tail -1 | jq -r .time)"; else READY_TS="(journald on signer hosts; start acknowledged via control channel)"; fi
+echo "signer start request -> first successful token: ${E7_MS}ms ($TRIES failed attempts; includes one kubectl process start per attempt$( [[ $TOPOLOGY == multihost ]] && echo '; multihost: also includes control-channel latency (operator polls every 0.5s) and systemctl start over multipass exec'))"
 echo "signer-3 last 'signer ready' log: $READY_TS"
-if (( TRIES <= 600 )); then pass E7 "issuance recovered ${E7_MS}ms after docker start"; else fail E7 "did not recover within 60s"; fi
+if (( TRIES <= 600 )); then pass E7 "issuance recovered ${E7_MS}ms after signer start request"; else fail E7 "did not recover within 60s"; fi
 
 section "E8: coordinator replicas and nginx failover"
 REF="$(sudo bin/e2e/probe fetchkeys "unix://$SOCK")"
@@ -339,8 +394,13 @@ for ip in 172.30.1.11 172.30.1.12 172.30.1.13; do
   expect_fail "lb-net, plaintext gRPC -> $ip Sign"         "$LBNET" sign "$ip:9090" "$CL"
 done
 for i in 1 2 3 4 5; do
-  expect_fail "lb-net -> signer-$i 172.30.2.2$i:8443 TCP" "$LBNET" connect "172.30.2.2$i:8443"
+  expect_fail "lb-net -> signer-$i ${SIGNER_ADDRS[$((i-1))]} TCP" "$LBNET" connect "${SIGNER_ADDRS[$((i-1))]}"
 done
+if [[ "$TOPOLOGY" == multihost ]]; then
+  for r in 1 2 3; do
+    expect_fail "uplink -> coordinator 172.30.3.1$r:9090 (gRPC bound to lb-net only)" tk8s_uplink connect "172.30.3.1$r:9090"
+  done
+fi
 if [[ $N1_OK == 1 ]]; then pass N1 "default-bridge and lb-net containers without the lb cert cannot call Sign/FetchKeys; lb-net cannot reach signers"
 else fail N1 "an unauthorised caller reached Sign/FetchKeys"; fi
 
@@ -364,18 +424,45 @@ echo "  the only entry point is the Unix socket $SOCK: socket $SOCK_MODE (nginx 
 if NR_OUT="$(bin/e2e/probe fetchkeys "unix://$SOCK" 2>&1)"; then echo "  UNEXPECTED: non-root user $(id -un) called FetchKeys on the socket"; N2_OK=0
 else echo "  non-root user $(id -un) -> socket: refused ($(tail -1 <<<"$NR_OUT" | cut -c1-120))"; fi
 [[ "$DIR_MODE" == "root:root 700" ]] || { echo "  socket directory is not root:root 700"; N2_OK=0; }
+if [[ "$TOPOLOGY" == multihost ]]; then
+  echo "  multihost: this host IS the coordinator host, so the signer firewalls admit its address (coordinator traffic is NAT'd to it);"
+  echo "  the signer's mTLS is then the control. TLS to each signer's /healthz from this host:"
+  for i in 1 2 3 4 5; do
+    a="${SIGNER_ADDRS[$((i-1))]}"
+    if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -timeout 3s >/dev/null 2>&1; then echo "    UNEXPECTED: $a accepted a client with no cert"; N2_OK=0; else echo "    $a no client cert: refused"; fi
+    if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -cert secrets/tls/lb/tls.crt -key secrets/tls/lb/tls.key -timeout 3s >/dev/null 2>&1; then echo "    UNEXPECTED: $a accepted the lb cert"; N2_OK=0; else echo "    $a lb cert: refused"; fi
+    if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -cert secrets/tls/coordinator/tls.crt -key secrets/tls/coordinator/tls.key -timeout 3s >/dev/null 2>&1; then echo "    $a coordinator cert: accepted (control)"; else echo "    CONTROL FAILED: $a refused the coordinator cert"; N2_OK=0; fi
+  done
+fi
 if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused"
 else fail N2 "host reached a component port or the socket is not root-only (tried $N2_N)"; fi
 
 section "N3: nginx cannot open a TCP connection to any signer"
 N3_OK=1
 for i in 1 2 3 4 5; do
-  for tgt in "172.30.2.2$i:8443" "signer-$i:8443"; do
+  tgts=("${SIGNER_ADDRS[$((i-1))]}")
+  [[ "$TOPOLOGY" == single ]] && tgts+=("signer-$i:8443")
+  for tgt in "${tgts[@]}"; do
     if out="$(probe_on container:tk8s-coordinator-lb-1 connect "$tgt" -timeout 2s 2>&1)"; then echo "  REACHABLE from nginx netns: $tgt"; N3_OK=0; else echo "  nginx netns -> $tgt: $(cut -c1-110 <<<"$out")"; fi
   done
 done
 echo "  nginx networks: $(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' tk8s-coordinator-lb-1)"
 if [[ $N3_OK == 1 ]]; then pass N3 "nginx (its network namespace) reaches no signer by IP or name"; else fail N3 "nginx reached a signer"; fi
+
+if [[ "$TOPOLOGY" == multihost ]]; then
+  section "N4: coordinator egress reaches only the signer ports"
+  N4_OK=1
+  C1=container:tk8s-grpc-proxy-1-1
+  for i in 1 2 3 4 5; do
+    if probe_on "$C1" connect "${SIGNER_ADDRS[$((i-1))]}" -timeout 3s >/dev/null 2>&1; then echo "  coordinator -> signer-$i ${SIGNER_ADDRS[$((i-1))]}: allowed (control)"; else echo "  CONTROL FAILED: coordinator cannot reach signer-$i"; N4_OK=0; fi
+  done
+  S1HOST="${SIGNER_ADDRS[0]%%:*}"
+  for tgt in 1.1.1.1:443 8.8.8.8:53 "$S1HOST:22" "$S1HOST:8445" 192.168.252.1:22; do
+    if out="$(probe_on "$C1" connect "$tgt" -timeout 3s 2>&1)"; then echo "  UNEXPECTED: coordinator reached $tgt"; N4_OK=0; else echo "  coordinator -> $tgt: blocked ($(cut -c1-90 <<<"$out"))"; fi
+  done
+  echo "  FROST-EGRESS chain:"; sudo iptables -S FROST-EGRESS | sed 's/^/    /'
+  if [[ $N4_OK == 1 ]]; then pass N4 "coordinators reach exactly the 5 signer ports; internet, SSH and other ports blocked"; else fail N4 "coordinator egress not restricted as expected"; fi
+fi
 
 section "(d) strategy used by every coordinator"
 READY_LINES="$(coord_logs | grep '"msg":"coordinator ready"' || true)"
@@ -387,6 +474,7 @@ if [[ "$N_READY" -ge 3 && "$N_READY" == "$N_STRICT" ]]; then
 else fail REQ-d "$N_STRICT of $N_READY coordinator starts were strict"; fi
 
 section "Signer policy decisions (all signers, from audit logs)"
+signer_ctl audit
 cat audit/signer-*/audit.log | jq -r '.decision' | sort | uniq -c
 cat audit/signer-*/audit.log | jq -r 'select(.decision=="deny") | .reason' | sed 's/[0-9]\{6,\}/N/g' | sort | uniq -c | head -20
 
