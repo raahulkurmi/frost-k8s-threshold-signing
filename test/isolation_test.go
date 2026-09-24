@@ -42,6 +42,42 @@ func TestNoSecretsInTree(t *testing.T) {
 	t.Logf("gitleaks: 0 findings (%s)", strings.TrimSpace(lastLine(string(out))))
 }
 
+// secretName matches files that hold key material in this project. gitleaks
+// has no rule for share-<i>.json (bare base64 values), so T11 also walks the
+// tree itself, ignored files included.
+var secretName = regexp.MustCompile(`(^|/)(share-[0-9]+\.json|public-meta\.json|[^/]+\.key|[^/]+\.pem|[^/]+\.enc|frost-keys\.json|ecdsa-signing\.pem)$`)
+
+// T11 (I10), part 2: no key material anywhere in the working tree, including
+// gitignored directories such as secrets/ left behind by an e2e run.
+func TestNoKeyMaterialFilesInTree(t *testing.T) {
+	root := repoRoot(t)
+	var found []string
+	_ = filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		rel, _ := filepath.Rel(root, p)
+		if d.IsDir() {
+			switch rel {
+			case ".git", "legacy":
+				return filepath.SkipDir // history is covered by HISTORY_PURGE.md; legacy holds no key files
+			case "secrets", "out", "data", "certs":
+				found = append(found, rel+"/")
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if secretName.MatchString(filepath.ToSlash(rel)) {
+			found = append(found, rel)
+		}
+		return nil
+	})
+	if len(found) > 0 {
+		t.Fatalf("key material in working tree: %v", found)
+	}
+	t.Log("no share, key, PEM, encrypted-share or secrets/ paths in the working tree")
+}
+
 func lastLine(s string) string {
 	lines := strings.Split(strings.TrimSpace(s), "\n")
 	return lines[len(lines)-1]

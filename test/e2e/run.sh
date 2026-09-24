@@ -54,6 +54,17 @@ teardown() {
   kind delete cluster --name "$CLUSTER" >/dev/null 2>&1 || true
   "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
 }
+# Generated key material (CA key, TLS keys, all 5 shares) must not outlive the
+# run in the working tree (I10, T11). Audit logs are kept with the results.
+wipe_secrets() {
+  [[ -d audit ]] && cp -r audit "$RESULTS/audit" 2>/dev/null || true
+  rm -rf secrets run audit bin/e2e
+}
+on_exit() {
+  local rc=$?
+  if [[ $KEEP == 0 ]]; then teardown; wipe_secrets; echo "cluster, stack and generated secrets removed"; fi
+  exit $rc
+}
 
 section "Environment"
 echo "git commit: $SHA"
@@ -67,6 +78,7 @@ echo "verify strategy: $VERIFY_STRATEGY, sign deadline: $SIGN_DEADLINE"
 section "Setup: fresh certs, key ceremony, signer stack"
 teardown
 rm -rf secrets run audit bin/e2e
+trap on_exit EXIT
 mkdir -p run bin/e2e
 for i in 1 2 3 4 5; do mkdir -p "audit/signer-$i"; done
 scripts/gen-certs.sh --out secrets
@@ -233,7 +245,7 @@ E6B_OUT="$(K create token default --duration=10m 2>&1)" && E6B=1 || E6B=0
 E6B_MS=$(( $(now_ms) - S ))
 echo "3 signers down: issue ok=$E6B after ${E6B_MS}ms; kubectl said: $E6B_OUT"
 sleep 1
-echo "coordinator log: $(coord_logs | grep 'threshold not met' | tail -1)"
+echo "coordinator log: $(coord_logs | grep '"msg":"sign failed"' | tail -1 | cut -c1-600)"
 OLD_REVIEW="$(tokenreview "$TOKEN1" | jq -r .status.authenticated)"
 PROJ_REVIEW="$(tokenreview "$PTOKEN" | jq -r .status.authenticated)"
 echo "previously issued tokens with 3 signers down: E1 token authenticated=$OLD_REVIEW, projected token authenticated=$PROJ_REVIEW"
@@ -299,6 +311,6 @@ section "Summary"
 echo "git commit: $SHA"
 echo "kubernetes: $(K version -o json | jq -r .serverVersion.gitVersion), node image $(docker inspect -f '{{.Image}}' "$CP")"
 printf '%s\n' "${RESULT_LINES[@]}"
-if [[ $KEEP == 0 ]]; then teardown; echo "cluster and stack removed"; fi
+[[ $KEEP == 1 ]] && echo "--keep: cluster and secrets/ left in place; run 'make e2e-down' (T11 fails until then)"
 if [[ $FAILED -ne 0 ]]; then echo "E2E: FAIL"; exit 1; fi
 echo "E2E: PASS"

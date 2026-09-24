@@ -327,3 +327,14 @@ logging process substitution `exec > >(tee …)`, which never exits (bash ≥ 5.
 behavior). This was a harness bug, not a system failure; the partial log is kept in
 the VM as `~/e2e-run2-hung.out`. Fixed by waiting on the restart's own PID with a
 60 s `timeout`. Gate 6 evidence comes from a complete clean rerun.
+
+### N32. T11 caught generated secrets left in the VM working tree
+The e2e run's teardown removed the cluster and containers but left `secrets/` (CA key,
+7 TLS keys, all 5 shares) in the VM's working tree. The files are gitignored, so they
+were never committable, but I10 requires a clean tree, and `make test` at `ab2de56`
+failed T11 `TestNoSecretsInTree` (7 `private-key` findings). **gitleaks flagged the PEM
+keys but not the five `share-<i>.json` files** (bare base64 has no rule). Fixes:
+`run.sh` wipes `secrets/`, `run/` and `audit/` in an EXIT trap (audit logs are copied into
+the results directory first; `--keep` deliberately keeps them), `make e2e-down` wipes
+them too, and T11 gained `TestNoKeyMaterialFilesInTree`, a tree walk that includes
+ignored directories and catches share files regardless of gitleaks.
