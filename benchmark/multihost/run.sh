@@ -36,7 +36,8 @@ vm_ip()   { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ip
 host_load() {
   local avail
   avail=$(vm_stat | awk -v ps="$(pagesize)" '/Pages free/{f=$NF}/Pages inactive/{i=$NF}/Pages speculative/{s=$NF}/Pages purgeable/{p=$NF} END{gsub("\\.","",f);gsub("\\.","",i);gsub("\\.","",s);gsub("\\.","",p); printf "%.2f", (f+i+s+p)*ps/2^30}')
-  printf '{"loadavg": "%s", "mem_available_gib": %s, "swap": "%s"}' "$(sysctl -n vm.loadavg | tr -d '{}' | xargs)" "$avail" "$(sysctl -n vm.swapusage)"
+  printf '{"loadavg": "%s", "mem_available_gib": %s, "swap": "%s", "power": "%s", "lid_closed": "%s"}' "$(sysctl -n vm.loadavg | tr -d '{}' | xargs)" "$avail" "$(sysctl -n vm.swapusage)" \
+    "$(pmset -g batt | tr '\t\n' '  ' | sed 's/  */ /g; s/"//g' | cut -c1-120)" "$(ioreg -r -k AppleClamshellState -d 4 | awk -F'= ' '/AppleClamshellState/{print $2; exit}')"
 }
 
 # Host sleep freezes every VM and would put frozen time into latencies. Keep the
@@ -134,7 +135,7 @@ if [[ -n "$SLEEPS" ]]; then SLEPT=true; else SLEPT=false; fi
 jq --argjson slept "$SLEPT" --arg when "$SLEEPS" --arg start "$BENCH_START_LOCAL" --arg end "$(date '+%Y-%m-%d %H:%M:%S')" \
   '. + {host_slept_during_run: $slept, host_sleep_events: $when, bench_window_local: ($start + " .. " + $end), host_awake_mechanism: "caffeinate -dims for the whole run"}' \
   "$RES/env.json" > "$RES/env.json.tmp" && mv "$RES/env.json.tmp" "$RES/env.json"
-SLEEPNOTE="Host sleep during run: $SLEPT (checked from pmset -g log for $BENCH_START_LOCAL onwards)."
+SLEEPNOTE="Host sleep during run: $SLEPT (checked from pmset -g log for $BENCH_START_LOCAL onwards). Host power at start: $(jq -r .host.load_at_start.power "$RES/env.json")."
 [[ "$SLEPT" == true ]] && SLEEPNOTE="INVALID RUN: the host slept at $SLEEPS; latencies include frozen VM time. $SLEEPNOTE"
 # shellcheck disable=SC2086
 "$RES/.summarize" -title "Phase 7B Level 1: T 3-of-5 multi-VM (preliminary)" \
