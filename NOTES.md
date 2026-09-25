@@ -692,3 +692,6 @@ fanout all then hedged, scored against N49) is **not run locally** and moves to 
 with the full matrix. N48 is covered by unit/integration tests only until then.
 The signer VMs sig-a/b/c are stopped (not deleted) to free host memory; tk8s stays up
 for single-host e2e runs.
+- Single-host `make e2e` at `aa223ca` on tk8s with **6 GiB** (N48 signers): **E2E: PASS**, all 17
+  checks. kind + nginx + 3 coordinators + 5 signers fit in 6 GiB
+  (`reports/gates/e2e-single-host-6GiB-aa223ca.log`).

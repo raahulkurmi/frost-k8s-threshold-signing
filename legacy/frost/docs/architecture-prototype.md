@@ -1,3 +1,6 @@
+> **Historical (FROST prototype, superseded).** This is the README of the abandoned FROST prototype, kept for the claims audit. Its keys are burned (reports/HISTORY_PURGE.md) and its design did not threshold-sign tokens (legacy/frost/README.md).
+
+
 # Architecture
 
 ## Components
