@@ -64,6 +64,14 @@ echo "topology: multi-VM, single physical host (Level 1); file $TOPO"
 echo "operator: $(sw_vers -productName 2>/dev/null) $(sw_vers -productVersion 2>/dev/null), $(sysctl -n hw.model) $(sysctl -n hw.ncpu) CPU, $(( $(sysctl -n hw.memsize) / 1073741824 )) GiB; $(multipass version | head -1)"
 multipass list
 
+section "Clock check (mandatory, N50)"
+# Mandatory pre-run step (N50): force time resync and require every VM to be
+# within 1 s of the operator clock; a skewed signer refuses every token (N44).
+# shellcheck disable=SC1091
+source deploy/multihost/clock-check.sh
+# shellcheck disable=SC2086
+clock_check "$COORD_VM" $SIGNER_VMS || die "clock skew check failed (N50)"
+
 section "Coordinator host at the same commit"
 on "$COORD_VM" bash -lc "cd ~/tk8s && git fetch -q && git checkout -q $SHA && git rev-parse HEAD" | tr -d '\r'
 

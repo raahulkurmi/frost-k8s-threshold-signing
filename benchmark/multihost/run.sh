@@ -80,6 +80,11 @@ RES="benchmark/results/$TS-${SHA:0:7}-multihost-L1"
 mkdir -p "$RES"
 exec > >(tee "$RES/run.log") 2>&1
 echo "LABEL: $LABEL_TEXT; netem rows emulated; labelled by measured RTT"
+# Mandatory pre-run step (N50): force time resync and require every VM to be
+# within 1 s of the operator clock; a skewed signer refuses every token (N44).
+# shellcheck disable=SC1091
+source deploy/multihost/clock-check.sh
+clock_check "$COORD_VM" sig-a sig-b sig-c || die "clock skew check failed (N50)"
 on "$COORD_VM" kubectl --context kind-tk8s get --raw /readyz >/dev/null || die "cluster not up: run test/e2e/multihost.sh --keep first"
 on "$COORD_VM" bash -lc "cd ~/tk8s && git rev-parse HEAD" | tr -d '\r' | grep -qx "$SHA" || die "coordinator host clone is not at $SHA"
 

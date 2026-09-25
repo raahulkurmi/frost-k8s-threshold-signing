@@ -672,3 +672,23 @@ completions / window) and failed-p95. The full matrix (all delays, both fan-out 
 3 runs) moves to the cloud (Phase 7A). Level 1 keeps L1–L5 and the multihost e2e as its
 main evidence; locally only a reduced **preliminary validation** runs (0 ms configured
 delay, c=1/10/50, fanout all then hedged), and only if free swap is ≥ 2 GB.
+
+### N50. Mandatory clock check before every multihost run
+`deploy/multihost/clock-check.sh` (sourced by `deploy.sh`, `test/e2e/multihost.sh` and
+`benchmark/multihost/run.sh`) restarts `systemd-timesyncd` on every VM, waits for
+`NTPSynchronized=yes`, then measures each VM's clock against the operator's using the
+midpoint of the `multipass exec` round trip. **Any skew above 1 s fails the run.**
+Motivation: after the Mac reboot, multipass *resumed* the VMs from saved state (uptime
+6 h / 3 h), and sig-b was **477 s behind** while still reporting `NTPSynchronized=yes`.
+Its signers would have refused every token (N44). After a full stop, `set
+local.tk8s.memory=6G` and a cold boot (uptime 41 s on all four), the check reported
+tk8s +198 ms, sig-a +298 ms, sig-b +225 ms, sig-c +191 ms, all synchronized.
+
+### N51. Reduced local validation deferred to the cloud VM (Phase 7A)
+After shrinking tk8s from 8 to 6 GiB and cold-booting all VMs, the Mac's free swap was
+**1.34 GB** (9,216 MB total, 7,881 MB used; host RAM available 4.63 GiB), below the 2 GB
+floor set for the validation run. Per the decision, the N48 validation (0 ms, c=1/10/50,
+fanout all then hedged, scored against N49) is **not run locally** and moves to Phase 7A
+with the full matrix. N48 is covered by unit/integration tests only until then.
+The signer VMs sig-a/b/c are stopped (not deleted) to free host memory; tk8s stays up
+for single-host e2e runs.

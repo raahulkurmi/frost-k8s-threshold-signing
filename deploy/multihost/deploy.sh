@@ -48,6 +48,12 @@ for vm in $SIGNER_VMS; do ip="$(vm_ip "$vm")"; [[ -n "$ip" ]] || die "no IP for 
 vm_ip_of() { local p; for p in $VM_IP_LIST; do [[ "${p%%=*}" == "$1" ]] && { echo "${p#*=}"; return; }; done; }
 echo "coordinator host $COORD_VM $COORD_IP; admin $ADMIN_IP"
 for vm in $SIGNER_VMS; do echo "signer host $vm $(vm_ip_of "$vm"): signers$(vm_ids "$vm")"; done
+# Mandatory pre-run step (N50): force time resync and require every VM to be
+# within 1 s of the operator clock; a skewed signer refuses every token (N44).
+# shellcheck disable=SC1091
+source deploy/multihost/clock-check.sh
+clock_check "$COORD_VM" $SIGNER_VMS || die "clock skew check failed (N50)"
+
 
 W="$(mktemp -d "${TMPDIR:-/tmp}/frost-ceremony.XXXXXX")"
 chmod 700 "$W"
