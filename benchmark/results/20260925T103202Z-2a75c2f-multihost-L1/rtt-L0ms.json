@@ -1,0 +1,7 @@
+[
+  {"signer_id": 1, "vm": "sig-a", "ip": "192.168.252.3", "port": 8441, "added_delay_ms": 0, "ping_avg_ms": 0.667, "tcp_connect_median_ms": 0.524, "tcp_connect_min_ms": 0.320, "tcp_connect_max_ms": 1.686},
+  {"signer_id": 2, "vm": "sig-a", "ip": "192.168.252.3", "port": 8442, "added_delay_ms": 0, "ping_avg_ms": 1.296, "tcp_connect_median_ms": 0.630, "tcp_connect_min_ms": 0.451, "tcp_connect_max_ms": 1.026},
+  {"signer_id": 3, "vm": "sig-b", "ip": "192.168.252.4", "port": 8443, "added_delay_ms": 0, "ping_avg_ms": 0.597, "tcp_connect_median_ms": 0.513, "tcp_connect_min_ms": 0.359, "tcp_connect_max_ms": 1.409},
+  {"signer_id": 4, "vm": "sig-b", "ip": "192.168.252.4", "port": 8444, "added_delay_ms": 0, "ping_avg_ms": 0.783, "tcp_connect_median_ms": 0.558, "tcp_connect_min_ms": 0.424, "tcp_connect_max_ms": 0.765},
+  {"signer_id": 5, "vm": "sig-c", "ip": "192.168.252.5", "port": 8445, "added_delay_ms": 0, "ping_avg_ms": 0.614, "tcp_connect_median_ms": 0.630, "tcp_connect_min_ms": 0.312, "tcp_connect_max_ms": 11.287}
+]

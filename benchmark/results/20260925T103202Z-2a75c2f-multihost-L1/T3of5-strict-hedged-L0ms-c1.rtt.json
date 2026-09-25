@@ -1,0 +1,7 @@
+[
+  {"signer_id": 1, "vm": "sig-a", "ip": "192.168.252.3", "rtt_ms": 0.666, "samples": 133, "measured": "ICMP avg during run"},
+  {"signer_id": 2, "vm": "sig-a", "ip": "192.168.252.3", "rtt_ms": 0.666, "samples": 133, "measured": "ICMP avg during run"},
+  {"signer_id": 3, "vm": "sig-b", "ip": "192.168.252.4", "rtt_ms": 0.535, "samples": 133, "measured": "ICMP avg during run"},
+  {"signer_id": 4, "vm": "sig-b", "ip": "192.168.252.4", "rtt_ms": 0.535, "samples": 133, "measured": "ICMP avg during run"},
+  {"signer_id": 5, "vm": "sig-c", "ip": "192.168.252.5", "rtt_ms": 0.858, "samples": 134, "measured": "ICMP avg during run"}
+]

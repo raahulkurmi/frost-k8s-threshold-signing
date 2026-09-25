@@ -600,4 +600,36 @@ two-signer / one-vCPU hosts, throughput collapsed at c=50 (93–97% errors).
    **Trade-off:** `all` has the lowest idle latency, because the quorum is the 3 fastest
    of 5, but costs 5 computations per token. `hedged` costs 4 per token (−20% signer
    CPU) and can add up to `HEDGE_DELAY` when a contacted signer is slow without failing.
-   The default is chosen from the post-fix benchmark (see that run's `summary.md`).
+   **Outcome:** the post-fix benchmark did **not** justify either mode as the default
+   (N47). `all` remains the default.
+
+### N47. Post-N43-fix benchmark: target NOT met; admission control as specified regresses c=10
+Run `benchmark/results/20260925T103202Z-2a75c2f-multihost-L1`, **PARTIAL**: configured
+delays 0 and 20 ms completed for both fan-out modes (12/24 configurations). It aborted at
+60 ms when the host's swap ran out (10,998 of 11,264 MB used), after which `multipass info`
+failed ("failed to obtain exit status"). The script-generated `summary.md` shows pre- and
+post-fix side by side, labelled by measured quorum RTT:
+- **c=1:** unchanged (0% errors, ~64–73 ms median).
+- **c=10: regression.** Pre-fix 0% errors (median 460 ms). Post-fix **67–76% errors** with
+  both `all` and `hedged`.
+- **c=50:** still **93–98% errors**, but failures now return fast (a run takes 3–8 s, not
+  ~41 s), and the successful requests' median falls from ~1,860 ms to 207–603 ms.
+- Measured RTT under load for "20 ms configured" was 24–44 ms (busy vCPUs wake on time, N45).
+
+**Cause (confirmed from signer audit logs).** Every signer runs with `max_concurrent: 1`
+(NumCPU on a 1-vCPU VM). signer-1 allowed 1,742 and **shed 1,783**; signer-2 allowed 1,731,
+shed 1,791; signer-5 allowed 2,229, shed 1,310. Shedding immediately whenever the single
+slot is busy throws away work that would have finished well inside the deadline: a share
+takes ~30 ms, so one slot can clear ~60 queued requests within the coordinator's 2 s. The
+spec's aim, "don't queue past the deadline", is right, but "no queue at all" overshoots.
+Neither fan-out mode compensates, so **no default is chosen from this run**.
+
+**Proposed next change (awaiting decision, not applied):** deadline-aware bounded
+admission. The coordinator sends its remaining deadline in a request header. The signer
+waits for a slot only while `remaining deadline − expected service time > 0` (tracked
+with an EWMA of RSA time) and a queue-length cap (for example 64) holds, and sheds with 503
+otherwise. That keeps the fast failure at real overload and restores c=10.
+
+**Host note:** the Mac is at its memory limit (16 GB, tk8s reserves 8 GB, swap ~11 GB
+used). Further Level 1 runs need a lighter host: fewer apps, or a smaller tk8s/kind
+footprint. Results stay labelled "preliminary: arm64, multi-VM on one overloaded 16 GB host".

@@ -41,7 +41,12 @@ alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
 on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
 id_port() { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { echo "${s##*:}"; return; }; done; }
-vm_ip()   { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }
+# VM IPs are resolved ONCE at start: `multipass info` failed mid-run when the
+# host ran out of swap (N47), so the benchmark must not depend on it per call.
+vm_ip_live() { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }
+VM_IP_CACHE=""
+for _vm in $COORD_VM sig-a sig-b sig-c; do VM_IP_CACHE="$VM_IP_CACHE $_vm=$(vm_ip_live "$_vm")"; done
+vm_ip() { local p; for p in $VM_IP_CACHE; do [[ "${p%%=*}" == "$1" ]] && { echo "${p#*=}"; return; }; done; }
 host_load() {
   local avail
   avail=$(vm_stat | awk -v ps="$(pagesize)" '/Pages free/{f=$NF}/Pages inactive/{i=$NF}/Pages speculative/{s=$NF}/Pages purgeable/{p=$NF} END{gsub("\\.","",f);gsub("\\.","",i);gsub("\\.","",s);gsub("\\.","",p); printf "%.2f", (f+i+s+p)*ps/2^30}')
