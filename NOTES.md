@@ -633,3 +633,42 @@ otherwise. That keeps the fast failure at real overload and restores c=10.
 **Host note:** the Mac is at its memory limit (16 GB, tk8s reserves 8 GB, swap ~11 GB
 used). Further Level 1 runs need a lighter host: fewer apps, or a smaller tk8s/kind
 footprint. Results stay labelled "preliminary: arm64, multi-VM on one overloaded 16 GB host".
+
+### N48. Deadline-aware bounded admission (replaces N46's "503 immediately")
+Approved after N47. The coordinator sends its **remaining** deadline on every
+sign-share request (`X-Frost-Deadline-Ms`, defined in `internal/wire`). The signer turns
+it into a local context deadline, so the two clocks never need to agree. Admission:
+- a free slot (of `SIGNER_MAX_CONCURRENT`, default NumCPU) is taken at once;
+- otherwise the request **waits** only while `remaining deadline − EWMA(RSA time) > 0`
+  and fewer than `SIGNER_MAX_QUEUE` (default 64) are already waiting. If either fails,
+  the answer is **503 immediately**;
+- a waiter gives up (503) at its latest possible start time, and re-checks after getting
+  the slot;
+- the EWMA of RSA time (α = 0.2) starts at a conservative 50 ms;
+- requests with no header may wait up to 1 s;
+- N46's cancellation checks stay: before admission, after the queue, and after RSA.
+
+Tests (`internal/signer/admission_test.go`, `internal/coordinator/fanout_test.go`):
+
+| Test | Result |
+|---|---|
+| queued request that fits succeeds | waited 167 ms for the busy slot, then signed |
+| request that cannot fit is shed immediately | 22 µs, "cannot finish in time (remaining 500ms, RSA estimate 1s)" |
+| queue cap enforced | cap 2: two waiters succeed, the third gets "queue full" immediately |
+| expired deadline never computes a share | 0 RSA ops when already expired; 0 for a request that expired while queued (shed at 191 ms) |
+| header parsed strictly | `abc`, `0`, `-5`, `999999` → 400 |
+| coordinator sends remaining deadline | 1499 ms on all 5 requests with a 1.5 s deadline |
+
+### N49. Benchmark target, redefined (decision after N47)
+Capacity on the Level 1 topology is about **22 tokens/s** (the c=10 plateau pre-fix), so at
+c=50 with a 2 s deadline some errors are unavoidable. Success criteria:
+1. **goodput** (successful tokens/s over the whole run) at c=50 is close to the c=10
+   goodput, not collapsed to ~1/s;
+2. errors at c=10 are **~0%**;
+3. failed requests fail fast (low failed-p95); successful requests have a bounded p95.
+
+`summary.md` now reports goodput (successful / whole-run window), offered (all
+completions / window) and failed-p95. The full matrix (all delays, both fan-out modes,
+3 runs) moves to the cloud (Phase 7A). Level 1 keeps L1–L5 and the multihost e2e as its
+main evidence; locally only a reduced **preliminary validation** runs (0 ms configured
+delay, c=1/10/50, fanout all then hedged), and only if free swap is ≥ 2 GB.

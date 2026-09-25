@@ -21,6 +21,11 @@ const (
 	maxRequestIDLen  = 128
 )
 
+// DeadlineHeader carries the coordinator's REMAINING deadline for a
+// sign-share request, in milliseconds (N48). The signer turns it into a local
+// context deadline, so coordinator and signer clocks never need to agree.
+const DeadlineHeader = "X-Frost-Deadline-Ms"
+
 // SignShareRequest is sent by the coordinator. SigningInput is the full JWS
 // signing input base64url(header).base64url(payload); the signer hashes and
 // pads it itself (I8). Unknown fields (e.g. a digest) are rejected.

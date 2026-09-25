@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -457,6 +458,15 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
 		return r
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// N48: tell the signer how long we will still wait, so it can queue for
+	// a computation slot only when the share can still arrive in time.
+	if d, ok := ctx.Deadline(); ok {
+		ms := time.Until(d).Milliseconds()
+		if ms < 1 {
+			ms = 1
+		}
+		req.Header.Set(wire.DeadlineHeader, strconv.FormatInt(ms, 10))
+	}
 	resp, err := ep.Client.Do(req)
 	if err != nil {
 		r.err = fmt.Errorf("request failed: %v", unwrapURL(err))

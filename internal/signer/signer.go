@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -38,10 +39,13 @@ type Config struct {
 	Now    func() time.Time
 	Logger *slog.Logger
 	// MaxConcurrent bounds concurrent RSA share computations (admission
-	// control, NOTES N46). 0 means runtime.NumCPU(). When all slots are busy a
-	// request is shed immediately with 503 instead of queueing past the
-	// coordinator's deadline.
+	// control, NOTES N46/N48). 0 means runtime.NumCPU().
 	MaxConcurrent int
+	// MaxQueue bounds requests waiting for a slot (N48). 0 means 64.
+	MaxQueue int
+	// DefaultWait is how long a request WITHOUT a deadline header may wait
+	// for a slot (N48). 0 means 1s.
+	DefaultWait time.Duration
 }
 
 // Server handles POST /v1/sign-share and GET /healthz.
@@ -50,7 +54,13 @@ type Server struct {
 	limiter *rate.Limiter
 	slots   chan struct{}
 	rsaOps  atomic.Int64
+	waiting atomic.Int64
+	rsaEWMA atomic.Int64 // nanoseconds; EWMA of RSA share computation time
 }
+
+// initialRSAEstimate is the RSA-time estimate before any share has been
+// computed: conservative for a 1-vCPU VM (a 2048-bit share takes ~6-30 ms).
+const initialRSAEstimate = 50 * time.Millisecond
 
 // testHookBeforeRSA, if set (tests only), runs while holding an admission
 // slot, just before the RSA share computation.
@@ -84,13 +94,86 @@ func New(cfg Config) (*Server, error) {
 	if cfg.MaxConcurrent == 0 {
 		cfg.MaxConcurrent = runtime.NumCPU()
 	}
+	if cfg.MaxQueue < 0 || cfg.DefaultWait < 0 {
+		return nil, errors.New("signer: MaxQueue and DefaultWait must be >= 0")
+	}
+	if cfg.MaxQueue == 0 {
+		cfg.MaxQueue = 64
+	}
+	if cfg.DefaultWait == 0 {
+		cfg.DefaultWait = time.Second
+	}
 	r := cfg.Policy.Config().RateLimit
-	return &Server{
+	srv := &Server{
 		cfg:     cfg,
 		limiter: rate.NewLimiter(rate.Limit(r.RequestsPerSecond), r.Burst),
 		slots:   make(chan struct{}, cfg.MaxConcurrent),
-	}, nil
+	}
+	srv.rsaEWMA.Store(int64(initialRSAEstimate))
+	return srv, nil
 }
+
+// RSAEstimate returns the current EWMA of RSA share computation time.
+func (s *Server) RSAEstimate() time.Duration { return time.Duration(s.rsaEWMA.Load()) }
+
+func (s *Server) observeRSA(d time.Duration) {
+	for {
+		old := s.rsaEWMA.Load()
+		nw := int64(0.8*float64(old) + 0.2*float64(d))
+		if s.rsaEWMA.CompareAndSwap(old, nw) {
+			return
+		}
+	}
+}
+
+// admit obtains a computation slot (N48, deadline-aware bounded admission).
+// It takes a free slot at once; otherwise it waits only while the request
+// could still finish in time (remaining deadline − RSA estimate > 0) and the
+// queue is below MaxQueue. It returns a release func, or a Rejection.
+func (s *Server) admit(ctx context.Context) (func(), *Rejection) {
+	release := func() { <-s.slots }
+	select {
+	case s.slots <- struct{}{}:
+		return release, nil
+	default:
+	}
+	est := s.RSAEstimate()
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		deadline = s.cfg.Now().Add(s.cfg.DefaultWait + est)
+	}
+	budget := time.Until(deadline) - est // latest moment we may still start
+	if budget <= 0 {
+		return nil, reject(http.StatusServiceUnavailable, "overloaded",
+			"signer %d busy and the request cannot finish in time (remaining %v, RSA estimate %v)", s.cfg.ID, time.Until(deadline).Round(time.Millisecond), est.Round(time.Millisecond))
+	}
+	if n := s.waiting.Add(1); n > int64(s.cfg.MaxQueue) {
+		s.waiting.Add(-1)
+		return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d queue full (%d waiting)", s.cfg.ID, s.cfg.MaxQueue)
+	}
+	defer s.waiting.Add(-1)
+	t := time.NewTimer(budget)
+	defer t.Stop()
+	select {
+	case s.slots <- struct{}{}:
+		// Re-check: the slot may have come too late to finish in time.
+		if time.Until(deadline) < s.RSAEstimate() {
+			<-s.slots
+			return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d: slot freed too late for the deadline", s.cfg.ID)
+		}
+		return release, nil
+	case <-t.C:
+		return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d: no slot before the latest start time", s.cfg.ID)
+	case <-ctx.Done():
+		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled while queued: %v", ctx.Err())
+	}
+}
+
+// MaxQueue returns the queue bound in effect.
+func (s *Server) MaxQueue() int { return s.cfg.MaxQueue }
+
+// Waiting returns the number of requests queued for a slot.
+func (s *Server) Waiting() int64 { return s.waiting.Load() }
 
 // RSAOps returns how many RSA share computations this signer has performed.
 func (s *Server) RSAOps() int64 { return s.rsaOps.Load() }
@@ -141,7 +224,20 @@ func (s *Server) handleSignShare(w http.ResponseWriter, r *http.Request) {
 	} else if dec.More() {
 		rej = reject(http.StatusBadRequest, "bad_request", "trailing data after request")
 	} else {
-		resp, rej = s.SignShare(r.Context(), req, peerName(r))
+		ctx := r.Context()
+		if v := r.Header.Get(wire.DeadlineHeader); v != "" {
+			ms, perr := strconv.ParseInt(v, 10, 64)
+			if perr != nil || ms <= 0 || ms > 60000 {
+				rej = reject(http.StatusBadRequest, "bad_request", "%s must be 1..60000 ms", wire.DeadlineHeader)
+			} else {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, time.Duration(ms)*time.Millisecond)
+				defer cancel()
+			}
+		}
+		if rej == nil {
+			resp, rej = s.SignShare(ctx, req, peerName(r))
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if rej != nil {
@@ -210,16 +306,23 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
 		_ = s.cfg.Audit.Write(entry)
 		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")
 	}
-	// N46: admission control. Take a slot without waiting; if all are busy,
-	// shed now (503) rather than queue past the coordinator's deadline.
-	select {
-	case s.slots <- struct{}{}:
-	default:
-		entry.Decision, entry.Reason = "shed", fmt.Sprintf("overloaded: %d concurrent share computations in progress", s.cfg.MaxConcurrent)
+	// N48: deadline-aware bounded admission.
+	release, arej := s.admit(ctx)
+	if arej != nil {
+		entry.Decision, entry.Reason = "shed", arej.Error()
+		if arej.Kind == "cancelled" {
+			entry.Decision = "cancelled"
+		}
 		_ = s.cfg.Audit.Write(entry)
-		return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d at capacity", s.cfg.ID)
+		return nil, arej
 	}
-	defer func() { <-s.slots }()
+	defer release()
+	// The wait may have outlived the caller.
+	if err := ctx.Err(); err != nil {
+		entry.Decision, entry.Reason = "cancelled", "after queue: "+err.Error()
+		_ = s.cfg.Audit.Write(entry)
+		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")
+	}
 	// Record the allow decision before releasing the share; no audit, no share.
 	entry.Decision = "allow"
 	if err := s.cfg.Audit.Write(entry); err != nil {
@@ -230,7 +333,9 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
 		testHookBeforeRSA()
 	}
 	s.rsaOps.Add(1)
+	rsaStart := time.Now()
 	ss, err := s.cfg.Share.Sign(doc, crypto.SHA256, s.cfg.Meta.Tcrsa)
+	s.observeRSA(time.Since(rsaStart))
 	if err != nil {
 		return nil, reject(http.StatusInternalServerError, "internal", "sign: %v", err)
 	}

@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"frost-k8s-threshold-signing/internal/coordinator"
 	"frost-k8s-threshold-signing/internal/testutil"
+	"frost-k8s-threshold-signing/internal/wire"
 )
 
 // TestHedgedContactsTPlusOneAndRotates (N46c): with every signer healthy and
@@ -144,4 +147,41 @@ func TestFanoutConfigValidation(t *testing.T) {
 	if _, err := coordinator.New(coordinator.Config{Meta: fx.Meta, Endpoints: eps, Deadline: time.Second, Strategy: coordinator.Strict, Fanout: coordinator.FanoutHedged}); err == nil {
 		t.Error("hedged without HedgeDelay accepted")
 	}
+}
+
+// TestCoordinatorSendsRemainingDeadline (N48): every sign-share request
+// carries the remaining deadline, never more than the coordinator's own.
+func TestCoordinatorSendsRemainingDeadline(t *testing.T) {
+	var mu sync.Mutex
+	var seen []int64
+	c := testutil.StartCluster(t, testutil.ClusterOpts{Wrap: func(id int, h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == wire.SignSharePath {
+				v, err := strconv.ParseInt(r.Header.Get(wire.DeadlineHeader), 10, 64)
+				mu.Lock()
+				if err != nil {
+					v = -1
+				}
+				seen = append(seen, v)
+				mu.Unlock()
+			}
+			h.ServeHTTP(w, r)
+		})
+	}})
+	const deadline = 1500 * time.Millisecond
+	co := c.NewCoordinatorFanout(t, coordinator.FanoutAll, 0, deadline, nil)
+	if _, err := co.Sign(context.Background(), claims(t)); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(seen) != 5 {
+		t.Fatalf("saw %d requests", len(seen))
+	}
+	for _, v := range seen {
+		if v <= 0 || v > deadline.Milliseconds() {
+			t.Fatalf("%s = %d, want 1..%d", wire.DeadlineHeader, v, deadline.Milliseconds())
+		}
+	}
+	t.Logf("%s values: %v (coordinator deadline %v)", wire.DeadlineHeader, seen, deadline)
 }

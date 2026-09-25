@@ -16,7 +16,9 @@
 //	TLS_CA         CA that issued the coordinator's client cert
 //	LISTEN_ADDR    optional, default ":8443"
 //	SIGNER_MAX_CONCURRENT optional, default runtime.NumCPU(): concurrent RSA
-//	               computations before requests are shed with 503 (N46)
+//	               computations (N46)
+//	SIGNER_MAX_QUEUE optional, default 64: requests that may wait for a slot;
+//	               a request waits only while it can still meet its deadline (N48)
 package main
 
 import (
@@ -51,16 +53,17 @@ func main() {
 
 // settings is the validated startup configuration.
 type settings struct {
-	ID      int
-	Meta    *keymeta.Meta
-	Share   *tcrsa.KeyShare
-	Policy  *policy.Policy
-	Audit   string
-	Listen  string
-	MaxConc int
-	Cert    string
-	Key     string
-	CA      string
+	ID       int
+	Meta     *keymeta.Meta
+	Share    *tcrsa.KeyShare
+	Policy   *policy.Policy
+	Audit    string
+	Listen   string
+	MaxConc  int
+	MaxQueue int
+	Cert     string
+	Key      string
+	CA       string
 }
 
 func require(getenv func(string) string, name string) (string, error) {
@@ -137,6 +140,11 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 			return nil, fmt.Errorf("SIGNER_MAX_CONCURRENT %q must be a positive integer", v)
 		}
 	}
+	if v := getenv("SIGNER_MAX_QUEUE"); v != "" {
+		if s.MaxQueue, err = strconv.Atoi(v); err != nil || s.MaxQueue < 1 {
+			return nil, fmt.Errorf("SIGNER_MAX_QUEUE %q must be a positive integer", v)
+		}
+	}
 	s.Listen = getenv("LISTEN_ADDR")
 	if s.Listen == "" {
 		s.Listen = ":8443"
@@ -158,7 +166,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	defer auditLog.Close()
-	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger, MaxConcurrent: s.MaxConc})
+	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger, MaxConcurrent: s.MaxConc, MaxQueue: s.MaxQueue})
 	if err != nil {
 		return err
 	}
@@ -172,7 +180,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		IdleTimeout:       120 * time.Second,
 	}
 	logger.Info("signer ready", "signer_id", s.ID, "kid", s.Meta.KID, "threshold", s.Meta.Threshold,
-		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent())
+		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent(), "max_queue", srv.MaxQueue())
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

@@ -28,7 +28,8 @@ FANOUTS="${FANOUTS:-all hedged}"          # coordinator fan-out modes to compare
 HEDGE_DELAY="${HEDGE_DELAY:-50ms}"
 PRE_DIR="${PRE_DIR:-}"                     # optional pre-fix results dir to show side by side
 SET_TAG="${SET_TAG:-post-N43-fix}"
-LABEL_TEXT="preliminary: arm64, multi-VM on one overloaded 16 GB host; not for publication"
+LABEL_TEXT="${LABEL_TEXT:-preliminary: arm64, multi-VM on one overloaded 16 GB host; not for publication}"
+EXTRA_CSVS="${EXTRA_CSVS:-}"               # extra TAG=path.csv sets shown side by side (earlier runs, unchanged)
 NEAR_VMS="${NEAR_VMS:-sig-a}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
@@ -210,6 +211,7 @@ done
 if [[ -n "$PRE_DIR" ]]; then
   for pf in "$PRE_DIR"/*.csv; do CSVS="pre-N43-fix=$pf $CSVS"; done
 fi
+CSVS="$EXTRA_CSVS $CSVS"
 
 # Did the host sleep during the run? (pmset log lines are "YYYY-MM-DD HH:MM:SS +zone Sleep ...")
 SLEEPS="$(pmset -g log | awk -v s="$BENCH_START_LOCAL" '($1" "$2) >= s && $4 == "Sleep" {print $1" "$2}' | tr '\n' ' ')"
