@@ -56,6 +56,18 @@ if [[ -z "${FROST_CAFFEINATED:-}" ]]; then
   exec caffeinate -dims "$0" "$@"
 fi
 BENCH_START_LOCAL="$(date '+%Y-%m-%d %H:%M:%S')"
+signer_maxconc() { # JSON object signer_id -> MaxConcurrent from each signer's "signer ready" log
+  local id vm v first=1
+  printf '{'
+  for id in 1 2 3 4 5; do
+    vm="$(id_vm "$id")"
+    v="$(on "$vm" sudo journalctl -u "frost-signer-$id" -o cat --no-pager | grep '"signer ready"' | tail -1 | jq -r '.max_concurrent // "null"' | tr -d '\r')"
+    [[ $first == 1 ]] || printf ', '; first=0
+    printf '"%s": %s' "$id" "${v:-null}"
+  done
+  printf '}'
+}
+
 SHA="$(git rev-parse HEAD)"
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 RES="benchmark/results/$TS-${SHA:0:7}-multihost-L1"
@@ -90,17 +102,6 @@ vm_json() { local vm="$1"; printf '{"vm": "%s", "ip": "%s", "vcpus": %s, "mem_mb
 } > "$RES/env.json"
 jq . "$RES/env.json" >/dev/null
 
-signer_maxconc() { # JSON object signer_id -> MaxConcurrent from each signer's "signer ready" log
-  local id vm v first=1
-  printf '{'
-  for id in 1 2 3 4 5; do
-    vm="$(id_vm "$id")"
-    v="$(on "$vm" sudo journalctl -u "frost-signer-$id" -o cat --no-pager | grep '"signer ready"' | tail -1 | jq -r '.max_concurrent // "null"' | tr -d '\r')"
-    [[ $first == 1 ]] || printf ', '; first=0
-    printf '"%s": %s' "$id" "${v:-null}"
-  done
-  printf '}'
-}
 
 # set_fanout MODE: restart the 3 coordinators with FANOUT=MODE and verify from
 # their logs that every replica runs it.
