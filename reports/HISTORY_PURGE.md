@@ -36,6 +36,7 @@ found by hand with `git log --all -- <path>` and `git log --all -S<literal>`.
 | `nohup.out` | f91807b | 8.6 MB of `sh: socat: command not found`. The pattern scan and gitleaks both found no secrets |
 | `grpc-proxy`, `signer` (root Mach-O binaries) | 562590e, 93f0dc5, ecfc0f5, bfec86c | Compiled binaries. They embed the `frost-dev-password` string, so purge them with the leaks |
 | `deploy/ nginx-grpc.conf` | f91807b | Duplicate config with a leading space in its name |
+| `benchmark/results/20260925T094221Z-4385a48-multihost-L1/.summarize` | dc9b396 (removed in the next commit) | 2.6 MB Mach-O build artifact of `benchmark/summarize`, committed by accident after an aborted benchmark run. Not secret |
 | `certs/*.crt`, `certs/*.csr`, `certs/ca.srl`, `certs/*.cnf` | bfec86c, fd12b6c, 9b412e3, f91807b | Public certs, but they're bound to the burned keys |
 
 ## 3. Commands (run by the owner, on a fresh mirror clone)
@@ -57,7 +58,8 @@ git filter-repo --invert-paths \
   --path nohup.out \
   --path grpc-proxy \
   --path signer \
-  --path 'deploy/ nginx-grpc.conf'
+  --path 'deploy/ nginx-grpc.conf' \
+  --path benchmark/results/20260925T094221Z-4385a48-multihost-L1/.summarize
 
 # 3. Scrub the literal default secrets from all remaining blobs (README, compose, scripts, Go)
 cat > ../replacements.txt <<'EOF'

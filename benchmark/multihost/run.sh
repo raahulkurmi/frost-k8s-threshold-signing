@@ -61,7 +61,8 @@ on "$COORD_VM" bash -lc "cd ~/tk8s && git rev-parse HEAD" | tr -d '\r' | grep -q
 
 echo "== build tokenbench on $COORD_VM (pinned toolchain)"
 on "$COORD_VM" bash -lc "cd ~/tk8s/benchmark && GOTOOLCHAIN=go1.27.1 go build -o /tmp/tokenbench ./tokenbench && sha256sum /tmp/tokenbench"
-( cd benchmark && go build -o "$OLDPWD/$RES/.summarize" ./summarize )
+TOOLS="$(mktemp -d "${TMPDIR:-/tmp}/frost-bench-tools.XXXXXX")"   # never inside the results dir
+( cd benchmark && go build -o "$TOOLS/summarize" ./summarize )
 
 # --- env.json ---
 COORD_IP="$(vm_ip "$COORD_VM")"
@@ -91,7 +92,7 @@ set_delay() { # L
     echo "  $vm $dev: $(on "$vm" tc qdisc show dev "$dev" | head -1 | tr -d '\r')"
   done
 }
-cleanup() { echo "== removing netem"; set_delay 0 || true; }
+cleanup() { echo "== removing netem"; set_delay 0 || true; rm -rf "${TOOLS:-/nonexistent}"; }
 trap cleanup EXIT
 
 measure_rtt() { # L -> rtt-L<L>.json
@@ -142,9 +143,8 @@ jq --argjson slept "$SLEPT" --arg when "$SLEEPS" --arg start "$BENCH_START_LOCAL
 SLEEPNOTE="Host sleep during run: $SLEPT (checked from pmset -g log for $BENCH_START_LOCAL onwards). Host power at start: $(jq -r .host.load_at_start.power "$RES/env.json")."
 [[ "$SLEPT" == true ]] && SLEEPNOTE="INVALID RUN: the host slept at $SLEEPS; latencies include frozen VM time. $SLEEPNOTE"
 # shellcheck disable=SC2086
-"$RES/.summarize" -title "Phase 7B Level 1: T 3-of-5 multi-VM (preliminary)" \
+"$TOOLS/summarize" -title "Phase 7B Level 1: T 3-of-5 multi-VM (preliminary)" \
   -note "PRELIMINARY, arm64, multi-VM SINGLE PHYSICAL HOST (Multipass on one Mac); not for publication. Rows with L>0ms add EMULATED latency (tc netem) on the far hosts sig-b (signers 3,4) and sig-c (signer 5); sig-a (signers 1,2) is near. Strategy strict, deadline 2s, RSA-2048. Measured RTT per setting: rtt-L*.json. Environment and host load: env.json, host-load.jsonl. $SLEEPNOTE" \
   -out "$RES/summary.md" $CSVS
-rm -f "$RES/.summarize"
 echo "== results: $RES"
 cat "$RES/summary.md"
