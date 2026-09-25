@@ -1,7 +1,7 @@
 # frost-k8s: threshold RSA ExternalJWTSigner
 export GOTOOLCHAIN := go1.27.1
 
-.PHONY: all build vet test test-unit test-malicious check-images e2e e2e-keep e2e-down legacy
+.PHONY: all build vet lint vuln repro test test-unit test-malicious check-images e2e e2e-keep e2e-down legacy
 
 all: build vet test
 
@@ -11,6 +11,20 @@ build:
 vet:
 	go vet ./...
 	go vet -tags testmalicious ./...
+
+## staticcheck (as in CI).
+lint:
+	staticcheck ./...
+	staticcheck -tags testmalicious ./...
+
+## govulncheck; fails on reachable vulns not accepted in reports/ci/govulncheck-accepted.txt.
+vuln:
+	scripts/govulncheck.sh
+	scripts/govulncheck.sh benchmark
+
+## Fresh Ubuntu 24.04 host only: install pinned tools, test, check-images, e2e -> reports/REPRO.md.
+repro:
+	scripts/repro.sh
 
 ## Unit + integration (T1–T12) + T5 with the test-only malicious signer build tag.
 test: test-unit test-malicious

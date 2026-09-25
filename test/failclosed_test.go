@@ -87,7 +87,7 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 			e := base()
 			tc.mut(e)
 			before := listDir(t, work)
-			err, out := runBinary(t, "grpc-proxy", e, 10*time.Second)
+			out, err := runBinary(t, "grpc-proxy", e, 10*time.Second)
 			if err == nil {
 				t.Fatalf("coordinator started: %s", out)
 			}
@@ -151,12 +151,12 @@ func TestWrongShareIndexRejected(t *testing.T) {
 	fx := testutil.Key(t)
 	e := signerEnv(t, fx, 1)
 	e["SHARE_FILE"] = fx.SharePath(2)
-	err, out := runBinary(t, "signer", e, 10*time.Second)
+	out, err := runBinary(t, "signer", e, 10*time.Second)
 	if err == nil || !strings.Contains(out, "share is for signer 2, this is signer 1") {
 		t.Fatalf("err=%v out=%s", err, out)
 	}
 	e["SHARE_FILE"] = rewriteShareFile(t, fx.SharePath(2), func(f *keyshare.File) { f.SignerIndex = 1 })
-	err, out = runBinary(t, "signer", e, 10*time.Second)
+	out, err = runBinary(t, "signer", e, 10*time.Second)
 	if err == nil || !strings.Contains(out, "does not match its verification key") {
 		t.Fatalf("relabelled share: err=%v out=%s", err, out)
 	}
@@ -168,7 +168,7 @@ func TestWrongKidRejected(t *testing.T) {
 	fx := testutil.Key(t)
 	e := signerEnv(t, fx, 3)
 	e["SHARE_FILE"] = rewriteShareFile(t, fx.SharePath(3), func(f *keyshare.File) { f.KID = "AAAAAAAAAAAAAAAAAAAAAA" })
-	err, out := runBinary(t, "signer", e, 10*time.Second)
+	out, err := runBinary(t, "signer", e, 10*time.Second)
 	if err == nil || !strings.Contains(out, "does not match meta kid") {
 		t.Fatalf("err=%v out=%s", err, out)
 	}
@@ -181,7 +181,7 @@ func TestSignerBinaryFailsClosed(t *testing.T) {
 	for _, k := range []string{"SIGNER_ID", "META_FILE", "SHARE_FILE", "POLICY_FILE", "AUDIT_LOG", "TLS_CERT", "TLS_KEY", "TLS_CA"} {
 		e := signerEnv(t, fx, 1)
 		delete(e, k)
-		if err, out := runBinary(t, "signer", e, 10*time.Second); err == nil {
+		if out, err := runBinary(t, "signer", e, 10*time.Second); err == nil {
 			t.Fatalf("started without %s: %s", k, out)
 		}
 	}

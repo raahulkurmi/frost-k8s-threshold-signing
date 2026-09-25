@@ -85,7 +85,7 @@ func saClaims(t *testing.T) string {
 
 // runBinary runs a built binary with env only (no inherited environment) and
 // returns its exit error and combined output. It must exit within timeout.
-func runBinary(t *testing.T, name string, env map[string]string, timeout time.Duration) (error, string) {
+func runBinary(t *testing.T, name string, env map[string]string, timeout time.Duration) (string, error) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -100,7 +100,7 @@ func runBinary(t *testing.T, name string, env map[string]string, timeout time.Du
 	if ctx.Err() != nil {
 		t.Fatalf("%s did not exit within %v (it should fail closed at startup): %s", name, timeout, out.String())
 	}
-	return err, out.String()
+	return out.String(), err
 }
 
 func listDir(t *testing.T, dir string) []string {

@@ -1,0 +1,24 @@
+$ scripts/govulncheck.sh   (grpc v1.84.0, govulncheck v1.8.0, 2026-09-25T14:42:47Z)
+=== Symbol Results ===
+
+Vulnerability #1: GO-2026-6443
+    Server panic via missing authority or Host headers in google.golang.org/grpc
+  More info: https://pkg.go.dev/vuln/GO-2026-6443
+  Module: google.golang.org/grpc
+    Found in: google.golang.org/grpc@v1.84.0
+    Fixed in: google.golang.org/grpc@v1.85.0-dev.0.20260825072537-93e31b48545e
+    Example traces found:
+      #1: cmd/grpc-proxy/main.go:264:29: grpc.run calls grpc.Server.Serve, which eventually calls transport.http2Server.HandleStreams
+
+Your code is affected by 1 vulnerability from 1 module.
+This scan also found 0 vulnerabilities in packages you import and 1
+vulnerability in modules you require, but your code doesn't appear to call these
+vulnerabilities.
+Use '-show verbose' for more details.
+govulncheck.sh: GO-2026-6443 reachable, ACCEPTED until 2026-11-30 (see /Users/rahulchaudhary/Desktop/frost-k8s-threshold-signing/reports/ci/govulncheck-accepted.txt)
+exit=0
+
+$ scripts/govulncheck.sh benchmark
+No vulnerabilities found.
+govulncheck.sh: no reachable vulnerabilities
+exit=0

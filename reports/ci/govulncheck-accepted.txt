@@ -1,0 +1,4 @@
+# Reachable vulnerabilities accepted temporarily. Checked by scripts/govulncheck.sh:
+# CI FAILS on any reachable vulnerability not listed here, and on any entry past
+# its review-by date. Format: ID <TAB> review-by (YYYY-MM-DD) <TAB> reason
+GO-2026-6443	2026-11-30	grpc server panic via missing :authority/Host (google.golang.org/grpc <= v1.84.0). Fixed only in unreleased v1.85.0-dev (93e31b48545e); no release yet. Reachable via the coordinator's gRPC listener, which accepts only mTLS client SAN "lb" on an internal network the host cannot reach, or root on the 0700 unix socket (THREAT_MODEL §1, N1-N2). Impact: coordinator panic (availability), no key material. Upgrade to grpc v1.85.0 when released (NOTES N52).
