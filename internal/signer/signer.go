@@ -4,6 +4,7 @@
 package signer
 
 import (
+	"context"
 	"crypto"
 	"crypto/sha256"
 	"encoding/hex"
@@ -12,6 +13,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/niclabs/tcrsa"
@@ -24,7 +27,8 @@ import (
 	"frost-k8s-threshold-signing/internal/wire"
 )
 
-// Config wires a signer. Every field except Now and Logger is required.
+// Config wires a signer. Every field except Now, Logger and MaxConcurrent is
+// required.
 type Config struct {
 	ID     int
 	Meta   *keymeta.Meta
@@ -33,13 +37,24 @@ type Config struct {
 	Audit  *audit.Log
 	Now    func() time.Time
 	Logger *slog.Logger
+	// MaxConcurrent bounds concurrent RSA share computations (admission
+	// control, NOTES N46). 0 means runtime.NumCPU(). When all slots are busy a
+	// request is shed immediately with 503 instead of queueing past the
+	// coordinator's deadline.
+	MaxConcurrent int
 }
 
 // Server handles POST /v1/sign-share and GET /healthz.
 type Server struct {
 	cfg     Config
 	limiter *rate.Limiter
+	slots   chan struct{}
+	rsaOps  atomic.Int64
 }
+
+// testHookBeforeRSA, if set (tests only), runs while holding an admission
+// slot, just before the RSA share computation.
+var testHookBeforeRSA func()
 
 // New validates cfg. The share must belong to this signer ID.
 func New(cfg Config) (*Server, error) {
@@ -63,9 +78,25 @@ func New(cfg Config) (*Server, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
+	if cfg.MaxConcurrent < 0 {
+		return nil, fmt.Errorf("signer: MaxConcurrent %d < 0", cfg.MaxConcurrent)
+	}
+	if cfg.MaxConcurrent == 0 {
+		cfg.MaxConcurrent = runtime.NumCPU()
+	}
 	r := cfg.Policy.Config().RateLimit
-	return &Server{cfg: cfg, limiter: rate.NewLimiter(rate.Limit(r.RequestsPerSecond), r.Burst)}, nil
+	return &Server{
+		cfg:     cfg,
+		limiter: rate.NewLimiter(rate.Limit(r.RequestsPerSecond), r.Burst),
+		slots:   make(chan struct{}, cfg.MaxConcurrent),
+	}, nil
 }
+
+// RSAOps returns how many RSA share computations this signer has performed.
+func (s *Server) RSAOps() int64 { return s.rsaOps.Load() }
+
+// MaxConcurrent returns the admission-control bound in effect.
+func (s *Server) MaxConcurrent() int { return s.cfg.MaxConcurrent }
 
 // Handler returns the HTTP routes.
 func (s *Server) Handler() http.Handler {
@@ -110,7 +141,7 @@ func (s *Server) handleSignShare(w http.ResponseWriter, r *http.Request) {
 	} else if dec.More() {
 		rej = reject(http.StatusBadRequest, "bad_request", "trailing data after request")
 	} else {
-		resp, rej = s.SignShare(req, peerName(r))
+		resp, rej = s.SignShare(r.Context(), req, peerName(r))
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if rej != nil {
@@ -124,7 +155,11 @@ func (s *Server) handleSignShare(w http.ResponseWriter, r *http.Request) {
 // SignShare validates req and, if every check passes, returns this signer's
 // signature share. It hashes and pads the signing input itself (I8); it
 // never accepts a digest or padded block from the caller.
-func (s *Server) SignShare(req wire.SignShareRequest, client string) (*wire.SignShareResponse, *Rejection) {
+//
+// ctx is the request's context: if the coordinator has already given up
+// (deadline, or quorum reached elsewhere and the request cancelled), no RSA
+// work is done, and a share computed after cancellation is discarded (N46).
+func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, client string) (*wire.SignShareResponse, *Rejection) {
 	start := s.cfg.Now()
 	entry := audit.Entry{Time: start.UTC(), SignerID: s.cfg.ID, RequestID: req.RequestID, Client: client}
 	if req.SigningInput != "" {
@@ -169,15 +204,40 @@ func (s *Server) SignShare(req wire.SignShareRequest, client string) (*wire.Sign
 	if err != nil {
 		return deny(reject(http.StatusInternalServerError, "internal", "encode: %v", err))
 	}
+	// N46: never start RSA work for a caller that has already gone away.
+	if err := ctx.Err(); err != nil {
+		entry.Decision, entry.Reason = "cancelled", "before RSA: "+err.Error()
+		_ = s.cfg.Audit.Write(entry)
+		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")
+	}
+	// N46: admission control. Take a slot without waiting; if all are busy,
+	// shed now (503) rather than queue past the coordinator's deadline.
+	select {
+	case s.slots <- struct{}{}:
+	default:
+		entry.Decision, entry.Reason = "shed", fmt.Sprintf("overloaded: %d concurrent share computations in progress", s.cfg.MaxConcurrent)
+		_ = s.cfg.Audit.Write(entry)
+		return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d at capacity", s.cfg.ID)
+	}
+	defer func() { <-s.slots }()
 	// Record the allow decision before releasing the share; no audit, no share.
 	entry.Decision = "allow"
 	if err := s.cfg.Audit.Write(entry); err != nil {
 		s.cfg.Logger.Error("audit write failed; refusing to sign", "err", err)
 		return nil, reject(http.StatusInternalServerError, "internal", "audit log unavailable")
 	}
+	if testHookBeforeRSA != nil {
+		testHookBeforeRSA()
+	}
+	s.rsaOps.Add(1)
 	ss, err := s.cfg.Share.Sign(doc, crypto.SHA256, s.cfg.Meta.Tcrsa)
 	if err != nil {
 		return nil, reject(http.StatusInternalServerError, "internal", "sign: %v", err)
+	}
+	if err := ctx.Err(); err != nil {
+		// Computed too late: the caller is gone. Do not release the share.
+		s.cfg.Logger.Info("sign-share discarded: request cancelled during signing", "request_id", req.RequestID)
+		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled during signing")
 	}
 	ss = tamper(s.cfg.ID, ss)
 	s.cfg.Logger.Info("sign-share", "request_id", req.RequestID, "sub", decision.Subject,

@@ -53,6 +53,8 @@ x-coordinator: &coordinator
     GRPC_TLS_CA: /etc/frost/ca.crt
     SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
     VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+    FANOUT: ${FANOUT:-all}
+    HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
   volumes:
     - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
     - ./policy.json:/etc/frost/policy.json:ro

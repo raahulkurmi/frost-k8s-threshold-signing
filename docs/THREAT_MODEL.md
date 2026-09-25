@@ -64,3 +64,21 @@ Evidence: `TestSignErrorIsGeneric` (gRPC level, including a list of forbidden
 substrings), e2e **REQ-b** (a non-allowlisted audience through kubectl returns the generic
 error, and the coordinator log and signer audit contain the policy reason), and e2e **E6**
 (3 signers down returns the generic error with no signer names).
+
+## 3. Availability: signer clocks (N44)
+
+Each signer checks `iat` against **its own clock** (±`clock_skew_seconds`, default 60 s)
+before producing a share. A signer with a wrong clock therefore **fails closed**: it
+refuses every token and is effectively down. When more than n − t = 2 signers have
+wrong clocks, issuance stops.
+
+This was observed in Phase 7B (NOTES N44). After the host slept, the signer VMs resumed
+with clocks up to **39,124 s (about 10.9 h)** behind until systemd-timesyncd stepped them.
+During that window the affected signers refused every request with `iat … is …s from
+signer clock`. The policy behaved correctly; the cost was availability.
+
+Operational requirement: **every signer needs reliable time synchronisation** (chrony
+or NTP, stepping allowed at start/resume, with monitoring and alerting on offset). After a
+VM resume or a clock jump, expect that signer to refuse requests until its clock resyncs.
+Loosening `clock_skew_seconds` to ride out such events would widen the replay window
+(Phase 9, C6); fixing time sync is the right answer.

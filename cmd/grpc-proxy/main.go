@@ -19,6 +19,9 @@
 //	SIGN_DEADLINE      optional, Go duration, default 2s
 //	VERIFY_STRATEGY    optional, strict (default) | optimistic
 //	REFRESH_HINT_SECONDS optional, default 3600
+//	FANOUT             optional, all (default) | hedged: contact t+1 signers
+//	                   first and the rest after HEDGE_DELAY or on a failure (N46)
+//	HEDGE_DELAY        optional, Go duration, default 50ms (hedged only)
 package main
 
 import (
@@ -60,6 +63,8 @@ type settings struct {
 	Endpoints   []coordinator.Endpoint
 	Deadline    time.Duration
 	Strategy    coordinator.Strategy
+	Fanout      coordinator.Fanout
+	HedgeDelay  time.Duration
 	RefreshHint int64
 	Socket      string
 	TCP         string
@@ -179,6 +184,18 @@ func load(getenv func(string) string) (*settings, error) {
 			return nil, err
 		}
 	}
+	s.Fanout = coordinator.FanoutAll
+	if v := getenv("FANOUT"); v != "" {
+		if s.Fanout, err = coordinator.ParseFanout(v); err != nil {
+			return nil, err
+		}
+	}
+	s.HedgeDelay = 50 * time.Millisecond
+	if v := getenv("HEDGE_DELAY"); v != "" {
+		if s.HedgeDelay, err = time.ParseDuration(v); err != nil || s.HedgeDelay <= 0 {
+			return nil, fmt.Errorf("HEDGE_DELAY %q is not a positive duration", v)
+		}
+	}
 	s.RefreshHint = 3600
 	if v := getenv("REFRESH_HINT_SECONDS"); v != "" {
 		if s.RefreshHint, err = strconv.ParseInt(v, 10, 64); err != nil || s.RefreshHint <= 0 {
@@ -207,7 +224,8 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	if err != nil {
 		return err
 	}
-	coord, err := coordinator.New(coordinator.Config{Meta: s.Meta, Endpoints: s.Endpoints, Deadline: s.Deadline, Strategy: s.Strategy, Logger: logger})
+	coord, err := coordinator.New(coordinator.Config{Meta: s.Meta, Endpoints: s.Endpoints, Deadline: s.Deadline, Strategy: s.Strategy,
+		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Logger: logger})
 	if err != nil {
 		return err
 	}
@@ -237,6 +255,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	}
 	logger.Info("coordinator ready", "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
 		"signers", ids, "listen", lis.Addr().String(), "deadline", s.Deadline.String(), "strategy", s.Strategy,
+		"fanout", s.Fanout, "hedge_delay", s.HedgeDelay.String(),
 		"max_token_seconds", s.MaxToken, "grpc_mtls", s.TCP != "")
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)

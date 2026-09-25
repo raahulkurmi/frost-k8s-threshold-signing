@@ -43,6 +43,8 @@ services:
       GRPC_TLS_CA: /etc/frost/ca.crt
       SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
       VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+      FANOUT: ${FANOUT:-all}
+      HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
     networks:
       lb-net:
         ipv4_address: 172.30.1.11
@@ -64,6 +66,8 @@ services:
       GRPC_TLS_CA: /etc/frost/ca.crt
       SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
       VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+      FANOUT: ${FANOUT:-all}
+      HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
     networks:
       lb-net:
         ipv4_address: 172.30.1.12
@@ -85,6 +89,8 @@ services:
       GRPC_TLS_CA: /etc/frost/ca.crt
       SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
       VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+      FANOUT: ${FANOUT:-all}
+      HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
     networks:
       lb-net:
         ipv4_address: 172.30.1.13

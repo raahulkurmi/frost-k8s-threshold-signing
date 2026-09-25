@@ -535,12 +535,69 @@ benchmark window. The policy is behaving as designed, failing closed, but a sign
 with a wrong clock is effectively down. For availability, signers need reliable time
 sync (NTP/chrony with monitoring). This goes into THREAT_MODEL (availability) in Phase 8.
 
-### N45. Measured RTT ≠ configured netem delay (cause not yet established)
-In the 7B Level 1 benchmark (`benchmark/results/20260925T094355Z-9bb1f16-multihost-L1`),
-the ICMP RTT measured from tk8s to the far signers was about **32–45 ms above the
-configured netem delay**: configured 20 → measured 52–65 ms; 60 → 99–109 ms;
-150 → 182–192 ms. With no qdisc it was 0.6–0.7 ms, and the near host was always under 1 ms.
-TCP connect times show the same offset. I haven't found the cause; netem's timer on a
-virtualized NIC is a candidate. Consequence: benchmark row labels (`L20ms` etc.) name the
-**configured** delay only. The **measured** RTT per signer and setting is in
-`rtt-L*.json`, and no document may call those rows "20/60/150 ms RTT".
+### N45. Measured RTT ≠ configured netem delay: cause found (idle-vCPU timer latency)
+In the pre-fix 7B benchmark, measured ICMP RTT to the far signers was 32–45 ms above the
+configured netem delay (20 → 52–65, 60 → 99–109, 150 → 182–192 ms).
+
+**Investigation (time-boxed, 15:47–15:50 on 2026-09-25, host load ~2.9, no benchmark
+running).** netem delay 20 ms on sig-b's egress:
+
+| Condition | tk8s → sig-b | sig-b → tk8s | Mac → sig-b |
+|---|---|---|---|
+| no netem | 0.78 ms | 0.74 ms | 0.50 ms |
+| netem, sig-b vCPU idle | **142.5 ms** | **122.9 ms** | **137.6 ms** |
+| netem, sig-b vCPU kept busy (spin loop) | **20.5 ms** | n/a | **20.4 ms** |
+| netem, idle again | 117.3 ms | n/a | n/a |
+
+Both ends had only `fq_codel` before the test. The guest kernel has `CONFIG_HZ=1000`,
+`CONFIG_HIGH_RES_TIMERS=y`, and clocksource `arch_sys_counter`, so this is not tick
+granularity. Moving the delay to tk8s's egress toward sig-b/sig-c (`prio` + `u32`
+filters, with tk8s also idle because kind was stopped) overshot too: 20 → 80/100 ms,
+150 → 213 ms, with the unfiltered path to sig-a at 0.73 ms.
+
+**Cause:** netem releases delayed packets from a kernel hrtimer. When the guest vCPU is
+idle (halted), the hypervisor (Multipass/Virtualization.framework on macOS) wakes it
+late, so the applied delay is `configured + wake-up latency`, and the wake-up latency
+depends on how busy that VM is. Under benchmark load the vCPUs are busier, hence the
+smaller 32–45 ms excess.
+
+**Consequences (decision from Gate 7B review):**
+- The configured netem delay is a **knob, not a measurement**. Every table and figure
+  uses **measured RTT** as its label/x-axis; the configured delay is only a secondary
+  column.
+- From the post-N43-fix runs onward, RTT is measured **during** each benchmark
+  configuration (pings alongside the load), which captures the delay the requests
+  actually saw. Pre-fix rows only have RTT measured before each delay setting, and are
+  marked as such.
+- Not fixed: forcing vCPUs never to idle (e.g. a guest `idle=poll`-style setting) would
+  distort the CPU budget of 1-vCPU signers, which is what the benchmark measures.
+
+### N46. Fix for N43: cancellation, admission control, hedged fan-out (design)
+N43 was a design bug. Every token cost 5 RSA share computations whether or not they
+were used, and signers queued work past the coordinator's deadline. On the two
+two-signer / one-vCPU hosts, throughput collapsed at c=50 (93–97% errors).
+1. **Cancellation (signer).** `SignShare` receives the request context and checks
+   `ctx.Err()` **before** the RSA operation (no work for a caller that has gone) and
+   **right after** it (a share computed too late is discarded, never released). net/http
+   cancels the context when the coordinator cancels (HTTP/2 RST_STREAM, or HTTP/1.1
+   disconnect after the body is read). Tests: `TestCancelledRequestComputesNoShare` (0 RSA
+   ops, counted with `RSAOps()`), `TestCancelledDuringSigningDiscardsShare`.
+2. **Admission control (signer).** A non-blocking semaphore of `SIGNER_MAX_CONCURRENT`
+   slots (default `runtime.NumCPU()`) wraps only the RSA operation. With no free slot the
+   request gets **503 `overloaded` immediately**; a slow queue would expire at the
+   coordinator anyway, after burning CPU. Decisions are audited as `shed` / `cancelled`,
+   separate from policy `deny`. Test: `TestAdmissionControlShedsImmediately` (shed in
+   23 µs while the only slot was busy).
+3. **Fast failure (coordinator).** A 503 is an immediate, attributed failure (as any
+   non-200 is); collection continues. Test: `TestOverloadedIsFastFailureInAllMode`.
+4. **Fan-out mode (coordinator, `FANOUT=all|hedged`, `HEDGE_DELAY`, default 50 ms).**
+   `hedged` contacts t+1 = 4 signers first, starting at a per-request rotating offset so
+   the load spreads evenly, and contacts the rest after `HEDGE_DELAY` or **as soon as any
+   contacted signer fails** (a 503 included). Tests: `TestHedgedContactsTPlusOneAndRotates`
+   (4 requests per token vs 5 for `all`; 16 per signer over 20 tokens),
+   `TestHedgedFastFailureHedgesImmediately` (~15 ms with a 3 s hedge delay),
+   `TestHedgedBelowThresholdFails`.
+   **Trade-off:** `all` has the lowest idle latency, because the quorum is the 3 fastest
+   of 5, but costs 5 computations per token. `hedged` costs 4 per token (−20% signer
+   CPU) and can add up to `HEDGE_DELAY` when a contacted signer is slow without failing.
+   The default is chosen from the post-fix benchmark (see that run's `summary.md`).

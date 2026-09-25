@@ -3,6 +3,7 @@ package signer_test
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
@@ -66,7 +67,7 @@ func (e *env) input(t *testing.T, mut func(map[string]any)) string {
 func TestSignShareProducesVerifiableShare(t *testing.T) {
 	e := newEnv(t, 2, nil)
 	in := e.input(t, nil)
-	resp, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: in, RequestID: "r1"}, "coordinator")
+	resp, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: in, RequestID: "r1"}, "coordinator")
 	if rej != nil {
 		t.Fatal(rej)
 	}
@@ -103,7 +104,7 @@ func TestSignerRejectsBadHeaders(t *testing.T) {
 	}
 	for name, in := range cases {
 		t.Run(name, func(t *testing.T) {
-			resp, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: in, RequestID: "h"}, "coordinator")
+			resp, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: in, RequestID: "h"}, "coordinator")
 			if rej == nil || resp != nil {
 				t.Fatal("signer produced a share")
 			}
@@ -135,7 +136,7 @@ func TestSignerRejectsPrehashedInput(t *testing.T) {
 	}
 	for name, s := range cases {
 		t.Run(name, func(t *testing.T) {
-			if resp, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: s, RequestID: "p"}, "coordinator"); rej == nil || resp != nil {
+			if resp, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: s, RequestID: "p"}, "coordinator"); rej == nil || resp != nil {
 				t.Fatal("signer produced a share")
 			} else {
 				t.Logf("rejected: %v", rej)
@@ -172,7 +173,7 @@ func TestSignerAppliesPolicy(t *testing.T) {
 			c["kubernetes.io"] = map[string]any{"namespace": "kube-system", "serviceaccount": map[string]any{"name": "clusterrole-aggregation-controller", "uid": "u"}}
 		},
 	} {
-		resp, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: e.input(t, mut), RequestID: "q"}, "coordinator")
+		resp, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: e.input(t, mut), RequestID: "q"}, "coordinator")
 		if name == "cluster-admin?" {
 			// A policy-compliant subject is signed: the policy is not an authorization system.
 			if rej != nil {
@@ -190,11 +191,11 @@ func TestSignerRateLimit(t *testing.T) {
 	e := newEnv(t, 1, func(c *policy.Config) { c.RateLimit = policy.Rate{RequestsPerSecond: 0.001, Burst: 2} })
 	in := e.input(t, nil)
 	for i := 0; i < 2; i++ {
-		if _, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: in, RequestID: "a"}, ""); rej != nil {
+		if _, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: in, RequestID: "a"}, ""); rej != nil {
 			t.Fatal(rej)
 		}
 	}
-	_, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: in, RequestID: "a"}, "")
+	_, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: in, RequestID: "a"}, "")
 	if rej == nil || rej.Status != http.StatusTooManyRequests {
 		t.Fatalf("3rd request not rate limited: %v", rej)
 	}
@@ -203,11 +204,11 @@ func TestSignerRateLimit(t *testing.T) {
 func TestSignerAuditLog(t *testing.T) {
 	e := newEnv(t, 3, nil)
 	good := e.input(t, nil)
-	resp, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: good, RequestID: "allow-1"}, "coordinator")
+	resp, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: good, RequestID: "allow-1"}, "coordinator")
 	if rej != nil {
 		t.Fatal(rej)
 	}
-	_, _ = e.srv.SignShare(wire.SignShareRequest{SigningInput: e.input(t, func(c map[string]any) { c["iss"] = "x" }), RequestID: "deny-1"}, "coordinator")
+	_, _ = e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: e.input(t, func(c map[string]any) { c["iss"] = "x" }), RequestID: "deny-1"}, "coordinator")
 
 	f, err := os.Open(e.auditP)
 	if err != nil {
@@ -245,7 +246,7 @@ func TestSignerAuditLog(t *testing.T) {
 func TestSignerRefusesWhenAuditFails(t *testing.T) {
 	e := newEnv(t, 1, nil)
 	e.auditLog.Close()
-	resp, rej := e.srv.SignShare(wire.SignShareRequest{SigningInput: e.input(t, nil), RequestID: "z"}, "")
+	resp, rej := e.srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: e.input(t, nil), RequestID: "z"}, "")
 	if rej == nil || resp != nil {
 		t.Fatal("signed without an audit record")
 	}

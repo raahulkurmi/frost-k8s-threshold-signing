@@ -192,3 +192,55 @@ func copyResponse(w http.ResponseWriter, rec *httptest.ResponseRecorder) {
 	w.WriteHeader(rec.Code)
 	_, _ = w.Write(rec.Body.Bytes())
 }
+
+// NewCoordinatorFanout builds a coordinator with an explicit fan-out mode.
+func (c *Cluster) NewCoordinatorFanout(t testing.TB, fanout coordinator.Fanout, hedge, deadline time.Duration, log *slog.Logger, ids ...int) *coordinator.Coordinator {
+	t.Helper()
+	co, err := coordinator.New(coordinator.Config{Meta: c.Fx.Meta, Endpoints: c.Endpoints(t, ids...), Deadline: deadline,
+		Strategy: coordinator.Strict, Fanout: fanout, HedgeDelay: hedge, Logger: log})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return co
+}
+
+// Counting wraps a signer handler and counts sign-share requests reaching it.
+type Counting struct {
+	mu sync.Mutex
+	n  map[int]int
+}
+
+// Wrap returns h counting requests for signer id.
+func (k *Counting) Wrap(id int, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == wire.SignSharePath {
+			k.mu.Lock()
+			if k.n == nil {
+				k.n = map[int]int{}
+			}
+			k.n[id]++
+			k.mu.Unlock()
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+// Counts returns a copy of the per-signer request counts.
+func (k *Counting) Counts() map[int]int {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	out := map[int]int{}
+	for id, n := range k.n {
+		out[id] = n
+	}
+	return out
+}
+
+// Overloaded makes a signer answer 503 {"error":"overloaded"} at once.
+func Overloaded() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = json.NewEncoder(w).Encode(wire.ErrorResponse{Error: "overloaded", Reason: "signer at capacity"})
+	})
+}

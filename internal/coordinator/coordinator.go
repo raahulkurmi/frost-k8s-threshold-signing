@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/niclabs/tcrsa"
@@ -54,6 +55,28 @@ func ParseStrategy(s string) (Strategy, error) {
 	return "", fmt.Errorf("unknown verify strategy %q (want strict or optimistic)", s)
 }
 
+// Fanout selects how many signers a request contacts up front (N46c).
+type Fanout string
+
+const (
+	// FanoutAll sends every request to all n signers at once (lowest latency
+	// when idle; every token costs up to n share computations).
+	FanoutAll Fanout = "all"
+	// FanoutHedged sends to t+1 signers first (rotating which ones), and to
+	// the rest only after HedgeDelay or as soon as any contacted signer fails
+	// (a 503 from admission control is such a fast failure).
+	FanoutHedged Fanout = "hedged"
+)
+
+// ParseFanout accepts "all" or "hedged".
+func ParseFanout(s string) (Fanout, error) {
+	switch Fanout(s) {
+	case FanoutAll, FanoutHedged:
+		return Fanout(s), nil
+	}
+	return "", fmt.Errorf("unknown fanout %q (want all or hedged)", s)
+}
+
 // Endpoint is one signer. ID is its authenticated identity (signer-<ID>).
 type Endpoint struct {
 	ID     int
@@ -68,6 +91,9 @@ type Config struct {
 	Deadline  time.Duration
 	Strategy  Strategy
 	Logger    *slog.Logger
+	// Fanout defaults to FanoutAll. HedgeDelay (hedged only) must be > 0.
+	Fanout     Fanout
+	HedgeDelay time.Duration
 }
 
 // Coordinator is safe for concurrent use.
@@ -78,6 +104,9 @@ type Coordinator struct {
 	strategy  Strategy
 	log       *slog.Logger
 	headerSeg string
+	fanout    Fanout
+	hedge     time.Duration
+	rr        atomic.Uint64 // rotates the hedged initial subset
 }
 
 // New validates cfg. At least t endpoints with unique IDs in [1,n] are required.
@@ -115,7 +144,17 @@ func New(cfg Config) (*Coordinator, error) {
 	if lg == nil {
 		lg = slog.Default()
 	}
-	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr}, nil
+	if cfg.Fanout == "" {
+		cfg.Fanout = FanoutAll
+	}
+	if _, err := ParseFanout(string(cfg.Fanout)); err != nil {
+		return nil, fmt.Errorf("coordinator: %w", err)
+	}
+	if cfg.Fanout == FanoutHedged && cfg.HedgeDelay <= 0 {
+		return nil, errors.New("coordinator: hedged fanout needs HedgeDelay > 0")
+	}
+	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr,
+		fanout: cfg.Fanout, hedge: cfg.HedgeDelay}, nil
 }
 
 // ErrInvalidClaims marks a Sign request whose claims are not a well-formed
@@ -161,6 +200,7 @@ type Result struct {
 	RequestID string
 	Signers   []int // share IDs combined
 	Excluded  []SignerFailure
+	Contacted int // signers a request was actually sent to
 }
 
 func newRequestID() string {
@@ -191,8 +231,8 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 
 	body, _ := json.Marshal(wire.SignShareRequest{SigningInput: input, RequestID: reqID})
 	results := make(chan result, len(c.endpoints))
-	for _, ep := range c.endpoints {
-		go func(ep Endpoint) {
+	launch := func(ep Endpoint) {
+		go func() {
 			r := c.fetch(ctx, ep, body, reqID)
 			if r.err == nil && c.strategy == Strict {
 				vs := time.Now()
@@ -204,7 +244,41 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 				r.verify = time.Since(vs)
 			}
 			results <- r
-		}(ep)
+		}()
+	}
+	// Fan-out (N46c). all: every signer now. hedged: t+1 now, starting at a
+	// rotating offset so load spreads; the rest after the hedge delay or on
+	// the first failure.
+	order := make([]Endpoint, len(c.endpoints))
+	off := int(c.rr.Add(1) % uint64(len(c.endpoints)))
+	for i := range c.endpoints {
+		order[i] = c.endpoints[(off+i)%len(c.endpoints)]
+	}
+	first := len(order)
+	if c.fanout == FanoutHedged && c.meta.Threshold+1 < first {
+		first = c.meta.Threshold + 1
+	}
+	launched := 0
+	var contacted []int
+	launchUpTo := func(n int) {
+		for ; launched < n; launched++ {
+			contacted = append(contacted, order[launched].ID)
+			launch(order[launched])
+		}
+	}
+	launchUpTo(first)
+	var hedgeC <-chan time.Time
+	if launched < len(order) {
+		ht := time.NewTimer(c.hedge)
+		defer ht.Stop()
+		hedgeC = ht.C
+	}
+	hedgeAll := func(why string) {
+		if launched < len(order) {
+			c.log.Debug("hedging to remaining signers", "request_id", reqID, "why", why)
+			launchUpTo(len(order))
+			hedgeC = nil
+		}
 	}
 
 	t := c.meta.Threshold
@@ -271,21 +345,27 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 
 	received := 0
 collect:
-	for received < len(c.endpoints) {
+	for received < launched || launched < len(order) {
+		if received == launched { // everything contacted has answered without quorum
+			hedgeAll("all contacted signers answered")
+		}
 		select {
 		case <-ctx.Done():
-			// Deadline: count every signer that has not answered.
-			for _, ep := range c.endpoints {
-				if valid[ep.ID] == nil && candidates[ep.ID] == nil && !failed(failures, ep.ID) {
-					fail(ep.ID, "no response before deadline")
+			// Deadline: count every contacted signer that has not answered.
+			for _, id := range contacted {
+				if valid[id] == nil && candidates[id] == nil && !failed(failures, id) {
+					fail(id, "no response before deadline")
 				}
 			}
 			break collect
+		case <-hedgeC:
+			hedgeAll("hedge delay elapsed")
 		case r := <-results:
 			received++
 			maxVerify = max(maxVerify, r.verify)
 			if r.err != nil {
 				fail(r.id, r.err.Error())
+				hedgeAll("signer failed: " + r.err.Error())
 				if r.share != nil { // a returned-but-invalid share (strict)
 					c.log.Warn("excluded invalid signature share", "request_id", reqID, "signer_id", r.id, "err", r.err.Error())
 				}
@@ -312,6 +392,7 @@ collect:
 					break collect
 				}
 				c.log.Warn("optimistic combine failed final verification; verifying shares individually", "request_id", reqID, "err", err.Error())
+				hedgeAll("optimistic combine failed")
 				fallback = true
 				verifyAll(candidates)
 				candidates = map[int]*tcrsa.SigShare{}
@@ -334,12 +415,12 @@ collect:
 
 	if sig == nil {
 		terr := &ThresholdError{Valid: len(valid), Needed: t, Failures: failures}
-		c.log.Error("sign failed", "request_id", reqID, "strategy", c.strategy, "signers_contacted", len(c.endpoints),
+		c.log.Error("sign failed", "request_id", reqID, "strategy", c.strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
 			"valid_shares", len(valid), "failures", failures, "latency_ms", ms(time.Since(start)))
 		return nil, terr
 	}
 	// Fail closed: the returned signature has passed rsa.VerifyPKCS1v15 in tryJoin.
-	c.log.Info("signed", "request_id", reqID, "strategy", c.strategy, "signers_contacted", len(c.endpoints),
+	c.log.Info("signed", "request_id", reqID, "strategy", c.strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
 		"valid_shares", len(valid)+len(candidates), "combined", used, "excluded", failures,
 		"latency_ms", ms(time.Since(start)), "fanout_ms", ms(fanout), "max_share_verify_ms", ms(maxVerify),
 		"combine_ms", ms(combine), "final_verify_ms", ms(finalVerify))
@@ -349,6 +430,7 @@ collect:
 		RequestID: reqID,
 		Signers:   used,
 		Excluded:  failures,
+		Contacted: len(contacted),
 	}, nil
 }
 
@@ -448,3 +530,6 @@ func (c *Coordinator) Meta() *keymeta.Meta { return c.meta }
 
 // Strategy returns the configured verification strategy.
 func (c *Coordinator) Strategy() Strategy { return c.strategy }
+
+// FanoutMode returns the configured fan-out mode.
+func (c *Coordinator) FanoutMode() Fanout { return c.fanout }

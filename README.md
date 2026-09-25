@@ -1076,3 +1076,15 @@ This implementation accompanies a three-paper research series:
 - [HashiCorp Vault](https://www.vaultproject.io/) — Secret management
 - [NIST IR 8214C](https://doi.org/10.6028/NIST.IR.8214C) — Multi-Party Threshold Schemes standardization
 - [RFC 9591](https://www.rfc-editor.org/rfc/rfc9591) — FROST: Flexible Round-Optimized Schnorr Threshold Signatures
+
+## Operations notes
+
+- **Signers need reliable time sync.** Each signer rejects claims whose `iat` is more
+  than `clock_skew_seconds` (default 60 s) from its own clock, so a signer with a bad
+  clock refuses everything. Run chrony/NTP on every signer host and monitor its offset.
+  After a VM resume or snapshot restore, a signer fails closed until its clock resyncs
+  (docs/THREAT_MODEL.md §3, NOTES N44).
+- **Signer capacity.** Each signer computes at most `SIGNER_MAX_CONCURRENT` shares at
+  once (default: CPU count) and answers `503` beyond that, so overload fails fast
+  instead of queueing past the coordinator's deadline (NOTES N46).
+

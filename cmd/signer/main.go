@@ -15,6 +15,8 @@
 //	TLS_CERT, TLS_KEY   this signer's cert (SAN exactly DNS:signer-<SIGNER_ID>)
 //	TLS_CA         CA that issued the coordinator's client cert
 //	LISTEN_ADDR    optional, default ":8443"
+//	SIGNER_MAX_CONCURRENT optional, default runtime.NumCPU(): concurrent RSA
+//	               computations before requests are shed with 503 (N46)
 package main
 
 import (
@@ -49,15 +51,16 @@ func main() {
 
 // settings is the validated startup configuration.
 type settings struct {
-	ID     int
-	Meta   *keymeta.Meta
-	Share  *tcrsa.KeyShare
-	Policy *policy.Policy
-	Audit  string
-	Listen string
-	Cert   string
-	Key    string
-	CA     string
+	ID      int
+	Meta    *keymeta.Meta
+	Share   *tcrsa.KeyShare
+	Policy  *policy.Policy
+	Audit   string
+	Listen  string
+	MaxConc int
+	Cert    string
+	Key     string
+	CA      string
 }
 
 func require(getenv func(string) string, name string) (string, error) {
@@ -129,6 +132,11 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 			return nil, err
 		}
 	}
+	if v := getenv("SIGNER_MAX_CONCURRENT"); v != "" {
+		if s.MaxConc, err = strconv.Atoi(v); err != nil || s.MaxConc < 1 {
+			return nil, fmt.Errorf("SIGNER_MAX_CONCURRENT %q must be a positive integer", v)
+		}
+	}
 	s.Listen = getenv("LISTEN_ADDR")
 	if s.Listen == "" {
 		s.Listen = ":8443"
@@ -150,7 +158,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	defer auditLog.Close()
-	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger})
+	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger, MaxConcurrent: s.MaxConc})
 	if err != nil {
 		return err
 	}
@@ -164,7 +172,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		IdleTimeout:       120 * time.Second,
 	}
 	logger.Info("signer ready", "signer_id", s.ID, "kid", s.Meta.KID, "threshold", s.Meta.Threshold,
-		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds())
+		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent())
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
