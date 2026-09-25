@@ -121,7 +121,8 @@ for L in $DELAYS; do
   set_delay "$L"
   measure_rtt "$L"
   for c in $CONCS; do
-    lab="T3of5-strict-L${L}ms-c${c}$( [[ $L != 0 ]] && echo '-emulated')"
+    lab="T3of5-strict-L${L}ms-c${c}"
+    if [[ "$L" != 0 ]]; then lab="$lab-emulated"; fi
     echo "  -> $lab  host load before: $(host_load)"
     on "$COORD_VM" /tmp/tokenbench -context kind-tk8s -n "$N" -warmup "$WARMUP" -c "$c" -label "$lab" -out "/tmp/$lab.csv"
     multipass transfer "$COORD_VM:/tmp/$lab.csv" "$RES/$lab.csv"
