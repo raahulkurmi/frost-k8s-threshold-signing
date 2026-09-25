@@ -534,3 +534,13 @@ signer clock (max skew 60s)` (≈10.9 h) and `… 2372s …`, in the windows 202
 benchmark window. The policy is behaving as designed, failing closed, but a signer
 with a wrong clock is effectively down. For availability, signers need reliable time
 sync (NTP/chrony with monitoring). This goes into THREAT_MODEL (availability) in Phase 8.
+
+### N45. Measured RTT ≠ configured netem delay (cause not yet established)
+In the 7B Level 1 benchmark (`benchmark/results/20260925T094355Z-9bb1f16-multihost-L1`),
+the ICMP RTT measured from tk8s to the far signers was about **32–45 ms above the
+configured netem delay**: configured 20 → measured 52–65 ms; 60 → 99–109 ms;
+150 → 182–192 ms. With no qdisc it was 0.6–0.7 ms, and the near host was always under 1 ms.
+TCP connect times show the same offset. I haven't found the cause; netem's timer on a
+virtualized NIC is a candidate. Consequence: benchmark row labels (`L20ms` etc.) name the
+**configured** delay only. The **measured** RTT per signer and setting is in
+`rtt-L*.json`, and no document may call those rows "20/60/150 ms RTT".
