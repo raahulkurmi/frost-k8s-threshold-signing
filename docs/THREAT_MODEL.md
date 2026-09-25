@@ -167,17 +167,108 @@ reading its source and testing it (NOTES N3, N4, N5, N21):
 
 ## 7. Attacker capability → what they get → evidence
 
-| Attacker capability | What they get | Test |
+The C-scenarios (C1–C7) are **mapped to tests that already exist**; no adversarial test
+code was written for them (decision at Gate 8/10). A sub-case no existing test exercises is
+marked **not separately tested**. Test IDs: T1–T13 (`test/`, `scripts/check-images.sh`),
+E1–E8 (`test/e2e/run.sh`), L1–L5 (`test/e2e/multihost.sh`); named Go tests are in
+`internal/…/*_test.go` and `test/*_test.go`.
+
+| Attacker capability | What they get | Evidence |
 |---|---|---|
-| One or two stolen shares (+ public metadata), offline | nothing: no valid signature for any message | T4, spike I5; C5 (Phase 9) |
-| Full control of one signer (bad shares, spoofed id, garbage, slow responses) | disruption only; excluded and attributed; tokens still issued with ≥ 3 honest | T5, `TestShareIDBoundToMTLSIdentity`, `TestJoinOutOfRangeIDs`; C1 (Phase 9) |
-| Coordinator's full filesystem and config, after losing control | no token, no offline signing | T12, T13, L4; C4 (Phase 9) |
-| Live control of the coordinator/apiserver | tokens for **policy-compliant** claims only while in control; policy-violating claims refused by every honest signer | T7; C2 (Phase 9) |
-| 2 signers + live coordinator control | same as above: the 3 honest signers still enforce the policy | C2 (Phase 9) |
-| 3 colluding signers | **forgery**, the threshold boundary | C3 (Phase 9) |
-| Replay of an old signing request to signers | the same deterministic share for the same input; stale `iat` refused outside the skew window | C6 (Phase 9) |
-| Flooding signers from a compromised coordinator | rate-limited and admission-controlled per signer | `TestSignerRateLimit`, N48 admission tests (`TestRequestThatCannotFitIsShedImmediately`, `TestQueueCapEnforced`); C7 (Phase 9) |
+| One or two stolen shares (+ public metadata), offline | nothing: no valid signature for any message | C5: T4, spike I5 |
+| Full control of one signer (bad shares, spoofed id, garbage, slow responses) | disruption only; excluded and attributed; tokens still issued with ≥ 3 honest | C1: T5, tampered-share tests, R-b tests |
+| Coordinator's full filesystem and config, after losing control | no token, no offline signing | C4: T12, T13 (+ negative control), L4 |
+| Live control of the coordinator/apiserver | tokens for **policy-compliant** claims only while in control; policy-violating claims refused by every honest signer | C2(a): T7, `TestPolicyRejects` (N14); C2(b): E1/E2 (online oracle, a limitation) |
+| 2 signers + live coordinator control | same as above: the 3 honest signers still enforce the policy | C2 (policy enforcement is per signer; the 2+coordinator combination is not separately tested) |
+| 3 colluding signers | **forgery**, the threshold boundary | C3: boundary statement, backed by T2 + T1/E2 (not tested adversarially) |
+| Replay of an old signing request to signers | the same deterministic share for the same input; stale `iat` refused outside the skew window | C6: `TestPolicyRejects` iat cases, N44 |
+| Flooding signers from a compromised coordinator | rate-limited and admission-controlled per signer | C7: `TestSignerRateLimit`, N48 admission tests |
 | Network position on the Docker/VM networks without the right mTLS key | no Sign, no FetchKeys, no signer access | N1–N4, L1–L2, `TestTLSRejectsClientWithoutCoordinatorSAN`, `TestTCPListenerRequiresLBClientCert` |
 | Root on the physical host (single host or Level 1) | **everything**: all shares | §6 (inherent to these deployments) |
 | Malicious dealer | **everything**, forever | trust assumption (docs/KEY_CEREMONY.md) |
 
+### C1. Malicious signer
+
+| Sub-case | Existing evidence | Status |
+|---|---|---|
+| Corrupted (garbage) share | T5 `TestMaliciousSignerExcluded` (`-tags testmalicious`: signer returns a well-formed but corrupted share; 1 malicious → excluded, attributed by `signer_id` in result and log, token verifies; 3 malicious → `ThresholdError`, each attributed), strict and optimistic. `TestMaliciousShareExcludedAndAttributed` (response rewritten in transit, `xi` byte flipped), `TestThreeMaliciousFails`; spike `TestTamperedShareRejected` (library level: a tampered share fails `Verify`) | tested |
+| Share computed for a different input | spike `TestTamperedShareRejected` case "share for other input": a genuine share over a different signing input fails `SigShare.Verify` (the check the coordinator runs on every share in strict mode). Not exercised end to end through the coordinator | tested at library level; **coordinator path not separately tested** |
+| Spoofed Id | `TestShareIDBoundToMTLSIdentity` (R-b: response claims another signer's id; endpoint pointed at another signer's cert), `TestJoinOutOfRangeIDs` (R-b: out-of-range and duplicate Ids stopped before `Join`), `TestNewRejectsBadEndpoints` (ids 0 and 6) | tested |
+| Oversized payload | the coordinator reads at most `wire.MaxResponseBytes`+1 (`internal/coordinator/coordinator.go:485`); no test sends an oversized response | **not separately tested** |
+| Slow response / never answers | T10 `TestDeadlineRespected` (`test/`: 3 signers delayed 30 s, error within deadline + 200 ms), `internal/coordinator` `TestDeadlineRespected` (error names "no response before deadline") | tested (delayed response) |
+| Slow-loris (bytes trickled below the deadline) | none | **not separately tested** |
+| Coordinator never panics / never hangs past deadline | the tests above assert return within the deadline; no fuzzing | tested for the listed inputs only |
+
+### C2. Two compromised signers + full coordinator control
+
+- **(a) Policy-violating claims are refused by every honest signer.** T7
+  `TestSignerPolicyRejectsCoordinatorBypass`: a caller holding the **real coordinator
+  certificate** posts directly to every signer and gets **0/5 shares** for
+  policy-violating claims. `TestSignerAppliesPolicy` and `TestPolicyRejects` cover each
+  rule: wrong/missing iss, disallowed aud (also one disallowed among allowed), lifetime
+  above max, malformed sub (node/user subjects, bad namespace forms), deny lists, and
+  duplicate and case-variant keys (`duplicate iss key`, `case-variant ISS key`,
+  `case-variant nested namespace`; N14). `TestSignerPolicyRejectsWrongHeaderDirect` and T6
+  `TestSignerRejectsPrehashedInput` cover header and pre-hashed input. With 2 attacker
+  shares plus 0 honest shares, no token forms (T4: 2 shares cannot forge).
+  *Not separately tested:* one scenario that combines the 2 real attacker shares with the
+  honest signers' responses to the same violating request. The pieces above cover it.
+- **(b) Policy-compliant claims CAN be obtained while the attacker controls the
+  coordinator.** This is the **online-oracle limitation**, not a defect the design fixes.
+  Evidence that ordinary compliant requests succeed through the coordinator: E1, E2 (and
+  every issued token in E3–E8). Signers limit *what* can be signed, not *who* asks. Once
+  control is lost, nothing further can be signed (C4).
+
+### C3. Collusion at threshold (boundary statement)
+
+**t = 3 colluding signers can forge any token; this is the threshold boundary, not a
+vulnerability.** It is recorded as a statement, **not tested adversarially**: no
+policy-disabled signer build and no forged-token test exist (decision at Gate 8). Backing:
+T2 `TestAllThresholdSubsetsIdentical` (every 3-subset of shares produces the same valid
+signature, so any 3 shares are sufficient) and T1/E2 (a signature combined from 3 shares
+is accepted by the go-jose verifiers and by kube-apiserver TokenReview). A signer's policy
+is enforced in that signer's own process, so 3 signers whose operators collude can drop it.
+
+### C4. Compromised coordinator after removal
+
+T12 `TestCoordinatorHasNoSecretTypes` (the coordinator binary's dependency graph and AST
+contain no share or private-key type), T13 `scripts/check-images.sh` (no share, key or
+private material in any image layer; the negative control is in
+`reports/gates/gate6-t13-negative-control.txt`), L4 (the multihost coordinator host holds no
+share file). With no share and no private key present, there is no offline signing path.
+*Not separately tested:* a scan of a `docker export` of a *running* coordinator container.
+The mTLS `lb`/`coordinator` keys do give
+network access while they remain valid, but no signing capability without honest signers
+(C2).
+
+### C5. One stolen share + public metadata, offline
+
+T4 `TestTwoSharesCannotForge`: for **all 10 pairs**, `Join` refuses; forcing K=2 and
+adding a fabricated third share both yield invalid signatures. Each single share is a
+subset of 4 of those pairs, so one share gives no more than a pair does. *Not separately
+tested:* a single-share attempt on its own. Spike I5 (`spike/gate0-output.txt`) is the
+original evidence.
+
+### C6. Replay of an old signing request
+
+RSA signature shares are deterministic: the same signing input yields the same share
+(T2: identical output across subsets). A replayed request carries its original claims, so
+its `iat` ages. `TestPolicyRejects` rejects `iat too far in past (backdated)` (61 s) and
+`iat too far in future` (61 s) with the default **`clock_skew_seconds` = 60**
+(`deploy/policy.json`). **Replay window: ±60 s around the signer's clock.** Inside it, a
+replay yields the same token that was already issued. N44 records the availability cost
+(a skewed signer refuses everything). *Not separately tested:* an end-to-end replay of a
+captured request to a live signer.
+
+### C7. Rate-limit abuse
+
+`TestSignerRateLimit`: with burst 2, the 3rd request gets `429`. The N48 admission tests
+(`TestRequestThatCannotFitIsShedImmediately`, `TestQueueCapEnforced`,
+`TestExpiredDeadlineNeverComputesShare`, `TestCancelledRequestComputesNoShare`) bound CPU
+work per signer. Configured limit (`deploy/policy.json`): **200 requests/s, burst 400
+per signer** (one limiter per signer process, shared by all callers), plus
+`SIGNER_MAX_CONCURRENT` (default NumCPU) and `SIGNER_MAX_QUEUE` 64. What a legitimate
+cluster needs: **not measured**. The only observed rates are the preliminary Level 1
+benchmarks (≤ 22 successful req/s at the coordinator), which are far below the limit. A
+flood from a compromised coordinator therefore reaches the admission limit (CPU) before
+the rate limit, and it denies service to legitimate requests too (availability only).
