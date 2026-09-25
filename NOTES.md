@@ -507,3 +507,30 @@ every operator-side script (`deploy.sh`, `teardown.sh`, `test/e2e/multihost.sh`,
 (`2> >(cat >&2) | cat`) and returns multipass's own exit code (`${PIPESTATUS[0]}`).
 Verified under /bin/bash 3.2.57: no hang with `>/dev/null`, exit code 3 propagates,
 `if on … false` is false, and output capture works.
+
+### N43. Overload at c=50 in the multi-VM benchmark (measured, not retuned)
+`T3of5-strict-L0ms-c50` ran 1000 requests with **969 errors**. All of them were
+`token signing failed: threshold not met`, returned at 2.00–2.80 s (the 2 s signing
+deadline). The 31 successes had a median of 1.76 s. The coordinator logs (1,429 `sign
+failed` lines over the run) attribute 4,089 per-signer failures to `no response before
+deadline`: signer 1: 1,031, signer 2: 1,012, signer 3: 1,015, signer 4: 1,031, **signer 5: 0**.
+Signer 5 is alone on sig-c. Signers 1–4 share two 1-vCPU VMs, two per VM. There were no
+policy denials and no rate limiting during the benchmark window.
+
+The cause: the coordinator fans out to all 5 signers and cancels the other two once it
+has 3 valid shares, but **the signer does not check for cancellation before computing its
+share**. Every token therefore costs 5 share computations. The two-signer / one-vCPU hosts
+saturate, their queues pass the deadline, and throughput collapses instead of degrading
+gracefully. Candidate fix, **not applied**: check `r.Context().Err()` before the RSA
+operation (net/http cancels it on client disconnect once the body is read), and/or
+admission control in the signer. Either would change the measured system, so it needs a
+decision first.
+
+### N44. Signer clock skew after host sleep (fail-closed, costs availability)
+After each Mac sleep the VMs resumed with lagging clocks until systemd-timesyncd
+stepped them. sig-b's signers refused 401 requests each with `iat … is 39124s from
+signer clock (max skew 60s)` (≈10.9 h) and `… 2372s …`, in the windows 2026-09-24
+21:42–21:43Z and 2026-09-25 08:49–08:54Z, both right after wakes. None occurred in the
+benchmark window. The policy is behaving as designed, failing closed, but a signer
+with a wrong clock is effectively down. For availability, signers need reliable time
+sync (NTP/chrony with monitoring). This goes into THREAT_MODEL (availability) in Phase 8.
