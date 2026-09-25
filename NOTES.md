@@ -475,3 +475,14 @@ new image ID **`sha256:531890316ebb0d1ac5d655bbf3f78421f3c83a9d6cc86d8fbfca7781a
 (a rebuild changes layer timestamps, so the ID differs from `2c8e428b…`). `kubeadm
 version` inside it still prints `v1.36.5`. Rule from now on: on tk8s, prune **only**
 `docker builder prune`, never unused images.
+
+### N41. Benchmarks need an awake host
+The first 7B benchmark attempt hung on its first remote call and measured nothing. The
+cause was host sleep: the Mac's lid was closed and it was on battery (`AppleClamshellState
+= Yes`, `Battery Power 48% discharging`), and `pmset -g log` shows it sleeping about every
+15 minutes. Sleep freezes all four VMs, so any latency measured across a sleep is
+invalid. `benchmark/multihost/run.sh` now (1) re-executes itself under `caffeinate -dims`,
+(2) gives every remote call a 300 s alarm, and (3) checks `pmset -g log` for sleep events
+inside the benchmark window, recording `host_slept_during_run` in `env.json` and marking
+`summary.md` INVALID if the host slept. `caffeinate` cannot prevent lid-closed sleep on
+battery, so the benchmark must run with the **lid open and on AC power**.

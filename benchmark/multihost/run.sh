@@ -26,7 +26,10 @@ FAR_VMS="${FAR_VMS:-sig-b sig-c}"
 NEAR_VMS="${NEAR_VMS:-sig-a}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
-on() { local vm="$1"; shift; multipass exec "$vm" -- "$@" </dev/null; }
+# Every remote call has a 300s alarm (macOS has no `timeout`): a hung
+# `multipass exec` (e.g. across host sleep) becomes a visible failure.
+alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
+on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null; }
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
 id_port() { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { echo "${s##*:}"; return; }; done; }
 vm_ip()   { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }
@@ -36,6 +39,13 @@ host_load() {
   printf '{"loadavg": "%s", "mem_available_gib": %s, "swap": "%s"}' "$(sysctl -n vm.loadavg | tr -d '{}' | xargs)" "$avail" "$(sysctl -n vm.swapusage)"
 }
 
+# Host sleep freezes every VM and would put frozen time into latencies. Keep the
+# host awake for the whole run and verify afterwards that it never slept.
+if [[ -z "${FROST_CAFFEINATED:-}" ]]; then
+  export FROST_CAFFEINATED=1
+  exec caffeinate -dims "$0" "$@"
+fi
+BENCH_START_LOCAL="$(date '+%Y-%m-%d %H:%M:%S')"
 SHA="$(git rev-parse HEAD)"
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 RES="benchmark/results/$TS-${SHA:0:7}-multihost-L1"
@@ -118,9 +128,17 @@ for L in $DELAYS; do
   done
 done
 
+# Did the host sleep during the run? (pmset log lines are "YYYY-MM-DD HH:MM:SS +zone Sleep ...")
+SLEEPS="$(pmset -g log | awk -v s="$BENCH_START_LOCAL" '($1" "$2) >= s && $4 == "Sleep" {print $1" "$2}' | tr '\n' ' ')"
+if [[ -n "$SLEEPS" ]]; then SLEPT=true; else SLEPT=false; fi
+jq --argjson slept "$SLEPT" --arg when "$SLEEPS" --arg start "$BENCH_START_LOCAL" --arg end "$(date '+%Y-%m-%d %H:%M:%S')" \
+  '. + {host_slept_during_run: $slept, host_sleep_events: $when, bench_window_local: ($start + " .. " + $end), host_awake_mechanism: "caffeinate -dims for the whole run"}' \
+  "$RES/env.json" > "$RES/env.json.tmp" && mv "$RES/env.json.tmp" "$RES/env.json"
+SLEEPNOTE="Host sleep during run: $SLEPT (checked from pmset -g log for $BENCH_START_LOCAL onwards)."
+[[ "$SLEPT" == true ]] && SLEEPNOTE="INVALID RUN: the host slept at $SLEEPS; latencies include frozen VM time. $SLEEPNOTE"
 # shellcheck disable=SC2086
 "$RES/.summarize" -title "Phase 7B Level 1: T 3-of-5 multi-VM (preliminary)" \
-  -note "PRELIMINARY, arm64, multi-VM SINGLE PHYSICAL HOST (Multipass on one Mac); not for publication. Rows with L>0ms add EMULATED latency (tc netem) on the far hosts sig-b (signers 3,4) and sig-c (signer 5); sig-a (signers 1,2) is near. Strategy strict, deadline 2s, RSA-2048. Measured RTT per setting: rtt-L*.json. Environment and host load: env.json, host-load.jsonl." \
+  -note "PRELIMINARY, arm64, multi-VM SINGLE PHYSICAL HOST (Multipass on one Mac); not for publication. Rows with L>0ms add EMULATED latency (tc netem) on the far hosts sig-b (signers 3,4) and sig-c (signer 5); sig-a (signers 1,2) is near. Strategy strict, deadline 2s, RSA-2048. Measured RTT per setting: rtt-L*.json. Environment and host load: env.json, host-load.jsonl. $SLEEPNOTE" \
   -out "$RES/summary.md" $CSVS
 rm -f "$RES/.summarize"
 echo "== results: $RES"
