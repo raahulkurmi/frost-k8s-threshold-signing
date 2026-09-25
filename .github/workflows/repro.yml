@@ -1,0 +1,44 @@
+# Manual reproduction on a fresh GitHub-hosted runner: fresh clone, `make repro`
+# end to end (scripts/repro.sh installs and verifies its own pinned tools), then
+# upload reports/REPRO.md, the per-step logs and the e2e log. Uses no actions
+# other than upload-artifact (pinned by SHA), and no cache.
+name: repro
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repro:
+    name: make repro (fresh clone, ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: fresh clone at the dispatched commit
+        run: |
+          set -euo pipefail
+          git clone --no-tags "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/repo"
+          cd "$RUNNER_TEMP/repo"
+          git checkout --detach "$GITHUB_SHA"
+          git log -1 --format='commit %H %s'
+      - name: make repro
+        env:
+          REPRO_LABEL: "fresh GitHub runner, ubuntu-24.04, amd64"
+        run: cd "$RUNNER_TEMP/repo" && make repro
+      - name: collect results
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          cd "$RUNNER_TEMP/repo"
+          cp -r reports/REPRO.md reports/repro-logs "$RUNNER_TEMP/out/" 2>/dev/null || true
+          cp test/e2e/results/*/e2e.log "$RUNNER_TEMP/out/" 2>/dev/null || true
+          ls -la "$RUNNER_TEMP/out"
+      - name: upload REPRO.md and logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repro
+          path: ${{ runner.temp }}/out
+          if-no-files-found: error
