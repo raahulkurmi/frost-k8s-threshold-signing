@@ -29,7 +29,10 @@ die() { echo "FATAL: $*" >&2; exit 1; }
 # Every remote call has a 300s alarm (macOS has no `timeout`): a hung
 # `multipass exec` (e.g. across host sleep) becomes a visible failure.
 alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
-on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null; }
+# multipass 1.16.4's client hangs if its stdout/stderr is /dev/null and the
+# remote command writes output (NOTES N42). Always hand it pipes; return its own
+# exit code.
+on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
 id_port() { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { echo "${s##*:}"; return; }; done; }
 vm_ip()   { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }

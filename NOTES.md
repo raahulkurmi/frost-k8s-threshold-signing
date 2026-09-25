@@ -486,3 +486,24 @@ invalid. `benchmark/multihost/run.sh` now (1) re-executes itself under `caffeina
 inside the benchmark window, recording `host_slept_during_run` in `env.json` and marking
 `summary.md` INVALID if the host slept. `caffeinate` cannot prevent lid-closed sleep on
 battery, so the benchmark must run with the **lid open and on AC power**.
+
+### N42. Root cause of the `multipass exec` hangs (corrects N38)
+Minimal reproduction with multipass 1.16.4 on macOS:
+
+| stdout of `multipass exec tk8s -- echo hi` | result |
+|---|---|
+| terminal | returns immediately |
+| pipe (`| cat`) | returns immediately |
+| file | returns immediately |
+| `/dev/null` (with or without `2>&1`) | **hangs** (killed by the 20 s alarm, exit 142) |
+
+The client hangs when its stdout or stderr is `/dev/null` **and the remote command writes
+output**. N38's case was not about `sudo`: the permission-denied message went to
+`/dev/null`. The benchmark's `kubectl get --raw /readyz >/dev/null` hung the same way.
+Probes that write nothing (L1/L2 TCP checks) never triggered it, so the `45dfe68`
+multihost e2e evidence is unaffected, and N38's `rc_on` already covered L3. Fix, in
+every operator-side script (`deploy.sh`, `teardown.sh`, `test/e2e/multihost.sh`,
+`benchmark/multihost/run.sh`): the `on` helper always gives multipass pipes
+(`2> >(cat >&2) | cat`) and returns multipass's own exit code (`${PIPESTATUS[0]}`).
+Verified under /bin/bash 3.2.57: no hang with `>/dev/null`, exit code 3 propagates,
+`if on … false` is false, and output capture works.

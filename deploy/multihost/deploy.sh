@@ -26,7 +26,10 @@ command -v multipass >/dev/null || die "multipass not found"
 command -v jq >/dev/null || die "jq not found"
 
 vm_ip() { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }
-on() { local vm="$1"; shift; multipass exec "$vm" -- "$@"; }
+# multipass 1.16.4's client hangs if its stdout/stderr is /dev/null and the
+# remote command writes output (NOTES N42). Always hand it pipes; return its own
+# exit code.
+on() { local vm="$1"; shift; multipass exec "$vm" -- "$@" 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
 
 # --- topology: each signer id exactly once, 1..5 (portable to macOS bash 3.2) ---
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }

@@ -34,8 +34,11 @@ exec > >(tee "$RES/multihost-e2e.log") 2>&1
 # Every remote call has a 300s alarm: a hung `multipass exec` becomes a visible
 # failure (exit 142), never a silent stall. (macOS has no `timeout`.)
 alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
-on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null; }
-on_pipe() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@"; }
+# multipass 1.16.4's client hangs if its stdout/stderr is /dev/null and the
+# remote command writes output (NOTES N42). Always hand it pipes; return its own
+# exit code.
+on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
+on_pipe() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
 # rc_on VM CMD: run CMD in bash on VM and print ONLY its exit code, as seen on
 # the VM. Needed because `multipass exec -- sudo -u USER cmd` can hang on the
 # client when cmd fails (NOTES N38); a timeout must never pass as "denied".
