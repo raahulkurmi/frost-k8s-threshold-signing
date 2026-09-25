@@ -695,3 +695,31 @@ for single-host e2e runs.
 - Single-host `make e2e` at `aa223ca` on tk8s with **6 GiB** (N48 signers): **E2E: PASS**, all 17
   checks. kind + nginx + 3 coordinators + 5 signers fit in 6 GiB
   (`reports/gates/e2e-single-host-6GiB-aa223ca.log`).
+
+## Phase 10 notes
+
+### N52. GO-2026-6443 accepted until 2026-11-30: revisit before then
+govulncheck v1.8.0 reports GO-2026-6443 (google.golang.org/grpc, server-side HTTP/2
+stream handling) as reachable via `grpc.Server.Serve`. The fix is only in unreleased
+grpc v1.85.0-dev (`93e31b48545e`); v1.84.0 (upgraded from v1.79.3, which fixed the other
+two reachable findings) is the newest release. The path is reachable only by callers that
+already hold the `lb` mTLS key or root on the coordinator host (unix socket in a
+root:root 0700 directory), and the impact is availability only. Accepted in
+`reports/ci/govulncheck-accepted.txt` **until 2026-11-30**; after that date
+`scripts/govulncheck.sh` fails CI. **Revisit before 2026-11-30**: upgrade grpc when a
+release contains the fix, or re-assess and extend the acceptance explicitly.
+
+### N53. make repro: fresh GitHub runner instead of a local fresh VM
+The local arm64 fresh-VM repro was **not run**: host memory (free swap 1.52–1.63 GB,
+below the 2 GB floor, even with tk8s stopped; no reboot). Gate 10's repro evidence is
+`.github/workflows/repro.yml` on a **fresh GitHub runner, ubuntu-24.04, amd64** (fresh
+`git clone`, then `make repro`), result in `reports/REPRO.md`. The runner ships a
+Docker Engine whose packages conflict with docker-ce, so `scripts/repro.sh` detects a
+running Engine, records its version and packages in REPRO.md and does not replace it
+(on a truly fresh VM it installs docker-ce from the signed docker.com repo). `make repro`
+will also run on the cloud VM in Phase 7A. `workflow_dispatch` works only once the
+workflow is on the default branch, so repro.yml also runs on pushes that change
+repro.yml or scripts/repro.sh.
+- A bug found while wiring this: each step function's `set -euo pipefail` leaked into
+  the main script (bash `set` is not function-local), so a failing step would have
+  aborted before REPRO.md was written. Steps now run in a subshell.

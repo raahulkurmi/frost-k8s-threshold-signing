@@ -6,6 +6,12 @@ name: repro
 
 on:
   workflow_dispatch:
+  # workflow_dispatch needs the file on the default branch; until then, run when the
+  # repro inputs change (NOTES N53).
+  push:
+    paths:
+      - .github/workflows/repro.yml
+      - scripts/repro.sh
 
 permissions:
   contents: read
