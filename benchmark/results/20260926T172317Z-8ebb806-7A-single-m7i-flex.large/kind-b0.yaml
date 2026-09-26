@@ -1,0 +1,35 @@
+# Phase 7A B0 baseline: stock kind, in-tree service account key (kubeadm's
+# sa.key), same node image, topology (1 control plane + 1 worker), issuer and
+# TokenRequest audit as the B1/T clusters (kind-external.yaml.tmpl). Rendered by
+# benchmark/single/run.sh (/home/ubuntu/repo -> repo path).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: tk8s
+nodes:
+- role: control-plane
+  image: kindest/node:v1.36.5-tk8s
+  extraMounts:
+  - hostPath: /home/ubuntu/repo/benchmark/single/apiserver-audit-policy
+    containerPath: /etc/kubernetes/audit
+    readOnly: true
+- role: worker
+  image: kindest/node:v1.36.5-tk8s
+kubeadmConfigPatches:
+- |
+  kind: ClusterConfiguration
+  apiServer:
+    extraArgs:
+      service-account-issuer: https://kubernetes.default.svc.cluster.local
+      audit-policy-file: /etc/kubernetes/audit/audit-policy.yaml
+      audit-log-path: /var/log/kubernetes/audit.log
+      audit-log-maxsize: "500"
+    extraVolumes:
+    - name: audit-policy
+      hostPath: /etc/kubernetes/audit
+      mountPath: /etc/kubernetes/audit
+      readOnly: true
+      pathType: Directory
+    - name: audit-log
+      hostPath: /var/log/kubernetes
+      mountPath: /var/log/kubernetes
+      pathType: DirectoryOrCreate

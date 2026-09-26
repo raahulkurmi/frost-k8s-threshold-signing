@@ -115,7 +115,7 @@ func coordStats(path string) (lat []float64, fails, n503 int, present bool) {
 }
 
 func scaleSection(dir string) string {
-	files, _ := filepath.Glob(filepath.Join(dir, "run*", "scale", "*.json"))
+	files, _ := filepath.Glob(filepath.Join(dir, "run[0-9]*", "scale", "*.json"))
 	if len(files) == 0 {
 		return ""
 	}

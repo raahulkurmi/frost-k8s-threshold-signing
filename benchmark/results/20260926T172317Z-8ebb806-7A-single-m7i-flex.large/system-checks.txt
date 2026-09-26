@@ -1,0 +1,12 @@
+run1 B0: apiserver=in-tree issued JWT header kid=kV0cAzCFANq2en7C2SVf79MJ13NNumDh02IDXhCbtNY
+run1 B1: apiserver=external issued JWT header kid=v2-fs5rVckQ9UI8_-MqHUQ (b1signer FetchKeys kid=v2-fs5rVckQ9UI8_-MqHUQ)
+run1 T: apiserver=external issued JWT header kid=KzEewRXDgVrx42DrPNqF7Q (public-meta kid=KzEewRXDgVrx42DrPNqF7Q)
+run1 T: signer admission {"max_concurrent":2,"max_queue":64}
+run2 B0: apiserver=in-tree issued JWT header kid=Onn9NyPSJ7hkzfOx2f_yJWW4-KJGheGXLXDwgphQBMo
+run2 B1: apiserver=external issued JWT header kid=Wx6Cqi6oJ4d8Le8ts0am9w (b1signer FetchKeys kid=Wx6Cqi6oJ4d8Le8ts0am9w)
+run2 T: apiserver=external issued JWT header kid=glLFbAY0SZuAehLSlqPQ4Q (public-meta kid=glLFbAY0SZuAehLSlqPQ4Q)
+run2 T: signer admission {"max_concurrent":2,"max_queue":64}
+run3 B0: apiserver=in-tree issued JWT header kid=-ERVOBWIg9rzzxuEsw-y36RQ8BbrHnumER1zen9Vqpk
+run3 B1: apiserver=external issued JWT header kid=7yNcG0zcFrBTP0yii1uVEw (b1signer FetchKeys kid=7yNcG0zcFrBTP0yii1uVEw)
+run3 T: apiserver=external issued JWT header kid=5KhFFNH9Q3l0T0uCZph4vA (public-meta kid=5KhFFNH9Q3l0T0uCZph4vA)
+run3 T: signer admission {"max_concurrent":2,"max_queue":64}

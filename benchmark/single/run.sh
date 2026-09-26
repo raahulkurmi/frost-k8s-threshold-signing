@@ -152,7 +152,7 @@ for run in $(seq 1 "$RUNS"); do
     B0)
       kind_up "$(render_kind benchmark/single/kind-b0.yaml.tmpl)"
       mode=$(apiserver_mode); kid=$(token_kid)
-      echo "run$run B0: apiserver=$mode token kid=$kid" | tee -a "$CHECKS"
+      echo "run$run B0: apiserver=$mode issued JWT header kid=$kid" | tee -a "$CHECKS"
       [[ "$mode" == in-tree ]] || die "B0 apiserver is not using the in-tree key"
       for c in $CONCS; do bench "B0-c$c" "$c" "$OUT"; done
       [[ $run == "$SCALE_RUN" ]] && scale_bench B0 "$OUT"
@@ -164,7 +164,7 @@ for run in $(seq 1 "$RUNS"); do
       b1kid=$(sudo bin/bench/probe fetchkeys "unix://$SOCK" 2>/dev/null | jq -r '.keys[0].kid')
       kind_up "$(render_ext_kind)"
       mode=$(apiserver_mode); kid=$(token_kid)
-      echo "run$run B1: apiserver=$mode token kid=$kid (b1signer FetchKeys kid=$b1kid)" | tee -a "$CHECKS"
+      echo "run$run B1: apiserver=$mode issued JWT header kid=$kid (b1signer FetchKeys kid=$b1kid)" | tee -a "$CHECKS"
       [[ "$mode" == external && -n "$kid" && "$kid" == "$b1kid" ]] || die "B1 tokens are not signed by b1signer"
       for c in $CONCS; do bench "B1-c$c" "$c" "$OUT"; done
       [[ $run == "$SCALE_RUN" ]] && scale_bench B1 "$OUT"
@@ -177,7 +177,7 @@ for run in $(seq 1 "$RUNS"); do
       VERIFY_STRATEGY=strict FANOUT=all "${T_COMPOSE[@]}" up -d >/dev/null 2>&1; wait_socket
       kind_up "$(render_ext_kind)"
       mode=$(apiserver_mode); kid=$(token_kid)
-      echo "run$run T: apiserver=$mode token kid=$kid (public-meta kid=$tkid)" | tee -a "$CHECKS"
+      echo "run$run T: apiserver=$mode issued JWT header kid=$kid (public-meta kid=$tkid)" | tee -a "$CHECKS"
       [[ "$mode" == external && "$kid" == "$tkid" ]] || die "T tokens are not threshold-signed"
       maxc=$("${T_COMPOSE[@]}" logs --no-color --no-log-prefix signer-1 2>/dev/null | grep '"signer ready"' | tail -1 | jq -c '{max_concurrent, max_queue}' 2>/dev/null || echo null)
       echo "run$run T: signer admission $maxc" | tee -a "$CHECKS"

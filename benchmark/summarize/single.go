@@ -60,7 +60,13 @@ func median(xs []float64) float64 {
 func errPct(s *stats) float64 { return 100 * float64(s.errs) / float64(s.n) }
 
 func runSingle(dir, title, note, outPath string) error {
-	runs, _ := filepath.Glob(filepath.Join(dir, "run*"))
+	cand, _ := filepath.Glob(filepath.Join(dir, "run[0-9]*"))
+	var runs []string // run<k> directories only (not run.log)
+	for _, c := range cand {
+		if fi, err := os.Stat(c); err == nil && fi.IsDir() {
+			runs = append(runs, c)
+		}
+	}
 	sort.Strings(runs)
 	byCfg := map[string][]cell{} // config label (with -c) -> cells
 	var cfgs []string
