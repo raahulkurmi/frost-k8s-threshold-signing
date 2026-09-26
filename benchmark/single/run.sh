@@ -243,7 +243,7 @@ done
   echo "  \"runs\": $RUNS, \"n\": $N, \"warmup\": $WARMUP, \"concurrency\": \"$CONCS\", \"systems\": \"$SYSTEMS\", \"t_strategies\": \"$STRATEGIES\", \"t_fanouts\": \"$FANOUTS\", \"hedge_delay\": \"$HEDGE_DELAY\", \"deadline\": \"$SIGN_DEADLINE\", \"rsa_bits\": 2048, \"t\": 3, \"n_signers\": 5,"
   echo "  \"n48_admission\": \"on (defaults: SIGNER_MAX_CONCURRENT=NumCPU, SIGNER_MAX_QUEUE=64)\", \"signer_admission_logged\": $(grep -h 'signer admission' "$CHECKS" | tail -1 | sed 's/.*admission //' || echo null),"
   echo "  \"client\": \"benchmark/tokenbench (client-go CreateToken, unthrottled) on the same host\","
-  echo "  \"apiserver_audit\": \"all systems: Metadata level for serviceaccounts/token create only (benchmark/single/audit/audit-policy.yaml)\","
+  echo "  \"apiserver_audit\": \"all systems: Metadata level for serviceaccounts/token create only (benchmark/single/apiserver-audit-policy/audit-policy.yaml)\","
   echo "  \"scale_up\": {\"run\": $SCALE_RUN, \"sizes\": \"$SCALE_SIZES\", \"reps\": $SCALE_REPS, \"t_variant\": \"strict, fanout all\", \"per_rep\": $(cat "$RES"/run*/scale/*.json 2>/dev/null | jq -s . || echo '[]')},"
   echo "  \"system_checks\": $(jq -R . < "$CHECKS" | jq -s .),"
   echo "  \"per_config\": $(for f in "$RES"/run*/*.metrics.json; do jq -c --arg run "$(basename "$(dirname "$f")")" '. + {run: $run}' "$f"; done | jq -s .)"

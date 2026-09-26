@@ -1,0 +1,13 @@
+# Phase 7A/7B: audit ONLY TokenRequest (serviceaccounts/token create) at Metadata
+# level, identically for B0, B1 and T. Used for per-pod token issuance latency
+# (stageTimestamp - requestReceivedTimestamp) and errors (responseStatus.code).
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages: ["RequestReceived", "ResponseStarted", "Panic"]
+rules:
+- level: Metadata
+  verbs: ["create"]
+  resources:
+  - group: ""
+    resources: ["serviceaccounts/token"]
+- level: None

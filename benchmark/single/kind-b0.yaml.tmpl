@@ -9,7 +9,7 @@ nodes:
 - role: control-plane
   image: kindest/node:v1.36.5-tk8s
   extraMounts:
-  - hostPath: __REPO__/benchmark/single/audit
+  - hostPath: __REPO__/benchmark/single/apiserver-audit-policy
     containerPath: /etc/kubernetes/audit
     readOnly: true
 - role: worker

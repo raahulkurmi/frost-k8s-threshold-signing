@@ -1,5 +1,5 @@
 # Phase 7A/7B benchmark cluster for B1 and T: test/e2e/kind-config.yaml.tmpl
-# plus apiserver audit of TokenRequest only (benchmark/single/audit/). Rendered by
+# plus apiserver audit of TokenRequest only (benchmark/single/apiserver-audit-policy/). Rendered by
 # benchmark/single/run.sh (__REPO__ -> repo path).
 #
 # kube-apiserver signs service account tokens ONLY through the external
@@ -21,7 +21,7 @@ nodes:
   - hostPath: __REPO__/test/e2e/kubeadm-patches
     containerPath: /etc/frost-kubeadm-patches
     readOnly: true
-  - hostPath: __REPO__/benchmark/single/audit
+  - hostPath: __REPO__/benchmark/single/apiserver-audit-policy
     containerPath: /etc/kubernetes/audit
     readOnly: true
 - role: worker
