@@ -5,6 +5,9 @@
 set -euo pipefail
 M="$1" E="$2" B="$3"
 jqr() { jq -r "$@" "$M"; }
+if [[ "$(jqr '.transport // "multipass"')" == ssh ]]; then
+  exec "$(dirname "$0")/gen-independence-l2.sh" "$@"
+fi
 cat <<HDR
 # Signer independence evidence (Phase 7B)
 
