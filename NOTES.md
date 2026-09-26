@@ -767,3 +767,28 @@ test now asserts `Result.Contacted` **exactly** per token (4 hedged, 5 all) and 
 server-side total within [3, contacted] per token, and still requires every signer to be
 used in hedged mode. The hedged half had the same race and got the same fix. Evidence:
 `reports/aws/REPRO-attempt1-FAIL.md`.
+
+### N57. Level 2 signer-host SSH: /32 enforced by the security group, not nftables
+The operator's home IP is dynamic. `deploy/aws/provision.sh refresh-ip` (run before every
+SSH-dependent step) replaces the tcp/22 /32 rule in every tagged security group and logs
+the change in `deploy/aws/state/sg-rules.txt`. A host nftables rule pinned to the old IP
+would lock the operator out of every signer. So on AWS (`SSH_ALLOW=any` in the topology)
+the host's nftables accepts tcp/22 and leaves the source restriction to the security
+group; the **signer port stays restricted to the coordinator EIP at both layers**
+(security group and nftables, plus systemd `IPAddressAllow`). L1/L2 test the effective
+paths end to end. Level 1 behaviour (nftables pins SSH to the operator) is unchanged.
+
+### N58. Level 2 transport and RTT method
+The multihost scripts use `deploy/multihost/transport.sh`: `multipass` (Level 1,
+unchanged) or `ssh` (Level 2). The ssh transport quotes every argument (`printf %q`) so
+the remote shell receives the same argv `multipass exec` passes, passes stdin only via
+`on_pipe`, and reuses connections (ControlMaster). On EC2 the public IP is NAT'd, so
+each signer **binds its private IP** while the coordinator dials its public IP (the
+signer certs pin DNS SAN `signer-<i>`, not an IP). Inbound ICMP is not allowed on the
+signer hosts ("nothing else inbound"), so Level 2 RTT is the **TCP connect time** to the
+signer port from the coordinator host (one SYN/SYN-ACK round trip), sampled every 0.5 s
+during each configuration (`benchmark/multihost/rtt_sampler.py`). These bare connects
+make each signer log a TLS handshake EOF; they carry no request. The far-quorum
+scenario stops the two signers with the lowest measured RTT (chosen from the
+measurement, not assumed). EC2 Ubuntu syncs time with chrony (Amazon Time Sync);
+`clock-check.sh` forces `chronyc makestep` there.
