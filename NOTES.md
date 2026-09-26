@@ -806,3 +806,34 @@ measurement, not assumed). EC2 Ubuntu syncs time with chrony (Amazon Time Sync);
   reports client-side and coordinator-side latency side by side for every configuration.
 - N49 on this host: N49-2 PASS for all four T variants; N49-1 and N49-3 FAIL for all four.
   The overload fix is to be designed together after 7B; nothing is implemented yet.
+
+### N60. Operator network drops and clock-check method (Phase 7B Level 2)
+**Event 1 (2026-09-26 ~19:33 UTC, during `test/e2e/multihost.sh --keep`, deploy step).**
+The operator Mac's Wi-Fi dropped: 4 × `ssh: connect to host 18.177.138.238 port 22:
+Network is unreachable` (sig-3, Tokyo) and one broken ssh multiplex master. Local
+routing error, not a security-group block; the IP was unchanged (110.226.114.36). The
+deploy-time clock check ran during recovery and reported inflated round-trip skews
+(+501 to +704 ms at 1.0–1.4 s exec round trips) but passed. Shortly after, the L2
+**control** check `operator -> sig-3:22` failed, so L2 reported FAIL, while every
+blocked path held (operator -> all 5 signer ports blocked; coordinator -> all 5 signer
+SSH ports blocked). All other checks passed: L1, L3, L4, L5, E1–E8, REQ-a–d, N1–N4
+(`reports/multihost/e2e-20260926T191044Z-b2f63ca/`). Per the rule for operator network
+drops, L2 was re-run once with connectivity restored: **L2 PASS**
+(`reports/multihost/l2-recheck-20260926T194211Z-ebabdb1/`, same deployment, kid
+4rIZD1LYAPixvZTYsskIKg). Both results are kept.
+
+**Clock check.** The exec-round-trip method measures the host against the operator's
+clock and inflates skew on a slow operator network. `clock-check.sh` now records each
+host's own chrony offset (`chronyc tracking` "System time", plus "Last offset") as the
+**primary** value and fails only if it exceeds the limit; the round-trip skew is kept as
+the secondary value (and stays primary only on hosts without chrony, i.e. the Level 1
+Multipass VMs). First run: chrony offsets 0.000–0.003 ms on all 6 hosts, round-trip
+skews +53 to +199 ms.
+
+**Benchmark robustness rule.** `benchmark/multihost/run-l2.sh` runs tokenbench and each
+scale-up repetition detached on the coordinator host (an operator drop cannot kill a
+measurement), and marks a configuration or repetition INVALID if *any* ssh/scp call
+failed while it was in progress: its files move to `invalid/`, the error goes to
+`invalid-events.jsonl`, the run waits for every host to answer and re-runs it once; only
+failure-free configurations reach summary.md. Verified with a test-only injected fault
+(`L2_FAULT_ONCE=1`) in a smoke run that was then deleted.
