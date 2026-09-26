@@ -748,3 +748,16 @@ generated per run (`secrets/b1/key.pem`, 0600) and wiped at exit with all other 
    retrying; attempt 1 on EC2 failed with `unexpected EOF` from dl.k8s.io. The step now
    retries up to 3 times (each attempt logged); the image is still built only from the
    official release.
+
+### N56. Racy server-side count in TestHedgedContactsTPlusOneAndRotates (found on EC2)
+Repro attempt 1 on the 2-vCPU EC2 host failed `make test` in this test:
+`all: 99 signer requests, want 100`. The test counted sign-share requests at the
+**signer** (HTTP handler). With fan-out `all` the coordinator launches 5 requests
+and, once 3 valid shares arrive, cancels the rest (N46); a cancelled request can be
+dropped before it reaches its signer, more often on a slow host. The coordinator's
+own log for those tokens says `signers_contacted=5`, so the property held; the
+assertion was racy. Fix (the property is unchanged, the racy equality is replaced): the
+test now asserts `Result.Contacted` **exactly** per token (4 hedged, 5 all) and the
+server-side total within [3, contacted] per token, and still requires every signer to be
+used in hedged mode. The hedged half had the same race and got the same fix. Evidence:
+`reports/aws/REPRO-attempt1-FAIL.md`.

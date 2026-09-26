@@ -36,6 +36,10 @@ func TestHedgedContactsTPlusOneAndRotates(t *testing.T) {
 			t.Fatalf("request %d: token does not verify: %v", i, err)
 		}
 	}
+	// Server-side counts can be below Contacted: once 3 valid shares arrive the
+	// coordinator cancels the rest (N46), and a cancelled request may never
+	// reach its signer (seen on a 2-vCPU host, N56). Contacted is asserted
+	// exactly above; the server side must lie between 3 and 4 per token.
 	counts := k.Counts()
 	total := 0
 	for id := 1; id <= 5; id++ {
@@ -44,27 +48,31 @@ func TestHedgedContactsTPlusOneAndRotates(t *testing.T) {
 		}
 		total += counts[id]
 	}
-	if total != 4*reqs {
-		t.Fatalf("total sign-share requests %d, want %d (4 per token)", total, 4*reqs)
+	if total < 3*reqs || total > 4*reqs {
+		t.Fatalf("server-side sign-share requests %d, want between %d and %d", total, 3*reqs, 4*reqs)
 	}
-	t.Logf("hedged: %d tokens -> %d signer requests (4 per token); per signer %v", reqs, total, counts)
+	t.Logf("hedged: %d tokens, 4 contacted each; %d requests reached signers; per signer %v", reqs, total, counts)
 
 	var ka testutil.Counting
 	ca := testutil.StartCluster(t, testutil.ClusterOpts{Wrap: ka.Wrap})
 	coAll := ca.NewCoordinatorFanout(t, coordinator.FanoutAll, 0, 5*time.Second, nil)
 	for i := 0; i < reqs; i++ {
-		if _, err := coAll.Sign(context.Background(), claims(t)); err != nil {
+		res, err := coAll.Sign(context.Background(), claims(t))
+		if err != nil {
 			t.Fatal(err)
+		}
+		if res.Contacted != 5 {
+			t.Fatalf("all: request %d contacted %d signers, want 5", i, res.Contacted)
 		}
 	}
 	all := 0
 	for _, n := range ka.Counts() {
 		all += n
 	}
-	if all != 5*reqs {
-		t.Fatalf("all: %d signer requests, want %d", all, 5*reqs)
+	if all < 3*reqs || all > 5*reqs {
+		t.Fatalf("all: server-side sign-share requests %d, want between %d and %d", all, 3*reqs, 5*reqs)
 	}
-	t.Logf("all:    %d tokens -> %d signer requests (5 per token)", reqs, all)
+	t.Logf("all:    %d tokens, 5 contacted each; %d requests reached signers", reqs, all)
 }
 
 // TestHedgedFastFailureHedgesImmediately (N46b/c): a 503 from a contacted
