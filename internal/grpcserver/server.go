@@ -103,8 +103,10 @@ func (s *Server) Metadata(context.Context, *externaljwtv1.MetadataRequest) (*ext
 	return &externaljwtv1.MetadataResponse{MaxTokenExpirationSeconds: s.maxTokenSeconds}, nil
 }
 
-// NewGRPC returns a grpc.Server with s registered.
+// NewGRPC returns a grpc.Server with s registered and TimingInterceptor first
+// in the unary chain.
 func NewGRPC(s *Server, opts ...grpc.ServerOption) *grpc.Server {
+	opts = append([]grpc.ServerOption{grpc.ChainUnaryInterceptor(TimingInterceptor)}, opts...)
 	g := grpc.NewServer(opts...)
 	externaljwtv1.RegisterExternalJWTSignerServer(g, s)
 	return g

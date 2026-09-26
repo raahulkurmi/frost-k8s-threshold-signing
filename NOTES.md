@@ -896,3 +896,78 @@ against default Kubernetes (B0/B1), come from 7C.** 7B stays as one-run, T-only 
   hypothesis is **untested, not refuted**: 7B never pushed the signers into shedding.
   Signer-host CPU was not measured in 7B (only the coordinator host's); the claim rests on
   the zero 503s and on optimistic reaching ~69 tokens/s with 0 errors.
+
+### N64. c1: arrival timestamps at nginx and the coordinator (timing only)
+To locate the time spent outside the coordinator's deadline (610–645 ms at c=50 strict in
+7B, N63), each request is now stamped twice before `Sign` starts:
+- **nginx** (`deploy/nginx-grpc.conf`) logs one JSON line per request on stdout
+  (`msec`, `request_time`, `request_id`, upstream timings, grpc status). It also sends
+  `X-Frost-Nginx-Request-Id: $request_id` and `X-Frost-Nginx-Msec: $msec` (the proxy time)
+  upstream.
+- a **gRPC unary interceptor** (`internal/grpcserver/timing.go`, first in the chain)
+  records arrival time, the caller's remaining gRPC deadline and those two headers. The
+  coordinator's `signed`/`sign failed` lines add `queued_before_sign_ms`,
+  `nginx_request_id`, `nginx_to_coordinator_ms` and `incoming_deadline_ms`.
+
+These values are **only logged, never used for any decision**. The headers are parsed
+strictly (32 lowercase hex; `^\d{10}\.\d{3}$`) and ignored if malformed or duplicated
+(`TestTimingInterceptor`). nginx sets them itself (`grpc_set_header`), overriding
+anything a caller sends. The e2e gained a **TIMING** check: at least 90 % of the
+coordinators' Sign lines must join an nginx line by `request_id`, and the log prints the
+median segments. `benchmark/single/timing-breakdown.sh` produces the same breakdown under
+load (c=1/10/50) on a kept stack. It does not see inside kube-apiserver: "outside nginx" is
+the client median minus the nginx median.
+
+### N65. c2 verify-until-t and (a) optimistic default with a per-signer suspicion breaker
+**c2, verify-until-t (strict).** Strict used to verify every share that arrived (5 per
+token with fan-out all), including shares arriving after 3 were already valid and after
+`Sign` had returned. A `verifyGate` now lets a share be verified only while fewer than t
+shares are valid or being verified. When t have verified, later shares are not verified
+at all. If a verification fails, a waiting share proceeds. With 5 honest signers, strict
+verifies exactly t per token (`TestStrictVerifiesUntilT`: 36 verifications for 12 tokens;
+previously up to 60). Worst-case latency cost: a share arriving while t verifications are
+in flight waits for one of them (≈ one share-verification time) and is used only if one
+fails.
+
+**(a) optimistic is the default** (`VERIFY_STRATEGY` default in `cmd/grpc-proxy`, both
+compose files and `test/e2e/run.sh`; strict stays selectable). A **per-signer suspicion
+breaker** (`internal/coordinator/breaker.go`) bounds the extra work misbehaving signers can
+cause:
+- a signer whose share fails verification (in any path) becomes a **suspect** for
+  `SuspectCooldown` (default 10m); a suspect's shares are verified individually before
+  they may be combined, so **each misbehaving signer causes at most one failed combine
+  per cooldown**;
+- `FallbackAfter` (default 3) failed optimistic combines within `FallbackWindow` (1m)
+  switch the coordinator to **strict** for `FallbackCooldown` (10m).
+
+**Work bound** (`TestBreakerWorkBound`, corrupt signer 1, 5 signers, fan-out all): the
+tripping request cost 1 failed combine and 4 share verifications (≤ n); the next 30
+tokens cost 13 verifications in total and never more than 1 per token (the suspect's own
+share), with no further failed combine. Strict would verify ≥ 90. Honest steady state:
+0 share verifications per token (1 join + 1 final RSA verify).
+
+**Security trade-off.** Unforgeability is unchanged: both strategies verify the combined
+signature against the group key (`rsa.VerifyPKCS1v15`) before returning, so no invalid
+token can be returned (I7). Share verification buys attribution and robustness, not
+unforgeability. Under optimistic:
+1. a bad share is attributed only after a failed combine;
+2. a not-yet-suspect bad signer can make one request cost a failed join, ≤ n share
+   verifications and a second join (≈ 2× a strict request), at most once per signer per
+   `SuspectCooldown`, and at most `FallbackAfter` times per `FallbackWindow` in total before
+   strict takes over;
+3. suspicion is per coordinator replica and in memory: each of the 3 replicas learns it
+   separately, and a restart forgets it.
+
+The guards are on both paths, unchanged:
+- `fetch` checks the mTLS identity (`signer-<id>`), response `signer_id` and
+  `request_id`, size limits, and bounds-checks ids in `wire.ToTcrsa`;
+- the collect loop dedupes by id;
+- tcrsa `Join` never sees an out-of-range or duplicate id.
+
+Tests: `TestBreakerTripMarksSuspect`, `TestBreakerWorkBound`, `TestBreakerRecovery`
+(suspect verified during the cooldown, fast path after it), `TestBreakerFallbackToStrict`,
+unit tests with a fake clock (`TestBreakerSuspectCooldown`, `TestBreakerFallbackWindow`,
+`TestBreakerConfigValidation`, `TestVerifyGate`); T5 passes under the new default.
+**Local kind validation blocked:** before `make check-images`/`make e2e`, free swap on the
+Mac was 730 MB, below the 2 GB floor for kind runs, so tk8s was not started (see the
+Phase 7C/overload-fix report).

@@ -38,12 +38,14 @@ import (
 type Strategy string
 
 const (
-	// Strict verifies every share (in parallel, as it arrives), joins t valid
-	// shares, then verifies the final signature.
+	// Strict verifies shares (in parallel, as they arrive) until t are valid
+	// (verify-until-t, N65), joins them, then verifies the final signature.
 	Strict Strategy = "strict"
-	// Optimistic joins the first t well-formed shares and verifies the final
-	// signature; only on failure does it verify each share, exclude and
-	// attribute the bad ones, and retry with the remaining valid shares.
+	// Optimistic (the default, N65) joins t well-formed shares and verifies
+	// the final signature; only on failure does it verify each share, exclude
+	// and attribute the bad ones, and retry with the remaining valid shares.
+	// Shares of suspect signers are verified before they may be combined, and
+	// repeated failed combines switch the coordinator to strict (BreakerConfig).
 	Optimistic Strategy = "optimistic"
 )
 
@@ -95,6 +97,8 @@ type Config struct {
 	// Fanout defaults to FanoutAll. HedgeDelay (hedged only) must be > 0.
 	Fanout     Fanout
 	HedgeDelay time.Duration
+	// Breaker bounds the extra work of misbehaving signers (optimistic only).
+	Breaker BreakerConfig
 }
 
 // Coordinator is safe for concurrent use.
@@ -108,6 +112,69 @@ type Coordinator struct {
 	fanout    Fanout
 	hedge     time.Duration
 	rr        atomic.Uint64 // rotates the hedged initial subset
+	brk       *breaker
+	now       func() time.Time // time source for the breaker (tests)
+
+	shareVerifications, failedCombines, suspectMarks, fallbackActivations atomic.Int64
+}
+
+// Stats are cumulative counters, for tests and operators.
+type Stats struct {
+	ShareVerifications  int64 // Shoup share-proof verifications performed
+	FailedCombines      int64 // optimistic combines whose final signature did not verify
+	SuspectMarks        int64 // times a signer was newly marked suspect
+	FallbackActivations int64 // times the breaker switched to strict
+	Suspects            []int // current suspects
+	StrictFallbackUntil time.Time
+}
+
+// Stats returns the current counters.
+func (c *Coordinator) Stats() Stats {
+	ids, until := c.brk.snapshot(c.now())
+	return Stats{ShareVerifications: c.shareVerifications.Load(), FailedCombines: c.failedCombines.Load(),
+		SuspectMarks: c.suspectMarks.Load(), FallbackActivations: c.fallbackActivations.Load(),
+		Suspects: ids, StrictFallbackUntil: until}
+}
+
+// Arrival is timing information about one Sign request, recorded before the
+// coordinator's own deadline starts (NOTES N64). It is only logged, never used
+// for any decision.
+type Arrival struct {
+	At               time.Time     // when this process's gRPC handler chain received the request
+	NginxRequestID   string        // nginx $request_id (32 hex), if present
+	NginxProxyAt     time.Time     // nginx $msec when it proxied the request (zero if absent)
+	IncomingDeadline time.Duration // time left on the caller's gRPC deadline at arrival (0: none)
+}
+
+type arrivalKey struct{}
+
+// WithArrival attaches a to ctx (grpcserver.TimingInterceptor).
+func WithArrival(ctx context.Context, a Arrival) context.Context {
+	return context.WithValue(ctx, arrivalKey{}, a)
+}
+
+// ArrivalFrom returns the Arrival attached to ctx, if any.
+func ArrivalFrom(ctx context.Context) (Arrival, bool) {
+	a, ok := ctx.Value(arrivalKey{}).(Arrival)
+	return a, ok
+}
+
+func timingAttrs(ctx context.Context, start time.Time) []any {
+	a, ok := ArrivalFrom(ctx)
+	if !ok {
+		return nil
+	}
+	out := []any{"queued_before_sign_ms", ms(start.Sub(a.At))}
+	if a.NginxRequestID != "" {
+		out = append(out, "nginx_request_id", a.NginxRequestID)
+	}
+	if !a.NginxProxyAt.IsZero() {
+		out = append(out, "nginx_to_coordinator_ms", ms(a.At.Sub(a.NginxProxyAt)))
+	}
+	if a.IncomingDeadline > 0 {
+		out = append(out, "incoming_deadline_ms", ms(a.IncomingDeadline))
+	}
+	return out
 }
 
 // New validates cfg. At least t endpoints with unique IDs in [1,n] are required.
@@ -154,9 +221,16 @@ func New(cfg Config) (*Coordinator, error) {
 	if cfg.Fanout == FanoutHedged && cfg.HedgeDelay <= 0 {
 		return nil, errors.New("coordinator: hedged fanout needs HedgeDelay > 0")
 	}
+	bc, err := cfg.Breaker.withDefaults()
+	if err != nil {
+		return nil, err
+	}
 	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr,
-		fanout: cfg.Fanout, hedge: cfg.HedgeDelay}, nil
+		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now}, nil
 }
+
+// BreakerConfig returns the effective breaker configuration (defaults applied).
+func (c *Coordinator) BreakerConfig() BreakerConfig { return c.brk.cfg }
 
 // ErrInvalidClaims marks a Sign request whose claims are not a well-formed
 // base64url JWT payload segment.
@@ -189,6 +263,7 @@ type result struct {
 	id       int
 	share    *tcrsa.SigShare
 	verified bool
+	skipped  bool // strict: not verified because t shares were already valid (N65)
 	err      error
 	fetch    time.Duration
 	verify   time.Duration
@@ -227,22 +302,57 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 		return nil, err
 	}
 	reqID := newRequestID()
+	timing := timingAttrs(ctx, start)
 	ctx, cancel := context.WithTimeout(ctx, c.deadline)
 	defer cancel() // cancels outstanding signer requests once we return
+
+	// Effective strategy for this request (N65): optimistic unless the breaker
+	// has switched to strict; suspects' shares are verified before combining.
+	strategy, now := c.strategy, c.now()
+	var suspects map[int]bool
+	if strategy == Optimistic {
+		if c.brk.strictActive(now) {
+			strategy = Strict
+		} else {
+			suspects = c.brk.suspects(now)
+		}
+	}
+	var nVerify atomic.Int64
+	verifyShare := func(s *tcrsa.SigShare) error {
+		nVerify.Add(1)
+		c.shareVerifications.Add(1)
+		return s.Verify(doc, c.meta.Tcrsa)
+	}
+	strike := func(id int) {
+		if newly, until := c.brk.strike(id, c.now()); newly {
+			c.suspectMarks.Add(1)
+			c.log.Warn("signer marked suspect: its shares are verified before combining", "request_id", reqID, "signer_id", id, "until", until)
+		}
+	}
+	// Strict: verify-until-t (N65). Deferred after cancel, so it runs first and
+	// releases any share still waiting to be verified.
+	gate := newVerifyGate(c.meta.Threshold)
+	defer gate.close()
 
 	body, _ := json.Marshal(wire.SignShareRequest{SigningInput: input, RequestID: reqID})
 	results := make(chan result, len(c.endpoints))
 	launch := func(ep Endpoint) {
 		go func() {
 			r := c.fetch(ctx, ep, body, reqID)
-			if r.err == nil && c.strategy == Strict {
-				vs := time.Now()
-				if err := r.share.Verify(doc, c.meta.Tcrsa); err != nil {
-					r.err = fmt.Errorf("invalid signature share: %v", err)
+			if r.err == nil && strategy == Strict {
+				if gate.acquire() {
+					vs := time.Now()
+					err := verifyShare(r.share)
+					gate.release(err == nil)
+					if err != nil {
+						r.err = fmt.Errorf("invalid signature share: %v", err)
+					} else {
+						r.verified = true
+					}
+					r.verify = time.Since(vs)
 				} else {
-					r.verified = true
+					r.skipped = true
 				}
-				r.verify = time.Since(vs)
 			}
 			results <- r
 		}()
@@ -286,7 +396,7 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 	valid := map[int]*tcrsa.SigShare{}      // verified shares, deduped by ID
 	candidates := map[int]*tcrsa.SigShare{} // optimistic: well-formed, unverified
 	var failures []SignerFailure
-	fallback := c.strategy == Strict // optimistic switches to verifying after a failed join
+	fallback := strategy == Strict // optimistic switches to verifying after a failed join
 	var maxVerify time.Duration
 	var fanout, combine, finalVerify time.Duration
 	var sig []byte
@@ -306,7 +416,7 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 		for id, s := range set {
 			go func(id int, s *tcrsa.SigShare) {
 				vs := time.Now()
-				err := s.Verify(doc, c.meta.Tcrsa)
+				err := verifyShare(s)
 				ch <- vr{id, err, time.Since(vs)}
 			}(id, s)
 		}
@@ -316,6 +426,7 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 			if v.err != nil {
 				fail(v.id, "invalid signature share: "+v.err.Error())
 				c.log.Warn("excluded invalid signature share", "request_id", reqID, "signer_id", v.id, "err", v.err.Error())
+				strike(v.id)
 			} else {
 				valid[v.id] = set[v.id]
 			}
@@ -369,7 +480,11 @@ collect:
 				hedgeAll("signer failed: " + r.err.Error())
 				if r.share != nil { // a returned-but-invalid share (strict)
 					c.log.Warn("excluded invalid signature share", "request_id", reqID, "signer_id", r.id, "err", r.err.Error())
+					strike(r.id)
 				}
+				continue
+			}
+			if r.skipped { // strict: t shares already verified; this one is not needed
 				continue
 			}
 			if valid[r.id] != nil || candidates[r.id] != nil {
@@ -379,20 +494,34 @@ collect:
 			switch {
 			case r.verified:
 				valid[r.id] = r.share
-			case fallback:
+			case fallback, suspects[r.id]:
+				// fallback: verifying everything after a failed combine;
+				// suspect: verified before it may be combined (N65).
 				verifyAll(map[int]*tcrsa.SigShare{r.id: r.share})
 			default:
 				candidates[r.id] = r.share
 			}
 
-			if !fallback && len(candidates) >= t {
+			if !fallback && len(candidates) > 0 && len(candidates)+len(valid) >= t {
 				fanout = time.Since(start)
-				s, ids, err := tryJoin(candidates)
+				set := make(map[int]*tcrsa.SigShare, len(candidates)+len(valid))
+				for id, sh := range valid {
+					set[id] = sh
+				}
+				for id, sh := range candidates {
+					set[id] = sh
+				}
+				s, ids, err := tryJoin(set)
 				if err == nil {
 					sig, used = s, ids
 					break collect
 				}
+				c.failedCombines.Add(1)
 				c.log.Warn("optimistic combine failed final verification; verifying shares individually", "request_id", reqID, "err", err.Error())
+				if activated, until := c.brk.failedCombine(c.now()); activated {
+					c.fallbackActivations.Add(1)
+					c.log.Warn("breaker: repeated failed optimistic combines; strict verification until cooldown ends", "request_id", reqID, "until", until)
+				}
 				hedgeAll("optimistic combine failed")
 				fallback = true
 				verifyAll(candidates)
@@ -416,15 +545,15 @@ collect:
 
 	if sig == nil {
 		terr := &ThresholdError{Valid: len(valid), Needed: t, Failures: failures}
-		c.log.Error("sign failed", "request_id", reqID, "strategy", c.strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
-			"valid_shares", len(valid), "failures", failures, "latency_ms", ms(time.Since(start)))
+		c.log.Error("sign failed", append([]any{"request_id", reqID, "strategy", c.strategy, "strategy_effective", strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
+			"valid_shares", len(valid), "failures", failures, "share_verifications", nVerify.Load(), "latency_ms", ms(time.Since(start))}, timing...)...)
 		return nil, terr
 	}
 	// Fail closed: the returned signature has passed rsa.VerifyPKCS1v15 in tryJoin.
-	c.log.Info("signed", "request_id", reqID, "strategy", c.strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
-		"valid_shares", len(valid)+len(candidates), "combined", used, "excluded", failures,
+	c.log.Info("signed", append([]any{"request_id", reqID, "strategy", c.strategy, "strategy_effective", strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
+		"valid_shares", len(valid) + len(candidates), "combined", used, "excluded", failures, "share_verifications", nVerify.Load(),
 		"latency_ms", ms(time.Since(start)), "fanout_ms", ms(fanout), "max_share_verify_ms", ms(maxVerify),
-		"combine_ms", ms(combine), "final_verify_ms", ms(finalVerify))
+		"combine_ms", ms(combine), "final_verify_ms", ms(finalVerify)}, timing...)...)
 	return &Result{
 		Header:    c.headerSeg,
 		Signature: base64.RawURLEncoding.EncodeToString(sig),

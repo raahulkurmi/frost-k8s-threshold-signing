@@ -42,7 +42,7 @@ services:
       GRPC_TLS_KEY: /etc/frost/grpc-tls/tls.key
       GRPC_TLS_CA: /etc/frost/ca.crt
       SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
-      VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+      VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
       FANOUT: ${FANOUT:-all}
       HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
     networks:
@@ -65,7 +65,7 @@ services:
       GRPC_TLS_KEY: /etc/frost/grpc-tls/tls.key
       GRPC_TLS_CA: /etc/frost/ca.crt
       SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
-      VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+      VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
       FANOUT: ${FANOUT:-all}
       HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
     networks:
@@ -88,7 +88,7 @@ services:
       GRPC_TLS_KEY: /etc/frost/grpc-tls/tls.key
       GRPC_TLS_CA: /etc/frost/ca.crt
       SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
-      VERIFY_STRATEGY: ${VERIFY_STRATEGY:-strict}
+      VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
       FANOUT: ${FANOUT:-all}
       HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
     networks:

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -159,6 +160,31 @@ func CorruptShare(h http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	})
+}
+
+// CorruptShareIf corrupts shares like CorruptShare while on is true, and
+// passes responses through unchanged otherwise (breaker recovery tests).
+func CorruptShareIf(on *atomic.Bool, h http.Handler) http.Handler {
+	bad := CorruptShare(h)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if on.Load() {
+			bad.ServeHTTP(w, r)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+// NewCoordinatorWith builds a coordinator from cfg, filling Meta and the
+// endpoints for ids (all signers if none).
+func (c *Cluster) NewCoordinatorWith(t testing.TB, cfg coordinator.Config, ids ...int) *coordinator.Coordinator {
+	t.Helper()
+	cfg.Meta, cfg.Endpoints = c.Fx.Meta, c.Endpoints(t, ids...)
+	co, err := coordinator.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return co
 }
 
 // Delay wraps a signer handler to sleep d before answering (or until the

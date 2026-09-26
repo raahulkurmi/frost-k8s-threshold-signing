@@ -124,6 +124,18 @@ pending).
   After a VM resume or snapshot restore, a signer fails closed until its clock resyncs
   (docs/THREAT_MODEL.md §3, NOTES N44). The multihost scripts refuse to run when any host is
   more than 1 s off (NOTES N50).
+- **Verification strategy.** Coordinators default to `VERIFY_STRATEGY=optimistic`:
+  combine t shares, verify only the final signature, and verify shares individually
+  only after a failed combine. A signer whose share fails verification becomes a
+  *suspect* for `BREAKER_SUSPECT_COOLDOWN` (default 10m): its shares are verified
+  before they are combined. `BREAKER_FALLBACK_AFTER` (default 3) failed combines within
+  `BREAKER_FALLBACK_WINDOW` (1m) switch to strict for `BREAKER_FALLBACK_COOLDOWN`
+  (10m). `strict` verifies shares until t are valid. Both strategies verify the final
+  signature against the group key before returning a token (NOTES N65).
+- **Timing logs.** nginx writes one JSON timing line per request, and the coordinators'
+  `signed`/`sign failed` lines carry `nginx_request_id`, `nginx_to_coordinator_ms`,
+  `queued_before_sign_ms` and `incoming_deadline_ms`; `benchmark/single/timing-breakdown.sh`
+  joins them (NOTES N64).
 - **Signer capacity.** Each signer computes at most `SIGNER_MAX_CONCURRENT` shares at once
   (default: CPU count). Further requests wait only while they can still meet the
   coordinator's deadline (sent in `X-Frost-Deadline-Ms`) and fewer than `SIGNER_MAX_QUEUE`

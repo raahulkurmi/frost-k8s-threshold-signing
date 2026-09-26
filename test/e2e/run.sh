@@ -31,7 +31,8 @@ RESULTS="test/e2e/results/${TS}-${SHA:0:7}"
 mkdir -p "$RESULTS"
 exec > >(tee "$RESULTS/e2e.log") 2>&1
 
-export FROST_UID="$(id -u)" GOTOOLCHAIN=go1.27.1 VERIFY_STRATEGY=strict SIGN_DEADLINE=2s
+# VERIFY_STRATEGY: the coordinators' default (optimistic + breaker, N65) unless overridden.
+export FROST_UID="$(id -u)" GOTOOLCHAIN=go1.27.1 VERIFY_STRATEGY="${VERIFY_STRATEGY:-optimistic}" SIGN_DEADLINE=2s
 TOPOLOGY="${TOPOLOGY:-single}"
 [[ "$TOPOLOGY" == single || "$TOPOLOGY" == multihost ]] || die "TOPOLOGY must be single or multihost"
 CTL=/tmp/frost-ctl
@@ -473,10 +474,30 @@ section "(d) strategy used by every coordinator"
 READY_LINES="$(coord_logs | grep '"msg":"coordinator ready"' || true)"
 jq -rc '{strategy, deadline, signers, kid}' <<<"$READY_LINES" | sort | uniq -c
 N_READY="$(grep -c . <<<"$READY_LINES" || true)"
-N_STRICT="$(jq -r 'select(.strategy=="strict" and .deadline=="2s" and .kid=="'"$KID"'") | .strategy' <<<"$READY_LINES" | grep -c strict || true)"
-if [[ "$N_READY" -ge 3 && "$N_READY" == "$N_STRICT" ]]; then
-  pass REQ-d "all $N_READY coordinator starts (incl. restarts) ran strategy=strict, deadline=2s, kid=$KID"
-else fail REQ-d "$N_STRICT of $N_READY coordinator starts were strict"; fi
+N_STRAT="$(jq -r 'select(.strategy=="'"$VERIFY_STRATEGY"'" and .deadline=="2s" and .kid=="'"$KID"'") | .strategy' <<<"$READY_LINES" | grep -c . || true)"
+if [[ "$N_READY" -ge 3 && "$N_READY" == "$N_STRAT" ]]; then
+  pass REQ-d "all $N_READY coordinator starts (incl. restarts) ran strategy=$VERIFY_STRATEGY, deadline=2s, kid=$KID"
+else fail REQ-d "$N_STRAT of $N_READY coordinator starts ran strategy=$VERIFY_STRATEGY"; fi
+
+section "TIMING (N64): nginx and coordinator timing lines join by request_id"
+# nginx logs one JSON line per request; each coordinator Sign line carries
+# nginx_request_id. Every Sign handled by a coordinator should join one nginx line.
+"${COMPOSE[@]}" logs --no-color --no-log-prefix coordinator-lb 2>/dev/null | grep '"src":"nginx"' | jq -c 'select(.uri | endswith("/Sign"))' > "$RESULTS/nginx-sign.jsonl" || true
+coord_logs | grep -E '"msg":"(signed|sign failed)"' > "$RESULTS/coord-sign.jsonl" || true
+N_NGINX="$(grep -c . "$RESULTS/nginx-sign.jsonl" || true)"; N_COORD="$(grep -c . "$RESULTS/coord-sign.jsonl" || true)"
+JOIN="$(jq -s -r --slurpfile ng "$RESULTS/nginx-sign.jsonl" '
+  ($ng | map({(.request_id): .}) | add // {}) as $by
+  | map(select(.nginx_request_id != null and $by[.nginx_request_id] != null)
+        | . as $c | $by[$c.nginx_request_id] as $n
+        | {nginx_total_ms: (($n.request_time | tonumber) * 1000), n2c: $c.nginx_to_coordinator_ms, q: $c.queued_before_sign_ms, coord: $c.latency_ms})
+  | def med(f): (map(f) | sort | if length == 0 then null else .[(length/2|floor)] end);
+    "\(length) \(med(.nginx_total_ms)) \(med(.n2c)) \(med(.q)) \(med(.coord)) \(med(.nginx_total_ms - .n2c - .q - .coord))"' "$RESULTS/coord-sign.jsonl")"
+read -r N_JOIN M_NG M_N2C M_Q M_CO M_REST <<<"$JOIN"
+echo "Sign requests: nginx lines $N_NGINX, coordinator lines $N_COORD, joined $N_JOIN"
+echo "medians over joined requests (ms): nginx total $M_NG = nginx->coordinator $M_N2C + queued before Sign $M_Q + coordinator Sign $M_CO + rest (nginx + return path) $M_REST"
+if [[ "${N_JOIN:-0}" -gt 0 && "$N_COORD" -gt 0 && $(( N_JOIN * 100 / N_COORD )) -ge 90 ]]; then
+  pass TIMING "$N_JOIN of $N_COORD coordinator Sign lines joined an nginx line by request_id; median nginx total ${M_NG} ms, nginx->coordinator ${M_N2C} ms, coordinator ${M_CO} ms"
+else fail TIMING "only ${N_JOIN:-0} of $N_COORD coordinator Sign lines joined an nginx timing line"; fi
 
 section "Signer policy decisions (all signers, from audit logs)"
 signer_ctl audit

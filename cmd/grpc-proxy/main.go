@@ -17,7 +17,13 @@
 //	                   clients must present SAN exactly DNS:lb). There is no
 //	                   plaintext TCP mode. SOCKET_PATH (local) uses no TLS.
 //	SIGN_DEADLINE      optional, Go duration, default 2s
-//	VERIFY_STRATEGY    optional, strict (default) | optimistic
+//	VERIFY_STRATEGY    optional, optimistic (default, N65) | strict
+//	BREAKER_SUSPECT_COOLDOWN  optional, Go duration, default 10m: how long a
+//	                   signer whose share failed verification has its shares
+//	                   verified before combining (optimistic only, N65)
+//	BREAKER_FALLBACK_AFTER    optional, default 3: failed optimistic combines
+//	                   within BREAKER_FALLBACK_WINDOW (default 1m) that switch
+//	                   to strict for BREAKER_FALLBACK_COOLDOWN (default 10m)
 //	REFRESH_HINT_SECONDS optional, default 3600
 //	FANOUT             optional, all (default) | hedged: contact t+1 signers
 //	                   first and the rest after HEDGE_DELAY or on a failure (N46)
@@ -65,6 +71,7 @@ type settings struct {
 	Strategy    coordinator.Strategy
 	Fanout      coordinator.Fanout
 	HedgeDelay  time.Duration
+	Breaker     coordinator.BreakerConfig
 	RefreshHint int64
 	Socket      string
 	TCP         string
@@ -178,7 +185,7 @@ func load(getenv func(string) string) (*settings, error) {
 			return nil, fmt.Errorf("SIGN_DEADLINE %q is not a positive duration", v)
 		}
 	}
-	s.Strategy = coordinator.Strict
+	s.Strategy = coordinator.Optimistic
 	if v := getenv("VERIFY_STRATEGY"); v != "" {
 		if s.Strategy, err = coordinator.ParseStrategy(v); err != nil {
 			return nil, err
@@ -194,6 +201,21 @@ func load(getenv func(string) string) (*settings, error) {
 	if v := getenv("HEDGE_DELAY"); v != "" {
 		if s.HedgeDelay, err = time.ParseDuration(v); err != nil || s.HedgeDelay <= 0 {
 			return nil, fmt.Errorf("HEDGE_DELAY %q is not a positive duration", v)
+		}
+	}
+	for _, d := range []struct {
+		dst  *time.Duration
+		name string
+	}{{&s.Breaker.SuspectCooldown, "BREAKER_SUSPECT_COOLDOWN"}, {&s.Breaker.FallbackWindow, "BREAKER_FALLBACK_WINDOW"}, {&s.Breaker.FallbackCooldown, "BREAKER_FALLBACK_COOLDOWN"}} {
+		if v := getenv(d.name); v != "" {
+			if *d.dst, err = time.ParseDuration(v); err != nil || *d.dst <= 0 {
+				return nil, fmt.Errorf("%s %q is not a positive duration", d.name, v)
+			}
+		}
+	}
+	if v := getenv("BREAKER_FALLBACK_AFTER"); v != "" {
+		if s.Breaker.FallbackAfter, err = strconv.Atoi(v); err != nil || s.Breaker.FallbackAfter < 1 {
+			return nil, fmt.Errorf("BREAKER_FALLBACK_AFTER %q must be an integer >= 1", v)
 		}
 	}
 	s.RefreshHint = 3600
@@ -225,7 +247,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	coord, err := coordinator.New(coordinator.Config{Meta: s.Meta, Endpoints: s.Endpoints, Deadline: s.Deadline, Strategy: s.Strategy,
-		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Logger: logger})
+		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Breaker: s.Breaker, Logger: logger})
 	if err != nil {
 		return err
 	}
@@ -249,6 +271,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	g := grpcserver.NewGRPC(srv, opts...)
+	bc := coord.BreakerConfig()
 	ids := make([]int, len(s.Endpoints))
 	for i, ep := range s.Endpoints {
 		ids[i] = ep.ID
@@ -256,6 +279,8 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	logger.Info("coordinator ready", "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
 		"signers", ids, "listen", lis.Addr().String(), "deadline", s.Deadline.String(), "strategy", s.Strategy,
 		"fanout", s.Fanout, "hedge_delay", s.HedgeDelay.String(),
+		"breaker_suspect_cooldown", bc.SuspectCooldown.String(), "breaker_fallback_after", bc.FallbackAfter,
+		"breaker_fallback_window", bc.FallbackWindow.String(), "breaker_fallback_cooldown", bc.FallbackCooldown.String(),
 		"max_token_seconds", s.MaxToken, "grpc_mtls", s.TCP != "")
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
