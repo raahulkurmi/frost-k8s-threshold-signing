@@ -3,10 +3,15 @@
 # Forces a time resync on each host (chrony: `chronyc makestep`, as on EC2 Ubuntu,
 # which syncs to the Amazon Time Sync Service; otherwise restart
 # systemd-timesyncd, as on the Multipass VMs), waits for sync,
-# then measures each VM's clock against the operator's and FAILS if any skew
-# exceeds MAX_SKEW_MS (default 1000). Skew = VM time − midpoint of the
-# operator's before/after timestamps, so multipass exec latency is not
-# counted as skew; a sample with a round trip over 2 s is retried.
+# then checks each host's clock and FAILS if its skew exceeds MAX_SKEW_MS
+# (default 1000).
+# PRIMARY value, where chrony runs (EC2): the host's own offset from its NTP source,
+# `chronyc tracking` "System time" (and "Last offset", recorded). The operator's
+# network does not affect it. SECONDARY (always recorded; primary only on hosts
+# without chrony, e.g. the Multipass VMs with systemd-timesyncd): host time −
+# midpoint of the operator's before/after timestamps. This round-trip method
+# inflates skew when the operator's network is slow (seen: +704 ms at a 1.4 s round
+# trip, NOTES N60), so on chrony hosts it never fails the check.
 # Uses the topology's transport (deploy/multihost/transport.sh; multipass by
 # default). Portable to macOS bash 3.2. Usage: [TOPO=topology.env] clock-check.sh VM [VM ...]
 # Can also be sourced: defines clock_check VM...
@@ -48,8 +53,18 @@ clock_check() {
     mid=$(( (t0 + t1) / 2 ))
     skew=$(( rv - mid ))
     synced="$(_ck_on "$vm" timedatectl show -p NTPSynchronized --value | tr -d '\r')"
-    printf 'clock-check: %-6s skew %+6d ms (exec round trip %d ms, NTPSynchronized=%s)\n' "$vm" "$skew" "$rtt" "$synced"
-    if [[ ${skew#-} -gt $max ]]; then echo "clock-check: FAIL: $vm skew ${skew} ms exceeds ${max} ms" >&2; bad=1; fi
+    # chrony: "System time : 0.000012345 seconds slow of NTP time" (slow = behind)
+    local trk sys_ms last_ms
+    trk="$(_ck_on "$vm" bash -c 'command -v chronyc >/dev/null && systemctl is-active --quiet chrony && chronyc tracking' 2>/dev/null | tr -d '\r' || true)"
+    sys_ms="$(awk -F: '/^System time/{split($2,a," "); v=a[1]*1000; if ($2 ~ /slow/) v=-v; printf "%.3f", v}' <<<"$trk")"
+    last_ms="$(awk -F: '/^Last offset/{split($2,a," "); printf "%.3f", a[1]*1000}' <<<"$trk")"
+    if [[ -n "$sys_ms" ]]; then
+      printf 'clock-check: %-6s chrony offset %+9s ms (last offset %s ms) [primary]; round-trip skew %+6d ms (exec round trip %d ms) [secondary]; NTPSynchronized=%s\n' "$vm" "$sys_ms" "$last_ms" "$skew" "$rtt" "$synced"
+      if awk -v v="$sys_ms" -v m="$max" 'BEGIN{exit !((v<0?-v:v) > m)}'; then echo "clock-check: FAIL: $vm chrony offset ${sys_ms} ms exceeds ${max} ms" >&2; bad=1; fi
+    else
+      printf 'clock-check: %-6s skew %+6d ms (exec round trip %d ms, NTPSynchronized=%s) [primary: no chrony on this host]\n' "$vm" "$skew" "$rtt" "$synced"
+      if [[ ${skew#-} -gt $max ]]; then echo "clock-check: FAIL: $vm skew ${skew} ms exceeds ${max} ms" >&2; bad=1; fi
+    fi
   done
   return $bad
 }

@@ -15,8 +15,11 @@
 # Usage: test/e2e/multihost.sh [--keep] [topology.env]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-KEEP=0
+KEEP=0 RECHECK_L2=0
 [[ "${1:-}" == "--keep" ]] && { KEEP=1; shift; }
+# --recheck-l2: re-run ONLY the L2 checks (clock check first) against an existing
+# deployment, e.g. after an operator network drop invalidated L2 (NOTES N60).
+[[ "${1:-}" == "--recheck-l2" ]] && { RECHECK_L2=1; shift; }
 TOPO="${1:-deploy/multihost/topology.local.env}"
 # shellcheck disable=SC1090
 source "$TOPO"
@@ -27,6 +30,7 @@ SHA="$(git rev-parse HEAD)"
 git fetch -q origin && [[ "$(git rev-parse "origin/$(git rev-parse --abbrev-ref HEAD)")" == "$SHA" ]] || die "HEAD $SHA is not pushed"
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 RES="reports/multihost/e2e-$TS-${SHA:0:7}"
+[[ $RECHECK_L2 == 1 ]] && RES="reports/multihost/l2-recheck-$TS-${SHA:0:7}"
 mkdir -p "$RES"
 exec > >(tee "$RES/multihost-e2e.log") 2>&1
 
@@ -70,6 +74,31 @@ source deploy/multihost/clock-check.sh
 # shellcheck disable=SC2086
 clock_check "$COORD_VM" $SIGNER_VMS || die "clock skew check failed (N50)"
 
+l2_test() {
+  section "L2: operator-only SSH; operator cannot reach signer ports"
+  L2_OK=1
+  for id in 1 2 3 4 5; do
+    vm="$(id_vm "$id")"; ip="$(vm_ip "$vm")"; p="$(id_port "$id")"
+    if nc -z -G 3 "$ip" "$p" >/dev/null 2>&1; then echo "  UNEXPECTED: operator reached signer-$id $ip:$p"; L2_OK=0; else echo "  operator -> signer-$id $ip:$p: blocked"; fi
+  done
+  for vm in $SIGNER_VMS; do
+    ip="$(vm_ip "$vm")"
+    if nc -z -G 3 "$ip" 22 >/dev/null 2>&1; then echo "  operator -> $vm:22: open (control)"; else echo "  CONTROL FAILED: operator cannot SSH to $vm"; L2_OK=0; fi
+    if tcp_from_vm "$COORD_VM" "$ip" 22; then echo "  UNEXPECTED: coordinator host reached $vm:22"; L2_OK=0; else echo "  $COORD_VM -> $vm:22: blocked"; fi
+  done
+  if [[ $L2_OK == 1 ]]; then pass L2 "SSH to signer hosts only from the operator; operator cannot reach signer ports"; else fail L2 "firewall allows an unexpected path"; fi
+}
+
+if [[ $RECHECK_L2 == 1 ]]; then
+  echo "deployment under test: reports/multihost/deploy-manifest.json (kid $(jq -r .kid reports/multihost/deploy-manifest.json), deployed $(jq -r .deployed_at reports/multihost/deploy-manifest.json))"
+  l2_test
+  section "Summary"
+  printf '%s\n' "$RESULT_LINES" | sed '/^$/d'
+  echo "results: $RES"
+  [[ $FAILED -eq 0 ]] && { echo "L2 RECHECK: PASS"; exit 0; }
+  echo "L2 RECHECK: FAIL"; exit 1
+fi
+
 section "Coordinator host at the same commit"
 on "$COORD_VM" bash -lc "cd ~/tk8s && git fetch -q && git checkout -q $SHA && git rev-parse HEAD" | tr -d '\r'
 
@@ -97,18 +126,7 @@ for id in 1 2 3 4 5; do
 done
 if [[ $L1_OK == 1 ]]; then pass L1 "no signer host can open TCP to another signer host's signer or SSH ports; coordinator host can"; else fail L1 "lateral path open"; fi
 
-section "L2: operator-only SSH; operator cannot reach signer ports"
-L2_OK=1
-for id in 1 2 3 4 5; do
-  vm="$(id_vm "$id")"; ip="$(vm_ip "$vm")"; p="$(id_port "$id")"
-  if nc -z -G 3 "$ip" "$p" >/dev/null 2>&1; then echo "  UNEXPECTED: operator reached signer-$id $ip:$p"; L2_OK=0; else echo "  operator -> signer-$id $ip:$p: blocked"; fi
-done
-for vm in $SIGNER_VMS; do
-  ip="$(vm_ip "$vm")"
-  if nc -z -G 3 "$ip" 22 >/dev/null 2>&1; then echo "  operator -> $vm:22: open (control)"; else echo "  CONTROL FAILED: operator cannot SSH to $vm"; L2_OK=0; fi
-  if tcp_from_vm "$COORD_VM" "$ip" 22; then echo "  UNEXPECTED: coordinator host reached $vm:22"; L2_OK=0; else echo "  $COORD_VM -> $vm:22: blocked"; fi
-done
-if [[ $L2_OK == 1 ]]; then pass L2 "SSH to signer hosts only from the operator; operator cannot reach signer ports"; else fail L2 "firewall allows an unexpected path"; fi
+l2_test
 
 section "L3: per-signer OS users on shared hosts"
 L3_OK=1

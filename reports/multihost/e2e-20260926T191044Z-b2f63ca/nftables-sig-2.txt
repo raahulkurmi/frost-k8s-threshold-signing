@@ -1,0 +1,22 @@
+table inet frost_filter {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		tcp dport 22 accept comment "ssh: source /32 enforced by the cloud security group (N57)"
+		ip saddr 13.126.226.82 ip daddr 172.31.45.255 tcp dport 8441 accept comment "signer ports from coordinator host only"
+		ip saddr 13.126.226.82 icmp type echo-request accept comment "ping for RTT measurement"
+		udp sport 67 udp dport 68 accept comment "DHCP lease renewal"
+		icmpv6 type { nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } accept
+		counter packets 0 bytes 0 drop comment "default deny"
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}
