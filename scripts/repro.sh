@@ -107,17 +107,33 @@ install_bins() {
 # is not active in this shell until a new login).
 in_docker_group() { sg docker -c "export PATH=/usr/local/go/bin:\$PATH GOTOOLCHAIN=local; cd '$REPO' && $*"; }
 
-# kind downloads the release tarball without retrying; a dropped connection
-# (seen once: "unexpected EOF" from dl.k8s.io) fails the build. Up to 3 attempts,
-# each logged; the image is still built only from the official release.
-build_node_image() {
-  local a
-  for a in 1 2 3; do
-    echo "node image build attempt $a"
-    in_docker_group "kind build node-image --type release $K8S_NODE_VERSION --image $NODE_IMAGE" && break
-    [ $a = 3 ] && return 1
-    sleep 20
+# The node image is built from the official release server tarball. kind's own
+# download (--type release) is one HTTP/2 GET with no retry or resume, and from
+# some regions the CDN resets it mid-file every time (N55: EC2 ap-south-1, reset at
+# 252 MiB of 340 MiB). So: fetch the tarball with resumable HTTP/1.1 range
+# requests, verify it against the official .sha256 from dl.k8s.io, then
+# `kind build node-image --type file`. Same artifact, now checksum-verified.
+fetch_k8s_tarball() { # prints the verified path
+  set -euo pipefail
+  local url="https://dl.k8s.io/$K8S_NODE_VERSION/kubernetes-server-linux-$ARCH.tar.gz"
+  local dir="$HOME/.cache/tk8s-repro" f want size i
+  mkdir -p "$dir"; f="$dir/kubernetes-server-linux-$ARCH-$K8S_NODE_VERSION.tar.gz"
+  want=$(curl -fsSIL "$url" | awk 'tolower($1)=="content-length:"{n=$2} END{gsub(/\r/,"",n); print n}')
+  [ -n "$want" ] || { echo "cannot read Content-Length of $url" >&2; return 1; }
+  for i in $(seq 1 30); do
+    size=$(stat -c %s "$f" 2>/dev/null || echo 0)
+    [ "$size" -ge "$want" ] && break
+    curl -sL --http1.1 -C - -o "$f" "$url" || true
+    echo "download pass $i: $(stat -c %s "$f" 2>/dev/null || echo 0) of $want bytes" >&2
   done
+  echo "$(curl -fsSL "$url.sha256")  $f" | sha256sum -c - >&2
+  echo "$f"
+}
+build_node_image() {
+  local tb
+  tb=$(fetch_k8s_tarball) || return 1
+  echo "official tarball verified: $tb"
+  in_docker_group "kind build node-image --type file '$tb' --image $NODE_IMAGE" || return 1
   in_docker_group "docker image inspect $NODE_IMAGE --format 'node image {{.Id}}'"
 }
 
@@ -151,7 +167,7 @@ step make-e2e in_docker_group "make e2e"
   echo "| kind | $(kind version 2>/dev/null) |"
   echo "| kubectl | $(kubectl version --client 2>/dev/null | head -1) |"
   echo "| gitleaks | $(gitleaks version 2>/dev/null) |"
-  echo "| kind node image | \`$NODE_IMAGE\` $(sudo docker image inspect "$NODE_IMAGE" --format '{{.Id}}' 2>/dev/null), built from the official $K8S_NODE_VERSION release |"
+  echo "| kind node image | \`$NODE_IMAGE\` $(sudo docker image inspect "$NODE_IMAGE" --format '{{.Id}}' 2>/dev/null), built from the official $K8S_NODE_VERSION release server tarball (sha256-verified against dl.k8s.io) |"
   echo "| e2e Kubernetes | $(grep -h '^kubernetes:' test/e2e/results/*/e2e.log 2>/dev/null | tail -1) |"
   echo
   echo "| Step | Result | Duration (s) | Log |"

@@ -744,10 +744,16 @@ generated per run (`secrets/b1/key.pem`, 0600) and wiped at exit with all other 
    on a truly fresh host. `scripts/repro.sh` installs make itself, so on such a host the
    entry point is `scripts/repro.sh` (what `make repro` runs); REPRO.md records which one
    was used.
-2. `kind build node-image --type release` downloads the release tarball without
-   retrying; attempt 1 on EC2 failed with `unexpected EOF` from dl.k8s.io. The step now
-   retries up to 3 times (each attempt logged); the image is still built only from the
-   official release.
+2. `kind build node-image --type release` downloads the release server tarball in one
+   HTTP/2 GET with no retry or resume. From EC2 ap-south-1 the CDN reset that stream
+   **every time** (attempts 1 and 2, 3 tries each: `unexpected EOF`; curl: HTTP/2 stream
+   error at exactly 264,241,152 of 356,575,952 bytes; HTTP/1.1 connections were also cut
+   but resume). So retrying kind was not a fix. `scripts/repro.sh` now fetches the tarball
+   with resumable HTTP/1.1 range requests, **verifies it against the official `.sha256`**
+   from dl.k8s.io, and runs `kind build node-image --type file`. Same official artifact,
+   now with an explicit checksum. EC2 attempt 2 (`c46daba`, same instance) failed only on
+   this step and the e2e that needs the image; make test (with the N56 fix) and
+   make check-images passed.
 
 ### N56. Racy server-side count in TestHedgedContactsTPlusOneAndRotates (found on EC2)
 Repro attempt 1 on the 2-vCPU EC2 host failed `make test` in this test:
