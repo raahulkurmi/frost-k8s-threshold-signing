@@ -15,6 +15,9 @@ dist/
 
 # logs
 *.log
+# ...except evidence logs, which reports and NOTES cite (gitleaks-scanned before commit)
+!reports/**/*.log
+!benchmark/results/**/*.log
 nohup.out
 
 # secret material: never commit (I10)

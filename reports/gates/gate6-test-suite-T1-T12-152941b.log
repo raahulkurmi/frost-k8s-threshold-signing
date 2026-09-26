@@ -1,0 +1,18 @@
+152941b
+--- PASS: TestIssuedJWTVerifiesWithFetchKeysOnly (80.81s)
+--- PASS: TestAllThresholdSubsetsIdentical (0.41s)
+--- PASS: TestBelowThresholdFails (0.05s)
+--- PASS: TestTwoSharesCannotForge (0.76s)
+--- PASS: TestSignerRejectsPrehashedInput (0.09s)
+--- PASS: TestSignerPolicyRejectsCoordinatorBypass (0.10s)
+--- PASS: TestSignerPolicyRejectsWrongHeaderDirect (0.06s)
+--- PASS: TestDeadlineRespected (0.62s)
+--- PASS: TestCoordinatorFailsClosed (0.07s)
+--- PASS: TestCoordinatorUnreachableSignersFail (0.02s)
+--- PASS: TestWrongShareIndexRejected (0.03s)
+--- PASS: TestWrongKidRejected (0.02s)
+--- PASS: TestSignerBinaryFailsClosed (0.04s)
+--- PASS: TestNoSecretsInTree (0.58s)
+--- PASS: TestNoKeyMaterialFilesInTree (0.00s)
+--- PASS: TestCoordinatorHasNoSecretTypes (0.31s)
+ok  	frost-k8s-threshold-signing/test	84.458s

@@ -1,0 +1,115 @@
+LABEL: preliminary, arm64, multi-VM single physical host; netem rows are emulated
+== build tokenbench on tk8s (pinned toolchain)
+4c13a3f85a41431e2c2394d812ca491d78a32d32c1e0a2bf91acb5241c3e9186  /tmp/tokenbench
+== added delay on far hosts: 0ms 
+  sig-b enp0s1: qdisc fq_codel 0: root refcnt 2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64 
+  sig-c enp0s1: qdisc fq_codel 0: root refcnt 2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64 
+  signer-1 sig-a 192.168.252.3:8441  ping avg 0.671ms  tcp connect median/min/max 0.451/0.273/0.608 ms
+  signer-2 sig-a 192.168.252.3:8442  ping avg 0.594ms  tcp connect median/min/max 0.447/0.275/0.688 ms
+  signer-3 sig-b 192.168.252.4:8443  ping avg 0.631ms  tcp connect median/min/max 0.367/0.255/0.555 ms
+  signer-4 sig-b 192.168.252.4:8444  ping avg 0.693ms  tcp connect median/min/max 0.406/0.260/1.554 ms
+  signer-5 sig-c 192.168.252.5:8445  ping avg 0.709ms  tcp connect median/min/max 0.516/0.383/3.280 ms
+  -> T3of5-strict-L0ms-c1  host load before: {"loadavg": "3.87 4.41 4.84", "mem_available_gib": 3.10, "swap": "total = 11264.00M  used = 10271.31M  free = 992.69M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 18:47 remaining present: true ", "lid_closed": "No"}
+T3of5-strict-L0ms-c1: 1000 requests (+100 warm-up) at c=1 in 1m2.706s; 0 errors -> /tmp/T3of5-strict-L0ms-c1.csv
+     host load after:  {"loadavg": "6.68 5.13 5.07", "mem_available_gib": 2.96, "swap": "total = 11264.00M  used = 10247.31M  free = 1016.69M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L0ms-c10  host load before: {"loadavg": "6.68 5.13 5.07", "mem_available_gib": 2.96, "swap": "total = 11264.00M  used = 10247.31M  free = 1016.69M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L0ms-c10: 1000 requests (+100 warm-up) at c=10 in 45.926s; 0 errors -> /tmp/T3of5-strict-L0ms-c10.csv
+     host load after:  {"loadavg": "8.54 5.92 5.37", "mem_available_gib": 3.19, "swap": "total = 11264.00M  used = 10239.31M  free = 1024.69M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 18:57 remaining present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L0ms-c50  host load before: {"loadavg": "8.54 5.92 5.37", "mem_available_gib": 3.21, "swap": "total = 11264.00M  used = 10239.31M  free = 1024.69M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 18:57 remaining present: true ", "lid_closed": "No"}
+T3of5-strict-L0ms-c50: 1000 requests (+100 warm-up) at c=50 in 41.253s; 969 errors -> /tmp/T3of5-strict-L0ms-c50.csv
+     host load after:  {"loadavg": "10.31 6.71 5.69", "mem_available_gib": 3.17, "swap": "total = 11264.00M  used = 10231.31M  free = 1032.69M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 19:07 remaining present: true ", "lid_closed": "No"}
+== added delay on far hosts: 20ms (EMULATED, tc netem)
+  sig-b enp0s1: qdisc netem 8001: root refcnt 2 limit 1000 delay 20ms
+  sig-c enp0s1: qdisc netem 8001: root refcnt 2 limit 1000 delay 20ms
+  signer-1 sig-a 192.168.252.3:8441  ping avg 0.638ms  tcp connect median/min/max 0.649/0.382/2.589 ms
+  signer-2 sig-a 192.168.252.3:8442  ping avg 0.738ms  tcp connect median/min/max 1.190/0.586/8.156 ms
+  signer-3 sig-b 192.168.252.4:8443  ping avg 52.160ms  tcp connect median/min/max 67.844/21.126/92.089 ms
+  signer-4 sig-b 192.168.252.4:8444  ping avg 61.826ms  tcp connect median/min/max 61.805/21.073/95.182 ms
+  signer-5 sig-c 192.168.252.5:8445  ping avg 64.752ms  tcp connect median/min/max 75.827/23.543/93.350 ms
+  -> T3of5-strict-L20ms-c1-emulated  host load before: {"loadavg": "8.68 6.88 5.81", "mem_available_gib": 3.29, "swap": "total = 11264.00M  used = 10307.81M  free = 956.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 19:17 remaining present: true ", "lid_closed": "No"}
+T3of5-strict-L20ms-c1-emulated: 1000 requests (+100 warm-up) at c=1 in 1m10.798s; 0 errors -> /tmp/T3of5-strict-L20ms-c1-emulated.csv
+     host load after:  {"loadavg": "6.58 6.65 5.81", "mem_available_gib": 3.25, "swap": "total = 11264.00M  used = 10275.81M  free = 988.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 19:27 remaining present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L20ms-c10-emulated  host load before: {"loadavg": "6.58 6.65 5.81", "mem_available_gib": 3.26, "swap": "total = 11264.00M  used = 10275.81M  free = 988.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 19:27 remaining present: true ", "lid_closed": "No"}
+T3of5-strict-L20ms-c10-emulated: 1000 requests (+100 warm-up) at c=10 in 46.213s; 0 errors -> /tmp/T3of5-strict-L20ms-c10-emulated.csv
+     host load after:  {"loadavg": "12.17 8.26 6.47", "mem_available_gib": 2.94, "swap": "total = 11264.00M  used = 10259.81M  free = 1004.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L20ms-c50-emulated  host load before: {"loadavg": "12.17 8.26 6.47", "mem_available_gib": 2.95, "swap": "total = 11264.00M  used = 10259.81M  free = 1004.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L20ms-c50-emulated: 1000 requests (+100 warm-up) at c=50 in 40.993s; 944 errors -> /tmp/T3of5-strict-L20ms-c50-emulated.csv
+     host load after:  {"loadavg": "10.64 8.43 6.62", "mem_available_gib": 3.38, "swap": "total = 11264.00M  used = 10243.81M  free = 1020.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+== added delay on far hosts: 60ms (EMULATED, tc netem)
+  sig-b enp0s1: qdisc netem 8001: root refcnt 2 limit 1000 delay 60ms
+  sig-c enp0s1: qdisc netem 8001: root refcnt 2 limit 1000 delay 60ms
+  signer-1 sig-a 192.168.252.3:8441  ping avg 0.797ms  tcp connect median/min/max 0.599/0.355/1.164 ms
+  signer-2 sig-a 192.168.252.3:8442  ping avg 0.647ms  tcp connect median/min/max 0.483/0.270/0.856 ms
+  signer-3 sig-b 192.168.252.4:8443  ping avg 102.063ms  tcp connect median/min/max 104.477/63.827/134.366 ms
+  signer-4 sig-b 192.168.252.4:8444  ping avg 98.808ms  tcp connect median/min/max 100.512/60.833/132.495 ms
+  signer-5 sig-c 192.168.252.5:8445  ping avg 109.308ms  tcp connect median/min/max 100.101/61.400/132.278 ms
+  -> T3of5-strict-L60ms-c1-emulated  host load before: {"loadavg": "6.23 7.57 6.42", "mem_available_gib": 3.26, "swap": "total = 11264.00M  used = 10235.81M  free = 1028.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L60ms-c1-emulated: 1000 requests (+100 warm-up) at c=1 in 1m49.002s; 0 errors -> /tmp/T3of5-strict-L60ms-c1-emulated.csv
+     host load after:  {"loadavg": "5.65 6.95 6.31", "mem_available_gib": 3.34, "swap": "total = 11264.00M  used = 10235.81M  free = 1028.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 33%; charging; (no estimate) present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L60ms-c10-emulated  host load before: {"loadavg": "5.65 6.95 6.31", "mem_available_gib": 3.35, "swap": "total = 11264.00M  used = 10235.81M  free = 1028.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 33%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L60ms-c10-emulated: 1000 requests (+100 warm-up) at c=10 in 45.575s; 0 errors -> /tmp/T3of5-strict-L60ms-c10-emulated.csv
+     host load after:  {"loadavg": "8.58 7.55 6.57", "mem_available_gib": 3.28, "swap": "total = 11264.00M  used = 10227.81M  free = 1036.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 33%; charging; (no estimate) present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L60ms-c50-emulated  host load before: {"loadavg": "8.58 7.55 6.57", "mem_available_gib": 3.28, "swap": "total = 11264.00M  used = 10227.81M  free = 1036.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 33%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L60ms-c50-emulated: 1000 requests (+100 warm-up) at c=50 in 40.801s; 933 errors -> /tmp/T3of5-strict-L60ms-c50-emulated.csv
+     host load after:  {"loadavg": "8.35 7.62 6.65", "mem_available_gib": 3.37, "swap": "total = 11264.00M  used = 10219.81M  free = 1044.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+== added delay on far hosts: 150ms (EMULATED, tc netem)
+  sig-b enp0s1: qdisc netem 8001: root refcnt 2 limit 1000 delay 150ms
+  sig-c enp0s1: qdisc netem 8001: root refcnt 2 limit 1000 delay 150ms
+  signer-1 sig-a 192.168.252.3:8441  ping avg 0.601ms  tcp connect median/min/max 0.466/0.321/0.916 ms
+  signer-2 sig-a 192.168.252.3:8442  ping avg 0.630ms  tcp connect median/min/max 0.553/0.248/1.289 ms
+  signer-3 sig-b 192.168.252.4:8443  ping avg 191.576ms  tcp connect median/min/max 178.491/150.770/224.067 ms
+  signer-4 sig-b 192.168.252.4:8444  ping avg 192.404ms  tcp connect median/min/max 167.635/150.922/224.946 ms
+  signer-5 sig-c 192.168.252.5:8445  ping avg 182.342ms  tcp connect median/min/max 182.603/152.242/225.094 ms
+  -> T3of5-strict-L150ms-c1-emulated  host load before: {"loadavg": "4.93 6.76 6.39", "mem_available_gib": 3.24, "swap": "total = 11264.00M  used = 10203.81M  free = 1060.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L150ms-c1-emulated: 1000 requests (+100 warm-up) at c=1 in 3m17.002s; 0 errors -> /tmp/T3of5-strict-L150ms-c1-emulated.csv
+     host load after:  {"loadavg": "3.89 5.50 5.94", "mem_available_gib": 3.22, "swap": "total = 11264.00M  used = 10003.81M  free = 1260.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 20:00 remaining present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L150ms-c10-emulated  host load before: {"loadavg": "3.89 5.50 5.94", "mem_available_gib": 3.22, "swap": "total = 11264.00M  used = 10003.81M  free = 1260.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 20:00 remaining present: true ", "lid_closed": "No"}
+T3of5-strict-L150ms-c10-emulated: 1000 requests (+100 warm-up) at c=10 in 45.816s; 0 errors -> /tmp/T3of5-strict-L150ms-c10-emulated.csv
+     host load after:  {"loadavg": "8.66 6.53 6.29", "mem_available_gib": 2.98, "swap": "total = 11264.00M  used = 10003.81M  free = 1260.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+  -> T3of5-strict-L150ms-c50-emulated  host load before: {"loadavg": "8.66 6.53 6.29", "mem_available_gib": 2.99, "swap": "total = 11264.00M  used = 10003.81M  free = 1260.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; (no estimate) present: true ", "lid_closed": "No"}
+T3of5-strict-L150ms-c50-emulated: 1000 requests (+100 warm-up) at c=50 in 41.11s; 973 errors -> /tmp/T3of5-strict-L150ms-c50-emulated.csv
+     host load after:  {"loadavg": "9.13 6.88 6.42", "mem_available_gib": 3.26, "swap": "total = 11264.00M  used = 9971.81M  free = 1292.19M  (encrypted)", "power": "Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 33%; charging; (no estimate) present: true ", "lid_closed": "No"}
+== results: benchmark/results/20260925T094355Z-9bb1f16-multihost-L1
+# Phase 7B Level 1: T 3-of-5 multi-VM (preliminary)
+
+> PRELIMINARY, arm64, multi-VM SINGLE PHYSICAL HOST (Multipass on one Mac); not for publication. Rows with L>0ms add EMULATED latency (tc netem) on the far hosts sig-b (signers 3,4) and sig-c (signer 5); sig-a (signers 1,2) is near. Strategy strict, deadline 2s, RSA-2048. Measured RTT per setting: rtt-L*.json. Environment and host load: env.json, host-load.jsonl. Host sleep during run: false (checked from pmset -g log for 2026-09-25 15:13:55 onwards). Host power at start: Now drawing from 'AC Power' -InternalBattery-0 (id=34734179) 32%; charging; 18:47 remaining present: true .
+
+Generated by `benchmark/summarize` from the raw CSVs listed below. Latencies in ms; percentiles are nearest-rank over successful requests; throughput = successful requests / (last end − first start). Every configuration run is listed, including the worst.
+
+| Configuration | N | errors | median | p95 | p99 | mean | stddev | min | max | throughput (req/s) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| T3of5-strict-L0ms-c1 | 1000 | 0 | 66.3 | 75.1 | 87.6 | 62.7 | 11.4 | 32.0 | 129.9 | 15.9 |
+| T3of5-strict-L0ms-c10 | 1000 | 0 | 459.7 | 569.4 | 658.8 | 458.5 | 70.8 | 190.0 | 792.1 | 21.8 |
+| T3of5-strict-L0ms-c50 | 1000 | 969 | 1869.7 | 2061.7 | 2152.0 | 1668.1 | 429.6 | 510.7 | 2152.0 | 0.8 |
+| T3of5-strict-L20ms-c1-emulated | 1000 | 0 | 68.5 | 95.0 | 114.4 | 70.8 | 17.3 | 44.9 | 320.8 | 14.1 |
+| T3of5-strict-L20ms-c10-emulated | 1000 | 0 | 465.5 | 589.8 | 672.4 | 461.7 | 82.9 | 140.8 | 749.6 | 21.6 |
+| T3of5-strict-L20ms-c50-emulated | 1000 | 944 | 1858.5 | 2060.9 | 2085.2 | 1763.1 | 318.4 | 893.9 | 2085.2 | 1.4 |
+| T3of5-strict-L60ms-c1-emulated | 1000 | 0 | 107.3 | 131.2 | 142.4 | 109.0 | 12.4 | 78.7 | 170.6 | 9.2 |
+| T3of5-strict-L60ms-c10-emulated | 1000 | 0 | 461.4 | 557.9 | 627.7 | 454.7 | 69.9 | 163.2 | 706.7 | 21.9 |
+| T3of5-strict-L60ms-c50-emulated | 1000 | 933 | 1804.8 | 2010.3 | 2262.4 | 1717.5 | 320.3 | 724.4 | 2262.4 | 1.6 |
+| T3of5-strict-L150ms-c1-emulated | 1000 | 0 | 193.8 | 226.8 | 233.8 | 197.0 | 15.6 | 170.5 | 280.4 | 5.1 |
+| T3of5-strict-L150ms-c10-emulated | 1000 | 0 | 465.9 | 575.4 | 637.3 | 457.4 | 79.5 | 186.5 | 766.8 | 21.8 |
+| T3of5-strict-L150ms-c50-emulated | 1000 | 973 | 1880.3 | 2054.0 | 2068.9 | 1756.9 | 377.5 | 568.0 | 2068.9 | 1.5 |
+
+Errors:
+- `T3of5-strict-L0ms-c50`: 969 errors; first: `Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = token signing failed: threshold not met`
+- `T3of5-strict-L20ms-c50-emulated`: 944 errors; first: `Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = token signing failed: threshold not met`
+- `T3of5-strict-L60ms-c50-emulated`: 933 errors; first: `Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = token signing failed: threshold not met`
+- `T3of5-strict-L150ms-c50-emulated`: 973 errors; first: `Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = token signing failed: threshold not met`
+
+Source CSVs:
+- `T3of5-strict-L0ms-c1.csv`
+- `T3of5-strict-L0ms-c10.csv`
+- `T3of5-strict-L0ms-c50.csv`
+- `T3of5-strict-L20ms-c1-emulated.csv`
+- `T3of5-strict-L20ms-c10-emulated.csv`
+- `T3of5-strict-L20ms-c50-emulated.csv`
+- `T3of5-strict-L60ms-c1-emulated.csv`
+- `T3of5-strict-L60ms-c10-emulated.csv`
+- `T3of5-strict-L60ms-c50-emulated.csv`
+- `T3of5-strict-L150ms-c1-emulated.csv`
+- `T3of5-strict-L150ms-c10-emulated.csv`
+- `T3of5-strict-L150ms-c50-emulated.csv`
+== removing netem
+  sig-b enp0s1: qdisc fq_codel 0: root refcnt 2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64 
+  sig-c enp0s1: qdisc fq_codel 0: root refcnt 2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64 

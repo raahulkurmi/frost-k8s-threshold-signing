@@ -344,6 +344,39 @@ func main() {
 		fmt.Fprintln(&b)
 	}
 
+	// N49 check per tag (Phase 7B), same thresholds as the 7A -single summary.
+	var n49 []string
+	for _, t := range tags {
+		var s10, s50 *stats
+		for _, k := range keys {
+			if st := byKey[k][t]; st != nil {
+				switch k.c {
+				case 10:
+					s10 = st
+				case 50:
+					s50 = st
+				}
+			}
+		}
+		if s10 == nil || s50 == nil {
+			continue
+		}
+		pf := func(ok bool) string {
+			if ok {
+				return "PASS"
+			}
+			return "**FAIL**"
+		}
+		ratio := s50.goodput / s10.goodput
+		e10 := 100 * float64(s10.errs) / float64(s10.n)
+		fpOK := math.IsNaN(s50.failP95) || s50.failP95 <= 2200
+		n49 = append(n49, fmt.Sprintf("| %s | %s | %s | %.2f | %s | %.1f | %s | %s | %s | %s |", t, f1(s10.goodput), f1(s50.goodput), ratio,
+			pf(ratio >= 0.8), e10, pf(e10 <= 1), f1(s50.failP95), f1(s50.p95), pf(fpOK && !math.IsNaN(s50.p95) && s50.p95 <= 2000)))
+	}
+	if len(n49) > 0 {
+		fmt.Fprintf(&b, "## N49 check (thresholds fixed before the 7A run)\n\nN49-1 goodput(c=50) ≥ 0.8 × goodput(c=10); N49-2 error rate at c=10 ≤ 1%%; N49-3 failed p95 at c=50 ≤ 2200 ms (no failures = pass) and successful p95 at c=50 ≤ 2000 ms. One run per configuration.\n\n| Tag | goodput c10 | goodput c50 | ratio | N49-1 | err%% c10 | N49-2 | failed p95 c50 | ok p95 c50 | N49-3 |\n|---|---:|---:|---:|---|---:|---|---:|---:|---|\n%s\n\n", strings.Join(n49, "\n"))
+	}
+
 	fmt.Fprintf(&b, "## All configurations\n\n| Set | Measured quorum RTT (ms) | RTT measured | Configured netem (ms) | Configuration | N | errors | error %% | median | p95 | p99 | mean | stddev | min | max | goodput (ok/s, whole run) | offered (all/s) | failed p95 | coordinator signed | coordinator p50 | coordinator p95 | client − coordinator median | coordinator sign failed | coordinator failed p95 |\n|---|---:|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
 	var errNotes []string
 	for _, s := range all {

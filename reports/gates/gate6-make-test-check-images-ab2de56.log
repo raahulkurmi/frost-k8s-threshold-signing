@@ -1,0 +1,38 @@
+$ git rev-parse HEAD
+ab2de56376baa1eecef762da6f9922c603628958
+$ make test
+go test -count=1 -timeout 30m ./...
+ok  	frost-k8s-threshold-signing/cmd/dealer	171.215s
+?   	frost-k8s-threshold-signing/cmd/grpc-proxy	[no test files]
+ok  	frost-k8s-threshold-signing/cmd/signer	124.247s
+?   	frost-k8s-threshold-signing/internal/audit	[no test files]
+ok  	frost-k8s-threshold-signing/internal/coordinator	130.485s
+?   	frost-k8s-threshold-signing/internal/dealer	[no test files]
+ok  	frost-k8s-threshold-signing/internal/grpcserver	72.529s
+?   	frost-k8s-threshold-signing/internal/jwtfmt	[no test files]
+?   	frost-k8s-threshold-signing/internal/keymeta	[no test files]
+?   	frost-k8s-threshold-signing/internal/keyshare	[no test files]
+ok  	frost-k8s-threshold-signing/internal/policy	0.020s
+ok  	frost-k8s-threshold-signing/internal/signer	30.349s
+?   	frost-k8s-threshold-signing/internal/testutil	[no test files]
+?   	frost-k8s-threshold-signing/internal/tlsconf	[no test files]
+?   	frost-k8s-threshold-signing/internal/wire	[no test files]
+--- FAIL: TestNoSecretsInTree (0.46s)
+FAIL
+FAIL	frost-k8s-threshold-signing/test	74.496s
+?   	frost-k8s-threshold-signing/test/e2e/fetchkeys	[no test files]
+FAIL
+make test exit=2
+
+$ make check-images
+scripts/check-images.sh
+== coordinator image frost-k8s/coordinator:dev (sha256:a9aab8c62cde)
+  layers inspected: 3
+  files in image: 90, binaries: grpc-proxy 
+  history: 6 entries, no secret references
+== signer image frost-k8s/signer:dev (sha256:623c50b6721a)
+  layers inspected: 3
+  files in image: 90, binaries: signer 
+  history: 6 entries, no secret references
+check-images: PASS (no shares, keys, certs, encrypted blobs or private keys in any layer of either image)
+check-images exit=0

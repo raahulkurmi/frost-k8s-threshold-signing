@@ -1,0 +1,276 @@
+
+================ Environment ================
+git commit: 152941b8c3bd6ca6684fd760c248832b07b617d0
+date (UTC): 20260924T171436Z
+Linux tk8s 6.8.0-139-generic #139-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 03:32:48 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+cpus: 4
+               total        used        free      shared  buff/cache   available
+Mem:           7.7Gi       488Mi       2.7Gi       1.2Mi       4.8Gi       7.3Gi
+docker engine 29.8.1
+kind v0.31.0 go1.25.5 linux/arm64
+Client Version: v1.36.5
+go version go1.27.1 linux/arm64
+verify strategy: strict, sign deadline: 2s
+
+================ Setup: fresh certs, key ceremony, signer stack ================
+Generated in secrets/:
+  coordinator/tls.crt          DNS:coordinator  sha256=76:16:5C:95:9E:D4:64:C5:A5:BF:2D:7A:B3:0C:BE:5C:43:D4:BB:CC:3C:E2:CE:70:56:16:13:A9:F3:9A:01:A8
+  signer-1/tls.crt             DNS:signer-1  sha256=70:8C:60:B7:48:80:8C:D3:1B:6C:41:A3:8C:AB:10:43:87:3B:89:14:95:7C:15:2E:E1:B7:52:23:E8:CB:F8:BB
+  signer-2/tls.crt             DNS:signer-2  sha256=6A:0D:D7:C2:93:2B:74:72:56:43:71:20:08:88:EB:C4:34:20:C3:01:BA:FA:2C:9F:7B:66:E7:70:67:AA:FC:D5
+  signer-3/tls.crt             DNS:signer-3  sha256=49:5C:12:A6:00:16:02:EC:49:78:D9:74:D9:40:11:90:30:01:64:28:49:94:3F:53:3D:9F:AE:8F:56:14:FD:BF
+  signer-4/tls.crt             DNS:signer-4  sha256=3A:E4:E4:50:6C:97:D5:C8:96:AD:DA:E0:DE:81:72:4C:22:7B:1C:4E:34:CF:AF:6E:1C:1E:00:2B:78:A9:4E:5F
+  signer-5/tls.crt             DNS:signer-5  sha256=F3:F7:99:59:5F:D8:8D:75:D4:14:22:EE:40:86:91:8B:C3:F0:A1:0E:03:37:6D:4B:15:FA:F0:8E:97:9E:99:9F
+CA private key: secrets/ca/ca.key (keep offline; never mount or copy into an image)
+Generating 3-of-5 threshold RSA key, 2048-bit modulus (safe primes; this can take minutes)...
+Generated in 9.925s
+kid: fngPKmdMVQzcV2Ym-3CMUg
+threshold: 3 of 5, modulus: 2048 bits
+SHA-256 of outputs:
+  325db6e02824fde18599f32559e08eb6dc82ead2d40f7f6c4a1a4610465ce249  secrets/keys/public-meta.json
+  e8f18834f410f5cc9a2c38a8746d9bac668de8c0284339b45fb1f875c6566499  secrets/keys/share-1.json
+  8ddb8733175f94e36cb05d0b20a9559550b00b55d4d0b33ec5108a19818da8c5  secrets/keys/share-2.json
+  12c7fc3ecf4c8da5d28b86835c1657a49742be2042665521c3334e26a67995e7  secrets/keys/share-3.json
+  f1cb841960020423f3a3cf83e45d6215dda26a411e0fd25695ce558f1af109e8  secrets/keys/share-4.json
+  b5671ae9ceba58619b0327d85c8bf1ad81596abb5286e39751e80306a205bc6f  secrets/keys/share-5.json
+Distribute each share-<i>.json to signer <i> only, then securely delete secrets/keys (docs/KEY_CEREMONY.md).
+kid: fngPKmdMVQzcV2Ym-3CMUg
+ Image frost-k8s/coordinator:dev Building 
+ Image frost-k8s/coordinator:dev Building 
+ Image frost-k8s/signer:dev Building 
+ Image frost-k8s/signer:dev Building 
+ Image frost-k8s/signer:dev Building 
+ Image frost-k8s/signer:dev Building 
+ Image frost-k8s/signer:dev Building 
+ Image frost-k8s/coordinator:dev Building 
+ Image frost-k8s/coordinator:dev Built 
+ Image frost-k8s/signer:dev Built 
+ Image frost-k8s/signer:dev Built 
+ Image frost-k8s/coordinator:dev Built 
+ Image frost-k8s/signer:dev Built 
+ Image frost-k8s/signer:dev Built 
+ Image frost-k8s/coordinator:dev Built 
+ Image frost-k8s/signer:dev Built 
+ Network tk8s_frost Creating 
+ Network tk8s_frost Creating 
+ Network tk8s_frost Created 
+ Network tk8s_frost Created 
+ Container tk8s-signer-3-1 Creating 
+ Container tk8s-signer-2-1 Creating 
+ Container tk8s-signer-4-1 Creating 
+ Container tk8s-signer-1-1 Creating 
+ Container tk8s-signer-5-1 Creating 
+ Container tk8s-signer-5-1 Created 
+ Container tk8s-signer-1-1 Created 
+ Container tk8s-signer-2-1 Created 
+ Container tk8s-signer-3-1 Created 
+ Container tk8s-signer-4-1 Created 
+ Container tk8s-grpc-proxy-3-1 Creating 
+ Container tk8s-grpc-proxy-1-1 Creating 
+ Container tk8s-grpc-proxy-2-1 Creating 
+ Container tk8s-grpc-proxy-1-1 Created 
+ Container tk8s-grpc-proxy-2-1 Created 
+ Container tk8s-grpc-proxy-3-1 Created 
+ Container tk8s-coordinator-lb-1 Creating 
+ Container tk8s-coordinator-lb-1 Created 
+ Container tk8s-signer-4-1 Starting 
+ Container tk8s-signer-3-1 Starting 
+ Container tk8s-signer-5-1 Starting 
+ Container tk8s-signer-2-1 Starting 
+ Container tk8s-signer-1-1 Starting 
+ Container tk8s-signer-4-1 Started 
+ Container tk8s-signer-3-1 Started 
+ Container tk8s-signer-5-1 Started 
+ Container tk8s-signer-2-1 Started 
+ Container tk8s-signer-1-1 Started 
+ Container tk8s-grpc-proxy-3-1 Starting 
+ Container tk8s-grpc-proxy-2-1 Starting 
+ Container tk8s-grpc-proxy-1-1 Starting 
+ Container tk8s-grpc-proxy-3-1 Started 
+ Container tk8s-grpc-proxy-2-1 Started 
+ Container tk8s-grpc-proxy-1-1 Started 
+ Container tk8s-coordinator-lb-1 Starting 
+ Container tk8s-coordinator-lb-1 Started 
+{"keys":[{"kid":"fngPKmdMVQzcV2Ym-3CMUg","pkix_sha256":"7e780f2a674c550cdc576626fb708c5213a52ce8b19279cafe55ab6b4b16d54e","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-24T17:14:47Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+SERVICE          STATE
+coordinator-lb   running
+grpc-proxy-1     running
+grpc-proxy-2     running
+grpc-proxy-3     running
+signer-1         running
+signer-2         running
+signer-3         running
+signer-4         running
+signer-5         running
+
+================ Setup: kind cluster (apiserver signs only via /home/ubuntu/tk8s/run/signer.sock) ================
+Creating cluster "tk8s" ...
+ • Ensuring node image (kindest/node:v1.36.5-tk8s) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.36.5-tk8s) 🖼
+ • Preparing nodes 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+ • Waiting ≤ 5m0s for control-plane = Ready ⏳  ...
+ ✓ Waiting ≤ 5m0s for control-plane = Ready ⏳
+ • Ready after 8s 💚
+Set kubectl context to "kind-tk8s"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-tk8s
+
+Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
+server version: v1.36.5
+node image: sha256:2c8e428b7d8141e273b8149bbcbccb9d21bebfe2a0bd3d98ede6a9c9cfe16286
+apiserver service-account flags:
+    - --service-account-issuer=https://kubernetes.default.svc.cluster.local
+    - --service-account-signing-endpoint=/var/run/frost-k8s/signer.sock
+controller-manager service-account flags:
+    - --use-service-account-credentials=true
+PASS SETUP: apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+deleted /etc/kubernetes/pki/sa.{key,pub} from the control-plane node
+pod/coredns-589f44dc88-98x6l condition met
+pod/coredns-589f44dc88-fz8kv condition met
+pod/etcd-tk8s-control-plane condition met
+pod/kindnet-bhvfs condition met
+pod/kindnet-jjpjf condition met
+pod/kube-apiserver-tk8s-control-plane condition met
+pod/kube-controller-manager-tk8s-control-plane condition met
+pod/kube-proxy-jdqhp condition met
+pod/kube-proxy-zdqd9 condition met
+pod/kube-scheduler-tk8s-control-plane condition met
+NAME                                         READY   STATUS    RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+coredns-589f44dc88-98x6l                     1/1     Running   0          15s   10.244.0.2   tk8s-control-plane   <none>           <none>
+coredns-589f44dc88-fz8kv                     1/1     Running   0          15s   10.244.0.3   tk8s-control-plane   <none>           <none>
+etcd-tk8s-control-plane                      1/1     Running   0          23s   172.18.0.3   tk8s-control-plane   <none>           <none>
+kindnet-bhvfs                                1/1     Running   0          15s   172.18.0.3   tk8s-control-plane   <none>           <none>
+kindnet-jjpjf                                1/1     Running   0          11s   172.18.0.2   tk8s-worker          <none>           <none>
+kube-apiserver-tk8s-control-plane            1/1     Running   0          23s   172.18.0.3   tk8s-control-plane   <none>           <none>
+kube-controller-manager-tk8s-control-plane   1/1     Running   0          23s   172.18.0.3   tk8s-control-plane   <none>           <none>
+kube-proxy-jdqhp                             1/1     Running   0          11s   172.18.0.2   tk8s-worker          <none>           <none>
+kube-proxy-zdqd9                             1/1     Running   0          15s   172.18.0.3   tk8s-control-plane   <none>           <none>
+kube-scheduler-tk8s-control-plane            1/1     Running   0          23s   172.18.0.3   tk8s-control-plane   <none>           <none>
+
+================ E1: kubectl create token default -> RS256, threshold kid ================
+header: {"alg":"RS256","typ":"JWT","kid":"fngPKmdMVQzcV2Ym-3CMUg"}
+claims: {"aud":["https://kubernetes.default.svc.cluster.local"],"exp":1790273723,"iat":1790270123,"iss":"https://kubernetes.default.svc.cluster.local","jti":"f3958a22-eb00-4aff-b5ee-459694719c6e","kubernetes.io":{"namespace":"default","serviceaccount":{"name":"default","uid":"b3c2c490-647d-4b51-8833-66dff0d9a823"}},"nbf":1790270123,"sub":"system:serviceaccount:default:default"}
+PASS E1: alg=RS256 kid=fngPKmdMVQzcV2Ym-3CMUg (equals public-meta.json)
+
+================ E2: TokenReview of that token ================
+{"audiences":["https://kubernetes.default.svc.cluster.local"],"authenticated":true,"user":{"extra":{"authentication.kubernetes.io/credential-id":["JTI=f3958a22-eb00-4aff-b5ee-459694719c6e"]},"groups":["system:serviceaccounts","system:serviceaccounts:default","system:authenticated"],"uid":"b3c2c490-647d-4b51-8833-66dff0d9a823","username":"system:serviceaccount:default:default"}}
+PASS E2: authenticated=true username=system:serviceaccount:default:default
+
+================ E3 + (a) + (c): pod with projected token calls the API ================
+pod/e3-client created
+pod/e3-client condition met
+GET /api with automounted token: HTTP 200
+SelfSubjectReview with projected token: {"username":"system:serviceaccount:default:default","uid":"b3c2c490-647d-4b51-8833-66dff0d9a823","groups":["system:serviceaccounts","system:serviceaccounts:default","system:authenticated"],"extra":{"authentication.kubernetes.io/credential-id":["JTI=3aa06559-bc0f-4e6d-aeb8-bea7bbfcf952"],"authentication.kubernetes.io/node-name":["tk8s-worker"],"authentication.kubernetes.io/node-uid":["9af95ce5-ee38-47d2-befb-d093170417f6"],"authentication.kubernetes.io/pod-name":["e3-client"],"authentication.kubernetes.io/pod-uid":["e687f452-46e0-46e1-b329-6ec2a12d2c98"]}}
+PASS E3: pod reached the API (HTTP 200) and authenticated as system:serviceaccount:default:default with its projected token
+projected token header: {"alg":"RS256","typ":"JWT","kid":"fngPKmdMVQzcV2Ym-3CMUg"}
+projected token claims: {"aud":["https://kubernetes.default.svc.cluster.local"],"exp":1790277325,"iat":1790270125,"iss":"https://kubernetes.default.svc.cluster.local","jti":"3aa06559-bc0f-4e6d-aeb8-bea7bbfcf952","kubernetes.io":{"namespace":"default","node":{"name":"tk8s-worker","uid":"9af95ce5-ee38-47d2-befb-d093170417f6"},"pod":{"name":"e3-client","uid":"e687f452-46e0-46e1-b329-6ec2a12d2c98"},"serviceaccount":{"name":"default","uid":"b3c2c490-647d-4b51-8833-66dff0d9a823"},"warnafter":1790273732},"nbf":1790270125,"sub":"system:serviceaccount:default:default"}
+projected token TokenReview: {"audiences":["https://kubernetes.default.svc.cluster.local"],"authenticated":true,"user":{"extra":{"authentication.kubernetes.io/credential-id":["JTI=3aa06559-bc0f-4e6d-aeb8-bea7bbfcf952"],"authentication.kubernetes.io/node-name":["tk8s-worker"],"authentication.kubernetes.io/node-uid":["9af95ce5-ee38-47d2-befb-d093170417f6"],"authentication.kubernetes.io/pod-name":["e3-client"],"authentication.kubernetes.io/pod-uid":["e687f452-46e0-46e1-b329-6ec2a12d2c98"]},"groups":["system:serviceaccounts","system:serviceaccounts:default","system:authenticated"],"uid":"b3c2c490-647d-4b51-8833-66dff0d9a823","username":"system:serviceaccount:default:default"}}
+projected token exp - iat = 7200s, warnafter - iat = 3607s (policy/Metadata max = 7200s)
+PASS REQ-a: kubelet-projected token issued and passes TokenReview; exp-iat=7200s warnafter-iat=3607s
+bound to Pod/e3-client: kubernetes.io={"namespace":"default","node":{"name":"tk8s-worker","uid":"9af95ce5-ee38-47d2-befb-d093170417f6"},"pod":{"name":"e3-client","uid":"e687f452-46e0-46e1-b329-6ec2a12d2c98"},"serviceaccount":{"name":"default","uid":"b3c2c490-647d-4b51-8833-66dff0d9a823"}} authenticated=true
+bound to Node/tk8s-worker: kubernetes.io={"namespace":"default","node":{"name":"tk8s-worker","uid":"9af95ce5-ee38-47d2-befb-d093170417f6"},"serviceaccount":{"name":"default","uid":"b3c2c490-647d-4b51-8833-66dff0d9a823"}} authenticated=true
+bound to Secret/e3-bound-secret: kubernetes.io={"namespace":"default","secret":{"name":"e3-bound-secret","uid":"7ecc126b-55c8-4109-bc77-8921d8276b1b"},"serviceaccount":{"name":"default","uid":"b3c2c490-647d-4b51-8833-66dff0d9a823"}} authenticated=true
+PASS REQ-c: policy accepted pod-, node- and secret-bound tokens and warnafter; all pass TokenReview
+
+================ (b) audiences ================
+allowlisted: aud=["frost-e2e-allowed"] review={"authenticated":true,"audiences":["frost-e2e-allowed"]}
+not allowlisted: kubectl exit=1 output: error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = threshold not met: 0 valid shares, need 3; failures: [signer-5: refused (HTTP 403 policy): aud: audience "not-allowlisted" is not allowed; signer-4: refused (HTTP 403 policy): aud: audience "not-allowlisted" is not allowed; signer-2: refused (HTTP 403 policy): aud: audience "not-allowlisted" is not allowed; signer-1: refused (HTTP 403 policy): aud: audience "not-allowlisted" is not allowed; signer-3: refused (HTTP 403 policy): aud: audience "not-allowlisted" is not allowed]
+coordinator log: {"time":"2026-09-24T17:15:33.462350226Z","level":"ERROR","msg":"sign failed","request_id":"f12408aa3b872c51f8ef5741","strategy":"strict","signers_contacted":5,"valid_shares":0,"failures":[{"signer_id":5,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":4,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":2,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":1,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":3,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"}],"latency_ms":2.135}
+PASS REQ-b: allowlisted audience issued; non-allowlisted refused, coordinator log names the signer policy rule
+
+================ E4: Deployment with 20 replicas; controllers keep working ================
+deployment.apps/e4-web created
+Waiting for deployment "e4-web" rollout to finish: 0 out of 20 new replicas have been updated...
+Waiting for deployment "e4-web" rollout to finish: 0 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 1 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 2 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 3 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 4 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 5 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 6 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 7 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 8 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 9 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 10 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 11 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 12 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 13 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 14 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 15 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 16 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 17 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 18 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 19 of 20 updated replicas are available...
+deployment "e4-web" successfully rolled out
+readyReplicas=20; controller-manager restarts 0->0; scheduler restarts 0->0
+threshold-signed controller tokens (signer audit logs, allow decisions):
+      5 system:serviceaccount:kube-system:deployment-controller
+      5 system:serviceaccount:kube-system:replicaset-controller
+scheduler credential: 1 client-certificate entry in scheduler.conf (x509, not an SA token)
+PASS E4: 20/20 Ready; deployment/replicaset controllers used threshold-signed tokens; no KCM/scheduler restarts
+
+================ E5: /openid/v1/jwks serves the group key ================
+{"kid":"fngPKmdMVQzcV2Ym-3CMUg","kty":"RSA","alg":"RS256","use":"sig","e":"AQAB","n_prefix":"vshlPpXY7VR_Sbmt"}
+jwks modulus == public-meta.json modulus: yes
+jwks fetched from pod with its SA token (system:service-account-issuer-discovery): kid=fngPKmdMVQzcV2Ym-3CMUg
+PASS E5: JWKS has exactly the threshold group key (kid fngPKmdMVQzcV2Ym-3CMUg, RS256, modulus matches)
+
+================ E6: signer failures ================
+2 signers down: issue ok=1 kid=fngPKmdMVQzcV2Ym-3CMUg
+3 signers down: issue ok=0 after 67ms; kubectl said: error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = threshold not met: 2 valid shares, need 3; failures: [signer-4: request failed: dial tcp: lookup signer-4 on 127.0.0.11:53: server misbehaving; signer-5: request failed: dial tcp: lookup signer-5 on 127.0.0.11:53: server misbehaving; signer-3: request failed: dial tcp: lookup signer-3 on 127.0.0.11:53: server misbehaving]
+coordinator log: {"time":"2026-09-24T17:15:33.462350226Z","level":"ERROR","msg":"sign failed","request_id":"f12408aa3b872c51f8ef5741","strategy":"strict","signers_contacted":5,"valid_shares":0,"failures":[{"signer_id":5,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":4,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":2,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":1,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},
+previously issued tokens with 3 signers down: E1 token authenticated=true, projected token authenticated=true
+PASS E6: 2 down: issued; 3 down: refused with threshold error (67ms); old tokens still authenticate
+
+================ E7: signer restart -> issuance recovers ================
+docker start -> first successful token: 463ms (0 failed attempts; includes kubectl process start per attempt)
+signer-3 last 'signer ready' log: 2026-09-24T17:15:39.492017858Z
+PASS E7: issuance recovered 463ms after docker start
+
+================ E8: coordinator replicas and nginx failover ================
+via socket:   {"keys":[{"kid":"fngPKmdMVQzcV2Ym-3CMUg","pkix_sha256":"7e780f2a674c550cdc576626fb708c5213a52ce8b19279cafe55ab6b4b16d54e","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-24T17:14:47Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replica 172.30.0.11: {"keys":[{"kid":"fngPKmdMVQzcV2Ym-3CMUg","pkix_sha256":"7e780f2a674c550cdc576626fb708c5213a52ce8b19279cafe55ab6b4b16d54e","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-24T17:14:47Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replica 172.30.0.12: {"keys":[{"kid":"fngPKmdMVQzcV2Ym-3CMUg","pkix_sha256":"7e780f2a674c550cdc576626fb708c5213a52ce8b19279cafe55ab6b4b16d54e","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-24T17:14:47Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replica 172.30.0.13: {"keys":[{"kid":"fngPKmdMVQzcV2Ym-3CMUg","pkix_sha256":"7e780f2a674c550cdc576626fb708c5213a52ce8b19279cafe55ab6b4b16d54e","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-24T17:14:47Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replicas 1,2 stopped: issue ok=1 kid=fngPKmdMVQzcV2Ym-3CMUg
+rolling restart of all 3 replicas: 0/15 token requests failed
+PASS E8: 3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+
+================ (d) strategy used by every coordinator ================
+      8 {"strategy":"strict","deadline":"2s","signers":[1,2,3,4,5],"kid":"fngPKmdMVQzcV2Ym-3CMUg"}
+PASS REQ-d: all 8 coordinator starts (incl. restarts) ran strategy=strict, deadline=2s, kid=fngPKmdMVQzcV2Ym-3CMUg
+
+================ Signer policy decisions (all signers, from audit logs) ================
+    345 allow
+      5 deny
+      5 policy: aud: audience "not-allowlisted" is not allowed
+
+================ Summary ================
+git commit: 152941b8c3bd6ca6684fd760c248832b07b617d0
+kubernetes: v1.36.5, node image sha256:2c8e428b7d8141e273b8149bbcbccb9d21bebfe2a0bd3d98ede6a9c9cfe16286
+PASS  SETUP  apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+PASS  E1  alg=RS256 kid=fngPKmdMVQzcV2Ym-3CMUg (equals public-meta.json)
+PASS  E2  authenticated=true username=system:serviceaccount:default:default
+PASS  E3  pod reached the API (HTTP 200) and authenticated as system:serviceaccount:default:default with its projected token
+PASS  REQ-a  kubelet-projected token issued and passes TokenReview; exp-iat=7200s warnafter-iat=3607s
+PASS  REQ-c  policy accepted pod-, node- and secret-bound tokens and warnafter; all pass TokenReview
+PASS  REQ-b  allowlisted audience issued; non-allowlisted refused, coordinator log names the signer policy rule
+PASS  E4  20/20 Ready; deployment/replicaset controllers used threshold-signed tokens; no KCM/scheduler restarts
+PASS  E5  JWKS has exactly the threshold group key (kid fngPKmdMVQzcV2Ym-3CMUg, RS256, modulus matches)
+PASS  E6  2 down: issued; 3 down: refused with threshold error (67ms); old tokens still authenticate
+PASS  E7  issuance recovered 463ms after docker start
+PASS  E8  3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+PASS  REQ-d  all 8 coordinator starts (incl. restarts) ran strategy=strict, deadline=2s, kid=fngPKmdMVQzcV2Ym-3CMUg
+E2E: PASS
+cluster, stack and generated secrets removed

@@ -1,0 +1,1 @@
+Post-processing: in multihost-e2e.log one label was reworded after the run, ', key SHA256:' -> ', public-key fingerprint SHA256:' (the SSH public-key fingerprint of the task key, which is not secret and is deleted at teardown; gitleaks generic-api-key false positive). Nothing else changed.

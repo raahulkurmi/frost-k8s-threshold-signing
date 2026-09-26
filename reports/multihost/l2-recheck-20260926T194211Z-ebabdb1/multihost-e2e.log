@@ -1,0 +1,43 @@
+
+================ Environment (operator) ================
+git commit: ebabdb193f32789d0ef57f4fa33ffcf897e0092c
+topology: Level 2: 5 regions, one provider (AWS), one account, one operator, one build, one dealer; file deploy/aws/state/topology.aws.env
+operator: macOS 26.6.2, Mac16,12 10 CPU, 16 GiB; transport: ssh (OpenSSH_10.3p1, LibreSSL 3.3.6), public-key fingerprint SHA256:mdZYbN/fYK6EEoiOw0T6zaj7fr5MFnvrrnrY8LmRTEg
+  coord reach 13.126.226.82 bind 172.31.46.130 (aws:ap-south-1a:m7i-flex.large)
+  sig-1 reach 15.252.100.66 bind 172.31.9.87 (aws:ap-south-1b:t3.micro)
+  sig-2 reach 13.212.79.145 bind 172.31.45.255 (aws:ap-southeast-1a:t3.micro)
+  sig-3 reach 18.177.138.238 bind 172.31.47.102 (aws:ap-northeast-1a:t3.micro)
+  sig-4 reach 35.158.123.209 bind 172.31.22.16 (aws:eu-central-1a:t3.micro)
+  sig-5 reach 54.80.53.92 bind 172.31.39.235 (aws:us-east-1a:t3.micro)
+
+================ Clock check (mandatory, N50) ================
+clock-check: coord  chrony offset    -0.001 ms (last offset -0.002 ms) [primary]; round-trip skew    +53 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: sig-1  chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +56 ms (exec round trip 95 ms) [secondary]; NTPSynchronized=yes
+clock-check: sig-2  chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +73 ms (exec round trip 192 ms) [secondary]; NTPSynchronized=yes
+clock-check: sig-3  chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew   +117 ms (exec round trip 372 ms) [secondary]; NTPSynchronized=yes
+clock-check: sig-4  chrony offset    -0.003 ms (last offset -0.003 ms) [primary]; round-trip skew   +123 ms (exec round trip 387 ms) [secondary]; NTPSynchronized=yes
+clock-check: sig-5  chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew   +199 ms (exec round trip 610 ms) [secondary]; NTPSynchronized=yes
+deployment under test: reports/multihost/deploy-manifest.json (kid 4rIZD1LYAPixvZTYsskIKg, deployed 2026-09-26T19:34:54Z)
+
+================ L2: operator-only SSH; operator cannot reach signer ports ================
+  operator -> signer-1 15.252.100.66:8441: blocked
+  operator -> signer-2 13.212.79.145:8441: blocked
+  operator -> signer-3 18.177.138.238:8441: blocked
+  operator -> signer-4 35.158.123.209:8441: blocked
+  operator -> signer-5 54.80.53.92:8441: blocked
+  operator -> sig-1:22: open (control)
+  coord -> sig-1:22: blocked
+  operator -> sig-2:22: open (control)
+  coord -> sig-2:22: blocked
+  operator -> sig-3:22: open (control)
+  coord -> sig-3:22: blocked
+  operator -> sig-4:22: open (control)
+  coord -> sig-4:22: blocked
+  operator -> sig-5:22: open (control)
+  coord -> sig-5:22: blocked
+PASS L2: SSH to signer hosts only from the operator; operator cannot reach signer ports
+
+================ Summary ================
+PASS  L2  SSH to signer hosts only from the operator; operator cannot reach signer ports
+results: reports/multihost/l2-recheck-20260926T194211Z-ebabdb1
+L2 RECHECK: PASS

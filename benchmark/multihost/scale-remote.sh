@@ -20,7 +20,12 @@ die() { echo "FATAL: $*" >&2; exit 1; }
 cpu_now() { awk '/^cpu /{t=0; for(i=2;i<=NF;i++) t+=$i; print t, $5+$6, $9}' /proc/stat; }
 audit_lines() { docker exec "$CP" sh -c 'wc -l < /var/log/kubernetes/audit.log' 2>/dev/null || echo 0; }
 set -a; . secrets/multihost.env; set +a
+# Every compose call (up AND the per-rep `logs` in scale-lib) needs FROST_UID for
+# interpolation; without it `logs` fails silently and the coordinator columns are
+# empty (happened in the first 7B run, NOTES N61).
+export FROST_UID="$(id -u)"
 COMPOSE=(docker compose -p tk8s -f deploy/docker-compose.multihost.yml)
+"${COMPOSE[@]}" config -q || die "compose config does not interpolate"
 
 FROST_UID=$(id -u) VERIFY_STRATEGY="$ST" FANOUT="$FO" HEDGE_DELAY="$HEDGE_DELAY" SIGN_DEADLINE=2s \
   "${COMPOSE[@]}" up -d --force-recreate --no-deps grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 >/dev/null 2>&1

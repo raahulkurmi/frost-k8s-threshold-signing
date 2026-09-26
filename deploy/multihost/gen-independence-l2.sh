@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# gen-independence-l2.sh MANIFEST E2E_RESULTS_DIR BENCH_RESULTS_DIR: Level 2 (AWS,
+# gen-independence-l2.sh MANIFEST E2E_RESULTS_DIR BENCH_RESULTS_DIR [L2_RECHECK_DIR]: Level 2 (AWS,
 # one signer per region) variant of gen-independence.sh. Tables are generated from
 # deploy-manifest.json, the nftables rulesets saved by test/e2e/multihost.sh, the
 # SG rule log and the benchmark's measured RTT. No value is typed by hand.
 set -euo pipefail
-M="$1" E="$2" B="$3"
+M="$1" E="$2" B="$3" RC="${4:-}"
 jqr() { jq -r "$@" "$M"; }
-res() { grep -E "^(PASS|FAIL) $1:" "$E/multihost-e2e.log" | tail -1 | cut -d' ' -f1 || echo "not run"; }
+res() {
+  local r; r="$(grep -E "^(PASS|FAIL) $1:" "$E/multihost-e2e.log" | tail -1 | cut -d' ' -f1 || echo "not run")"
+  if [[ "$1" == L2 && -n "$RC" && -f "$RC/multihost-e2e.log" ]]; then
+    r="$r in the e2e run (a CONTROL check failed during an operator network drop, NOTES N60); re-run once: $(grep -E '^(PASS|FAIL) L2:' "$RC/multihost-e2e.log" | tail -1 | cut -d' ' -f1) (\`$RC\`)"
+  fi
+  echo "$r"
+}
 cat <<HDR
 # Signer independence evidence (Phase 7B)
 

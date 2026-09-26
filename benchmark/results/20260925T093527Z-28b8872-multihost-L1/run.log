@@ -1,0 +1,3 @@
+LABEL: preliminary, arm64, multi-VM single physical host; netem rows are emulated
+benchmark/multihost/run.sh: line 31: 73806 Alarm clock: 14         perl -e 'alarm shift; exec @ARGV' "$s" "$@"
+FATAL: cluster not up: run test/e2e/multihost.sh --keep first

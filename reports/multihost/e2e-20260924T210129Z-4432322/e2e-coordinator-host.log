@@ -1,0 +1,168 @@
+
+================ Environment ================
+git commit: 443232262029ad8ad7bf9d6ae16164b43c2f6127
+date (UTC): 20260924T210315Z
+Linux tk8s 6.8.0-139-generic #139-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 03:32:48 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+cpus: 4
+               total        used        free      shared  buff/cache   available
+Mem:           7.7Gi       528Mi       4.7Gi       1.2Mi       2.7Gi       7.2Gi
+docker engine 29.8.1
+kind v0.31.0 go1.25.5 linux/arm64
+Client Version: v1.36.5
+go version go1.27.1 linux/arm64
+verify strategy: strict, sign deadline: 2s
+
+================ Setup: fresh certs, key ceremony, signer stack ================
+topology: multihost; signer addresses: 192.168.252.3:8441 192.168.252.3:8442 192.168.252.4:8443 192.168.252.4:8444 192.168.252.5:8445
+kid: 7HT88uTvysvZLqtW2c2OQA
+ Image frost-k8s/coordinator:dev Building 
+ Image frost-k8s/coordinator:dev Building 
+ Image frost-k8s/coordinator:dev Building 
+ Image frost-k8s/coordinator:dev Built 
+ Image frost-k8s/coordinator:dev Built 
+ Image frost-k8s/coordinator:dev Built 
+ Image nginx:1.29-alpine Pulling 
+ 662c8d6f6620 Pulling fs layer 0B
+ a96b658a00fe Pulling fs layer 0B
+ d17f077ada11 Pulling fs layer 0B
+ 910c2a6cad6d Pulling fs layer 0B
+ a89d14ef5abe Pulling fs layer 0B
+ 634f1d1ce0f7 Pulling fs layer 0B
+ 10cbc192f783 Pulling fs layer 0B
+ 83fbf849ee89 Pulling fs layer 0B
+ 662c8d6f6620 Downloading 1.049MB
+ 662c8d6f6620 Downloading 2.097MB
+ a96b658a00fe Download complete 0B
+ 662c8d6f6620 Downloading 3.146MB
+ 662c8d6f6620 Downloading 4.194MB
+ 662c8d6f6620 Downloading 4.194MB
+ a89d14ef5abe Download complete 0B
+ 662c8d6f6620 Downloading 5.243MB
+ 662c8d6f6620 Downloading 5.243MB
+ 662c8d6f6620 Downloading 6.291MB
+ 662c8d6f6620 Downloading 6.291MB
+ 662c8d6f6620 Downloading 6.291MB
+ 662c8d6f6620 Downloading 7.34MB
+ 662c8d6f6620 Downloading 7.34MB
+ 662c8d6f6620 Downloading 7.34MB
+ 662c8d6f6620 Downloading 8.389MB
+ 662c8d6f6620 Downloading 8.389MB
+ 662c8d6f6620 Downloading 8.389MB
+ 910c2a6cad6d Downloading 1.049MB
+ 662c8d6f6620 Downloading 9.437MB
+ 910c2a6cad6d Downloading 1.049MB
+ 910c2a6cad6d Downloading 1.049MB
+ 662c8d6f6620 Downloading 9.437MB
+ 662c8d6f6620 Downloading 9.437MB
+ 910c2a6cad6d Downloading 1.049MB
+ 662c8d6f6620 Downloading 10.49MB
+ 910c2a6cad6d Downloading 1.049MB
+ 662c8d6f6620 Downloading 10.49MB
+ 910c2a6cad6d Download complete 0B
+ 662c8d6f6620 Downloading 10.49MB
+ 662c8d6f6620 Downloading 11.53MB
+ 662c8d6f6620 Downloading 11.53MB
+ 634f1d1ce0f7 Download complete 0B
+ 662c8d6f6620 Downloading 12.58MB
+ 83fbf849ee89 Downloading 1.398kB
+ 662c8d6f6620 Downloading 12.58MB
+ 83fbf849ee89 Download complete 0B
+ 662c8d6f6620 Downloading 12.58MB
+ 662c8d6f6620 Downloading 13.63MB
+ d17f077ada11 Downloading 1.049MB
+ 10cbc192f783 Download complete 0B
+ 662c8d6f6620 Downloading 13.63MB
+ 662c8d6f6620 Downloading 13.63MB
+ d17f077ada11 Downloading 1.049MB
+ 662c8d6f6620 Downloading 14.68MB
+ d17f077ada11 Downloading 1.049MB
+ 662c8d6f6620 Downloading 14.68MB
+ d17f077ada11 Downloading 1.049MB
+ 662c8d6f6620 Downloading 14.68MB
+ d17f077ada11 Downloading 1.049MB
+ 662c8d6f6620 Downloading 14.68MB
+ d17f077ada11 Downloading 1.049MB
+ 662c8d6f6620 Downloading 15.73MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 15.73MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 15.73MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 15.73MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 16.78MB
+ d17f077ada11 Downloading 2.097MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 16.78MB
+ 662c8d6f6620 Downloading 16.78MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 16.78MB
+ d17f077ada11 Downloading 2.097MB
+ 662c8d6f6620 Downloading 17.83MB
+ d17f077ada11 Downloading 2.097MB
+ 59993c59bb89 Download complete 0B
+ 662c8d6f6620 Downloading 17.83MB
+ d17f077ada11 Downloading 3.146MB
+ 662c8d6f6620 Downloading 17.83MB
+ d17f077ada11 Downloading 3.146MB
+ 662c8d6f6620 Downloading 17.83MB
+ 6fe7ecffd0b2 Download complete 0B
+ d17f077ada11 Downloading 3.146MB
+ 662c8d6f6620 Downloading 17.83MB
+ d17f077ada11 Downloading 3.146MB
+ d17f077ada11 Downloading 3.146MB
+ 662c8d6f6620 Downloading 18.87MB
+ 662c8d6f6620 Downloading 18.87MB
+ d17f077ada11 Downloading 3.146MB
+ 662c8d6f6620 Downloading 19.72MB
+ d17f077ada11 Downloading 3.146MB
+ d17f077ada11 Download complete 0B
+ 662c8d6f6620 Download complete 0B
+ d17f077ada11 Extracting 1B
+ a89d14ef5abe Extracting 1B
+ 910c2a6cad6d Pull complete 0B
+ d17f077ada11 Pull complete 0B
+ a96b658a00fe Pull complete 0B
+ a89d14ef5abe Pull complete 0B
+ 634f1d1ce0f7 Pull complete 0B
+ 83fbf849ee89 Pull complete 0B
+ 10cbc192f783 Pull complete 0B
+ 662c8d6f6620 Extracting 1B
+ 662c8d6f6620 Extracting 1B
+ 662c8d6f6620 Extracting 1B
+ 662c8d6f6620 Pull complete 0B
+ Image nginx:1.29-alpine Pulled 
+ Network tk8s_lb-net Creating 
+ Network tk8s_lb-net Creating 
+ Network tk8s_lb-net Created 
+ Network tk8s_lb-net Created 
+ Container tk8s-grpc-proxy-3-1 Creating 
+ Container tk8s-grpc-proxy-1-1 Creating 
+ Container tk8s-grpc-proxy-2-1 Creating 
+ Container tk8s-grpc-proxy-2-1 Created 
+ Container tk8s-grpc-proxy-3-1 Created 
+ Container tk8s-grpc-proxy-1-1 Created 
+ Container tk8s-coordinator-lb-1 Creating 
+ Container tk8s-coordinator-lb-1 Created 
+ Container tk8s-grpc-proxy-1-1 Starting 
+ Container tk8s-grpc-proxy-2-1 Starting 
+ Container tk8s-grpc-proxy-3-1 Starting 
+ Container tk8s-grpc-proxy-1-1 Started 
+ Container tk8s-grpc-proxy-2-1 Started 
+ Container tk8s-grpc-proxy-3-1 Started 
+ Container tk8s-coordinator-lb-1 Starting 
+ Container tk8s-coordinator-lb-1 Started 
+{"keys":[{"kid":"7HT88uTvysvZLqtW2c2OQA","pkix_sha256":"ec74fcf2e4efcacbd92eab56d9cd8e40c95a65d8e9dc95495b68f794b8141e2d","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-24T21:01:45Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+SERVICE          STATE
+coordinator-lb   running
+grpc-proxy-1     running
+grpc-proxy-2     running
+grpc-proxy-3     running
+
+================ Setup: kind cluster (apiserver signs only via /home/ubuntu/tk8s/run/signer.sock) ================
+Creating cluster "tk8s" ...
+ • Ensuring node image (kindest/node:v1.36.5-tk8s) 🖼  ...
+ ✗ Ensuring node image (kindest/node:v1.36.5-tk8s) 🖼
+ERROR: failed to create cluster: failed to pull image "kindest/node:v1.36.5-tk8s": command "docker pull kindest/node:v1.36.5-tk8s" failed with error: exit status 1
+
+Command Output: Error response from daemon: failed to resolve reference "docker.io/kindest/node:v1.36.5-tk8s": docker.io/kindest/node:v1.36.5-tk8s: not found

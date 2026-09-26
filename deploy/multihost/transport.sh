@@ -47,7 +47,7 @@ ssh)
   push()    { alarm 600 scp -q $(_ssh_opts) "$2" "ubuntu@$(vm_ip "$1"):$3"; }
   # shellcheck disable=SC2046
   pull()    { alarm 600 scp -q $(_ssh_opts) "ubuntu@$(vm_ip "$1"):$2" "$3"; }
-  transport_desc() { echo "ssh ($(ssh -V 2>&1)), key $(ssh-keygen -lf "$SSH_KEY.pub" 2>/dev/null | awk '{print $2}')"; }
+  transport_desc() { echo "ssh ($(ssh -V 2>&1)), public-key fingerprint $(ssh-keygen -lf "$SSH_KEY.pub" 2>/dev/null | awk '{print $2}')"; }
   if [[ -n "${SSH_PRE_HOOK:-}" && -z "${_TRANSPORT_HOOK_DONE:-}" ]]; then
     export _TRANSPORT_HOOK_DONE=1
     $SSH_PRE_HOOK >/dev/null || { echo "transport: SSH_PRE_HOOK failed: $SSH_PRE_HOOK" >&2; exit 1; }

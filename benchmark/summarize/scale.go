@@ -135,6 +135,7 @@ func scaleSection(dir string) string {
 		auditLat, coordLat  []float64
 		tokErr, cFail, n503 int
 		coord, notReady     bool
+		coordMissing        bool // coordinator log empty although TokenRequests were audited
 		skipped             string
 	}
 	byKey := map[key]*agg{}
@@ -179,6 +180,13 @@ func scaleSection(dir string) string {
 		a.req = append(a.req, float64(reqs))
 		a.tokErr += errs
 		cl, cf, c5, present := coordStats(base + ".coord.jsonl")
+		// For T every TokenRequest goes through a coordinator ("signed" or "sign
+		// failed"), so an empty coordinator log with audited requests means the
+		// log was not captured, not "no failures" (7B first run, NOTES N61).
+		if present && len(cl)+cf == 0 && reqs > 0 {
+			a.coordMissing = true
+			present = false
+		}
 		if present {
 			a.coord = true
 			a.coordLat = append(a.coordLat, cl...)
@@ -217,7 +225,10 @@ func scaleSection(dir string) string {
 		sort.Float64s(a.auditLat)
 		sort.Float64s(a.coordLat)
 		coordCol, failCol, c503 := "–", "–", "–"
-		if a.coord {
+		if a.coordMissing {
+			coordCol, failCol, c503 = "**not captured** (N61)", "**not captured**", "**not captured**"
+		}
+		if a.coord && !a.coordMissing {
 			coordCol = fmt.Sprintf("%s / %s", f1(pct(a.coordLat, 50)), f1(pct(a.coordLat, 95)))
 			failCol, c503 = fmt.Sprint(a.cFail), fmt.Sprint(a.n503)
 		}

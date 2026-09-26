@@ -1,0 +1,5 @@
+LABEL: preliminary: arm64, multi-VM on one overloaded 16 GB host; not for publication; netem rows emulated; labelled by measured RTT
+== build tokenbench on tk8s (pinned toolchain)
+59782daa5e385c59915b2ece9e037f9afa3173ce3a3a0e391d45dc534c9a7158  /tmp/tokenbench
+benchmark/multihost/run.sh: line 86: signer_maxconc: command not found
+jq: parse error: Expected value before ',' at line 9, column 103

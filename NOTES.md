@@ -837,3 +837,28 @@ failed while it was in progress: its files move to `invalid/`, the error goes to
 `invalid-events.jsonl`, the run waits for every host to answer and re-runs it once; only
 failure-free configurations reach summary.md. Verified with a test-only injected fault
 (`L2_FAULT_ONCE=1`) in a smoke run that was then deleted.
+
+### N61. 7B scale-up: coordinator logs not captured (bug), coordinator CPU is the strict-mode bottleneck
+**Bug.** In the first 7B run, every scale-up repetition's `<rep>.coord.jsonl` is empty:
+`benchmark/multihost/scale-remote.sh` set `FROST_UID` only for its `docker compose up`,
+and the per-rep `docker compose logs` in `scale-lib.sh` failed the compose file's
+`${FROST_UID:?}` interpolation with stderr discarded. So for the 7B scale-up the
+coordinator latency, coordinator sign-failure and **signer 503** columns are **not
+captured**. The coordinators were already torn down, so they cannot be recovered. The
+audit-log metrics (time to Ready, TokenRequests per rep, token errors, token latency) are
+unaffected. Fixed: FROST_UID exported, `compose config -q` checked at start, and log
+capture now fails the rep loudly. The summarizer shows "not captured" instead of zeros.
+**Findings (7B, one run per configuration).**
+- The client − coordinator median gap is ~4 ms for optimistic at every concurrency, but
+  60 ms (c=10) and 610–645 ms (c=50) for strict with all 5 signers.
+- The coordinator host's CPU is 80–89 % busy for strict and ~20 % for optimistic: strict
+  verifies every share on the same 2 vCPU that runs kube-apiserver, nginx and the load
+  generator.
+- With strict at c=50, far-quorum (3 signers, 3 verifications per token) is faster than
+  all 5 (1228 vs 1899 ms client p50).
+- N49: every optimistic variant passes all three criteria in both scenarios; strict passes
+  N49-1 and N49-2 everywhere, but fails N49-3 in 3 of 4 variants (failed or successful p95
+  above the thresholds at c=50).
+- Pod scale-up: optimistic-hedged made exactly one TokenRequest per pod with 0 errors;
+  strict-all needed 68 (50 pods) and 357 (100 pods) TokenRequests per repetition, with 47
+  and 815 failed ones over 3 repetitions. All pods became Ready.

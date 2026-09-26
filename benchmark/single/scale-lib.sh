@@ -64,7 +64,9 @@ scale_bench() {
       sleep 2   # let the last audit events and coordinator logs flush
       docker exec "$CP" sh -c "tail -n +$((off+1)) /var/log/kubernetes/audit.log" > "$base.audit.jsonl"
       if [[ ${#comp[@]} -gt 0 ]]; then
-        "${comp[@]}" logs --no-color --no-log-prefix --since "$since" grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 2>/dev/null | grep -E '"msg":"(signed|sign failed)"' > "$base.coord.jsonl" || true
+        "${comp[@]}" logs --no-color --no-log-prefix --since "$since" grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 > "$base.coord.raw" 2> "$base.coord.err" || die "coordinator logs failed: $(tail -2 "$base.coord.err")"
+        grep -E '"msg":"(signed|sign failed)"' "$base.coord.raw" > "$base.coord.jsonl" || true
+        rm -f "$base.coord.raw" "$base.coord.err"
       fi
       local nready; nready=$(K get deploy scale-pause -o jsonpath='{.status.readyReplicas}'); nready=${nready:-0}
       awk -v sys="$sys" -v n="$size" -v rep="$rep" -v dt="$(( (t1-t0)/1000000 ))" -v ok="$ready" -v nr="$nready" -v ct=$((c1-c0)) -v ci=$((i1-i0)) -v cst=$((s1-s0)) -v l1="$l1" -v l5="$l5" -v cools="$COOL_S" -v cl="$COOL_LOAD1" -v co="$COOL_OK" \

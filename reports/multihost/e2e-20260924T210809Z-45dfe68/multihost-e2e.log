@@ -1,0 +1,192 @@
+
+================ Environment (operator) ================
+git commit: 45dfe68b0896c4ba0ad52125d2495ec5dca3053b
+topology: multi-VM, single physical host (Level 1); file deploy/multihost/topology.local.env
+operator: macOS 26.6.2, Mac16,12 10 CPU, 16 GiB; multipass   1.16.4+mac
+Name                    State             IPv4             Image
+sig-a                   Running           192.168.252.3    Ubuntu 24.04 LTS
+sig-b                   Running           192.168.252.4    Ubuntu 24.04 LTS
+sig-c                   Running           192.168.252.5    Ubuntu 24.04 LTS
+tk8s                    Running           192.168.252.2    Ubuntu 24.04 LTS
+                                          172.17.0.1
+                                          172.18.0.1
+                                          172.30.3.1
+
+================ Coordinator host at the same commit ================
+45dfe68b0896c4ba0ad52125d2495ec5dca3053b
+
+================ Deploy (deploy/multihost/deploy.sh) ================
+coordinator host tk8s 192.168.252.2; admin 192.168.252.1
+signer host sig-a 192.168.252.3: signers 1 2
+signer host sig-b 192.168.252.4: signers 3 4
+signer host sig-c 192.168.252.5: signers 5
+signer binary: go1.27.1 linux/arm64 sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+Generating 3-of-5 threshold RSA key, 2048-bit modulus (safe primes; this can take minutes)...
+Generated in 18.372s
+kid: 4pzW_MwX1eZYlV4oGbSxKw
+threshold: 3 of 5, modulus: 2048 bits
+SHA-256 of outputs:
+  5352fa12c2ccd786b8cb407fad65349fb136764a9771203feca77f1fdab92e6a  /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/frost-ceremony.OKKHHG/keys/public-meta.json
+  5d4838d042e68be7bef99cf190006638b72779967f6d7266f65b18594c1b3055  /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/frost-ceremony.OKKHHG/keys/share-1.json
+  598116c396be1d27cc183755b38b5737361d5ff892c41e1f0864b3b12ea70652  /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/frost-ceremony.OKKHHG/keys/share-2.json
+  94ee56f1f18c6d43e9e34a77f854887d11aafa95b9052e9b235eaacb7e3162c4  /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/frost-ceremony.OKKHHG/keys/share-3.json
+  f04b44fc5e3dd00a2d7ddaf2ed296390ac564fcf600eb6b03d4602f8ed9ad939  /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/frost-ceremony.OKKHHG/keys/share-4.json
+  32a27e89a2ac923c45c0b95bfbbf4241b0c5717a9f141453c5085c90fa9a742f  /var/folders/53/n5l2v9392vsfk51tqq90mzdr0000gn/T/frost-ceremony.OKKHHG/keys/share-5.json
+Distribute each share-<i>.json to signer <i> only, then securely delete <ceremony>/keys (docs/KEY_CEREMONY.md).
+signers 2 1 active on 192.168.252.3 ports 8441 8442; firewall loaded; binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+signers 4 3 active on 192.168.252.4 ports 8443 8444; firewall loaded; binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+signers 5 active on 192.168.252.5 ports 8445; firewall loaded; binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+coordinator egress from 172.30.3.0/24 limited to: 192.168.252.3:8441 192.168.252.3:8442 192.168.252.4:8443 192.168.252.4:8444 192.168.252.5:8445
+-N FROST-EGRESS
+-A FROST-EGRESS -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+-A FROST-EGRESS -d 192.168.252.3/32 -p tcp -m tcp --dport 8441 -j RETURN
+-A FROST-EGRESS -d 192.168.252.3/32 -p tcp -m tcp --dport 8442 -j RETURN
+-A FROST-EGRESS -d 192.168.252.4/32 -p tcp -m tcp --dport 8443 -j RETURN
+-A FROST-EGRESS -d 192.168.252.4/32 -p tcp -m tcp --dport 8444 -j RETURN
+-A FROST-EGRESS -d 192.168.252.5/32 -p tcp -m tcp --dport 8445 -j RETURN
+-A FROST-EGRESS -j DROP
+deployed kid 4pzW_MwX1eZYlV4oGbSxKw; manifest reports/multihost/deploy-manifest.json; ceremony directory deleted on exit
+
+================ L1: lateral isolation between signer hosts ================
+  sig-a -> sig-b 192.168.252.4:8443 (signer-3): blocked
+  sig-a -> sig-b 192.168.252.4:8444 (signer-4): blocked
+  sig-a -> sig-b 192.168.252.4:22 (ssh): blocked
+  sig-a -> sig-c 192.168.252.5:8445 (signer-5): blocked
+  sig-a -> sig-c 192.168.252.5:22 (ssh): blocked
+  sig-b -> sig-a 192.168.252.3:8441 (signer-1): blocked
+  sig-b -> sig-a 192.168.252.3:8442 (signer-2): blocked
+  sig-b -> sig-a 192.168.252.3:22 (ssh): blocked
+  sig-b -> sig-c 192.168.252.5:8445 (signer-5): blocked
+  sig-b -> sig-c 192.168.252.5:22 (ssh): blocked
+  sig-c -> sig-a 192.168.252.3:8441 (signer-1): blocked
+  sig-c -> sig-a 192.168.252.3:8442 (signer-2): blocked
+  sig-c -> sig-a 192.168.252.3:22 (ssh): blocked
+  sig-c -> sig-b 192.168.252.4:8443 (signer-3): blocked
+  sig-c -> sig-b 192.168.252.4:8444 (signer-4): blocked
+  sig-c -> sig-b 192.168.252.4:22 (ssh): blocked
+  tk8s -> sig-a 192.168.252.3:8441 (signer-1): open (control)
+  tk8s -> sig-a 192.168.252.3:8442 (signer-2): open (control)
+  tk8s -> sig-b 192.168.252.4:8443 (signer-3): open (control)
+  tk8s -> sig-b 192.168.252.4:8444 (signer-4): open (control)
+  tk8s -> sig-c 192.168.252.5:8445 (signer-5): open (control)
+PASS L1: no signer host can open TCP to another signer host's signer or SSH ports; coordinator host can
+
+================ L2: operator-only SSH; operator cannot reach signer ports ================
+  operator -> signer-1 192.168.252.3:8441: blocked
+  operator -> signer-2 192.168.252.3:8442: blocked
+  operator -> signer-3 192.168.252.4:8443: blocked
+  operator -> signer-4 192.168.252.4:8444: blocked
+  operator -> signer-5 192.168.252.5:8445: blocked
+  operator -> sig-a:22: open (control)
+  tk8s -> sig-a:22: blocked
+  operator -> sig-b:22: open (control)
+  tk8s -> sig-b:22: blocked
+  operator -> sig-c:22: open (control)
+  tk8s -> sig-c:22: blocked
+PASS L2: SSH to signer hosts only from the operator; operator cannot reach signer ports
+
+================ L3: per-signer OS users on shared hosts ================
+  sig-a frost-signer-1 reads own share: yes (control, rc=0)
+  sig-a frost-signer-1 -> /etc/frost-signer-2/share.json: permission denied (rc=1)
+  sig-a frost-signer-1 -> /etc/frost-signer-2/tls.key: permission denied (rc=1)
+  sig-a frost-signer-2 reads own share: yes (control, rc=0)
+  sig-a frost-signer-2 -> /etc/frost-signer-1/share.json: permission denied (rc=1)
+  sig-a frost-signer-2 -> /etc/frost-signer-1/tls.key: permission denied (rc=1)
+  sig-a files: /etc/frost-signer-1/share.json frost-signer-1:frost-signer-1 600;/etc/frost-signer-1/tls.key frost-signer-1:frost-signer-1 600;/etc/frost-signer-2/share.json frost-signer-2:frost-signer-2 600;/etc/frost-signer-2/tls.key frost-signer-2:frost-signer-2 600;
+  sig-b frost-signer-3 reads own share: yes (control, rc=0)
+  sig-b frost-signer-3 -> /etc/frost-signer-4/share.json: permission denied (rc=1)
+  sig-b frost-signer-3 -> /etc/frost-signer-4/tls.key: permission denied (rc=1)
+  sig-b frost-signer-4 reads own share: yes (control, rc=0)
+  sig-b frost-signer-4 -> /etc/frost-signer-3/share.json: permission denied (rc=1)
+  sig-b frost-signer-4 -> /etc/frost-signer-3/tls.key: permission denied (rc=1)
+  sig-b files: /etc/frost-signer-3/share.json frost-signer-3:frost-signer-3 600;/etc/frost-signer-3/tls.key frost-signer-3:frost-signer-3 600;/etc/frost-signer-4/share.json frost-signer-4:frost-signer-4 600;/etc/frost-signer-4/tls.key frost-signer-4:frost-signer-4 600;
+  sig-c frost-signer-5 reads own share: yes (control, rc=0)
+  sig-c files: /etc/frost-signer-5/share.json frost-signer-5:frost-signer-5 600;/etc/frost-signer-5/tls.key frost-signer-5:frost-signer-5 600;
+PASS L3: each signer's share and TLS key are 0600 owned by its own user; co-located signers cannot read each other's
+
+================ L4: share placement (each host holds exactly its assigned shares) ================
+  sig-a: share indices [1 2], assigned [1 2]
+  sig-b: share indices [3 4], assigned [3 4]
+  sig-c: share indices [5], assigned [5]
+  tk8s: share files: []
+  operator: ceremony directories left: 0
+PASS L4: every signer host holds exactly its assigned share indices; coordinator host holds none; ceremony dir deleted
+
+================ L5: systemd hardening and binary ================
+  signer-1 on sig-a: IPAddressAllow=192.168.252.2/32 IPAddressDeny=::/0 0.0.0.0/0 CapabilityBoundingSet= User=frost-signer-1 ReadWritePaths=/var/lib/frost-signer-1 PrivateTmp=yes ProtectHome=yes ProtectSystem=strict NoNewPrivileges=yes ActiveState=active 
+    /proc/8686: Uid: 997 997 997 997 CapEff: 0000000000000000 CapBnd: 0000000000000000 NoNewPrivs: 1 
+    systemd-analyze security: → Overall exposure level for frost-signer-1.service: 1.2 OK :-)
+    binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+  signer-2 on sig-a: IPAddressAllow=192.168.252.2/32 IPAddressDeny=::/0 0.0.0.0/0 CapabilityBoundingSet= User=frost-signer-2 ReadWritePaths=/var/lib/frost-signer-2 PrivateTmp=yes ProtectHome=yes ProtectSystem=strict NoNewPrivileges=yes ActiveState=active 
+    /proc/8638: Uid: 999 999 999 999 CapEff: 0000000000000000 CapBnd: 0000000000000000 NoNewPrivs: 1 
+    systemd-analyze security: → Overall exposure level for frost-signer-2.service: 1.2 OK :-)
+    binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+  signer-3 on sig-b: IPAddressAllow=192.168.252.2/32 IPAddressDeny=::/0 0.0.0.0/0 CapabilityBoundingSet= User=frost-signer-3 ReadWritePaths=/var/lib/frost-signer-3 PrivateTmp=yes ProtectHome=yes ProtectSystem=strict NoNewPrivileges=yes ActiveState=active 
+    /proc/8263: Uid: 997 997 997 997 CapEff: 0000000000000000 CapBnd: 0000000000000000 NoNewPrivs: 1 
+    systemd-analyze security: → Overall exposure level for frost-signer-3.service: 1.2 OK :-)
+    binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+  signer-4 on sig-b: IPAddressAllow=192.168.252.2/32 IPAddressDeny=::/0 0.0.0.0/0 CapabilityBoundingSet= User=frost-signer-4 ReadWritePaths=/var/lib/frost-signer-4 PrivateTmp=yes ProtectHome=yes ProtectSystem=strict NoNewPrivileges=yes ActiveState=active 
+    /proc/8215: Uid: 999 999 999 999 CapEff: 0000000000000000 CapBnd: 0000000000000000 NoNewPrivs: 1 
+    systemd-analyze security: → Overall exposure level for frost-signer-4.service: 1.2 OK :-)
+    binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+  signer-5 on sig-c: IPAddressAllow=192.168.252.2/32 IPAddressDeny=0.0.0.0/0 ::/0 CapabilityBoundingSet= User=frost-signer-5 ReadWritePaths=/var/lib/frost-signer-5 PrivateTmp=yes ProtectHome=yes ProtectSystem=strict NoNewPrivileges=yes ActiveState=active 
+    /proc/6472: Uid: 999 999 999 999 CapEff: 0000000000000000 CapBnd: 0000000000000000 NoNewPrivs: 1 
+    systemd-analyze security: → Overall exposure level for frost-signer-5.service: 1.2 OK :-)
+    binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+  firewall rulesets saved: reports/multihost/e2e-20260924T210809Z-45dfe68/nftables-*.txt
+PASS L5: all 5 signers active as their own user, NoNewPrivs=1, no capabilities, ProtectSystem=strict, identical binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+
+================ E2E on the coordinator host (TOPOLOGY=multihost), control channel served here ================
+  [ctl] 1: audit  -> ok
+  [ctl] 2: audit  -> ok
+  [ctl] 3: stop 4 5 -> ok
+  [ctl] 4: stop 3 -> ok
+  [ctl] 5: start 3 4 5 -> ok
+  [ctl] 6: audit  -> ok
+PASS SETUP: apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+PASS E1: alg=RS256 kid=4pzW_MwX1eZYlV4oGbSxKw (equals public-meta.json)
+PASS E2: authenticated=true username=system:serviceaccount:default:default
+PASS E3: pod reached the API (HTTP 200) and authenticated as system:serviceaccount:default:default with its projected token
+PASS REQ-a: kubelet-projected token issued and passes TokenReview; exp-iat=7200s warnafter-iat=3607s
+PASS REQ-c: policy accepted pod-, node- and secret-bound tokens and warnafter; all pass TokenReview
+PASS REQ-b: allowlisted audience issued; non-allowlisted refused with generic error only (N33); reason in coordinator log and signer audit
+PASS E4: 20/20 Ready; deployment/replicaset controllers used threshold-signed tokens; no KCM/scheduler restarts
+PASS E5: JWKS has exactly the threshold group key (kid 4pzW_MwX1eZYlV4oGbSxKw, RS256, modulus matches)
+PASS E6: 2 down: issued; 3 down: refused with threshold error (62ms); old tokens still authenticate
+PASS E7: issuance recovered 1035ms after signer start request
+PASS E8: 3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+PASS N1: default-bridge and lb-net containers without the lb cert cannot call Sign/FetchKeys; lb-net cannot reach signers
+PASS N2: 0 of 13 (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused
+PASS N3: nginx (its network namespace) reaches no signer by IP or name
+PASS N4: coordinators reach exactly the 5 signer ports; internet, SSH and other ports blocked
+PASS REQ-d: all 8 coordinator starts (incl. restarts) ran strategy=strict, deadline=2s, kid=4pzW_MwX1eZYlV4oGbSxKw
+PASS  SETUP  apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+PASS  E1  alg=RS256 kid=4pzW_MwX1eZYlV4oGbSxKw (equals public-meta.json)
+PASS  E2  authenticated=true username=system:serviceaccount:default:default
+PASS  E3  pod reached the API (HTTP 200) and authenticated as system:serviceaccount:default:default with its projected token
+PASS  REQ-a  kubelet-projected token issued and passes TokenReview; exp-iat=7200s warnafter-iat=3607s
+PASS  REQ-c  policy accepted pod-, node- and secret-bound tokens and warnafter; all pass TokenReview
+PASS  REQ-b  allowlisted audience issued; non-allowlisted refused with generic error only (N33); reason in coordinator log and signer audit
+PASS  E4  20/20 Ready; deployment/replicaset controllers used threshold-signed tokens; no KCM/scheduler restarts
+PASS  E5  JWKS has exactly the threshold group key (kid 4pzW_MwX1eZYlV4oGbSxKw, RS256, modulus matches)
+PASS  E6  2 down: issued; 3 down: refused with threshold error (62ms); old tokens still authenticate
+PASS  E7  issuance recovered 1035ms after signer start request
+PASS  E8  3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+PASS  N1  default-bridge and lb-net containers without the lb cert cannot call Sign/FetchKeys; lb-net cannot reach signers
+PASS  N2  0 of 13 (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused
+PASS  N3  nginx (its network namespace) reaches no signer by IP or name
+PASS  N4  coordinators reach exactly the 5 signer ports; internet, SSH and other ports blocked
+PASS  REQ-d  all 8 coordinator starts (incl. restarts) ran strategy=strict, deadline=2s, kid=4pzW_MwX1eZYlV4oGbSxKw
+PASS E2E-MH: coordinator-host e2e (E1-E8, REQ-a..d, N1-N4) passed against remote signers
+
+================ Summary ================
+git commit: 45dfe68b0896c4ba0ad52125d2495ec5dca3053b
+topology: multi-VM, single physical host (Level 1); NOT infrastructure independence
+PASS  L1  no signer host can open TCP to another signer host's signer or SSH ports; coordinator host can
+PASS  L2  SSH to signer hosts only from the operator; operator cannot reach signer ports
+PASS  L3  each signer's share and TLS key are 0600 owned by its own user; co-located signers cannot read each other's
+PASS  L4  every signer host holds exactly its assigned share indices; coordinator host holds none; ceremony dir deleted
+PASS  L5  all 5 signers active as their own user, NoNewPrivs=1, no capabilities, ProtectSystem=strict, identical binary sha256 445fb979a657f98d815cd7d8fff31c7d9309085cd7856f1741b08c7034095aa6
+PASS  E2E-MH  coordinator-host e2e (E1-E8, REQ-a..d, N1-N4) passed against remote signers
+results: reports/multihost/e2e-20260924T210809Z-45dfe68
+MULTIHOST E2E: PASS
