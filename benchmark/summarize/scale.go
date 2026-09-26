@@ -22,16 +22,19 @@ import (
 )
 
 type scaleRep struct {
-	System        string  `json:"system"`
-	Replicas      int     `json:"replicas"`
-	Rep           int     `json:"rep"`
-	MsToAllReady  float64 `json:"ms_to_all_ready"`
-	AllReady      bool    `json:"all_ready"`
-	ReadyReplicas int     `json:"ready_replicas"`
-	CPUBusyPct    float64 `json:"cpu_busy_pct"`
-	Load1         float64 `json:"load1"`
-	Skipped       bool    `json:"skipped"`
-	Reason        string  `json:"reason"`
+	System        string   `json:"system"`
+	Replicas      int      `json:"replicas"`
+	Rep           int      `json:"rep"`
+	MsToAllReady  float64  `json:"ms_to_all_ready"`
+	AllReady      bool     `json:"all_ready"`
+	ReadyReplicas int      `json:"ready_replicas"`
+	CPUBusyPct    float64  `json:"cpu_busy_pct"`
+	Load1         float64  `json:"load1"`
+	CooldownS     *float64 `json:"cooldown_s"`
+	Load1AtStart  *float64 `json:"load1_at_start"`
+	CooldownOK    *bool    `json:"cooldown_reached"`
+	Skipped       bool     `json:"skipped"`
+	Reason        string   `json:"reason"`
 }
 
 type auditEvent struct {
@@ -126,6 +129,8 @@ func scaleSection(dir string) string {
 	}
 	type agg struct {
 		reps                []scaleRep
+		cool, coolLoad      []float64
+		coolMissed          int
 		ms, cpu, load, req  []float64
 		auditLat, coordLat  []float64
 		tokErr, cFail, n503 int
@@ -158,6 +163,13 @@ func scaleSection(dir string) string {
 		a.ms = append(a.ms, r.MsToAllReady/1000)
 		a.cpu = append(a.cpu, r.CPUBusyPct)
 		a.load = append(a.load, r.Load1)
+		if r.CooldownS != nil && r.Load1AtStart != nil {
+			a.cool = append(a.cool, *r.CooldownS)
+			a.coolLoad = append(a.coolLoad, *r.Load1AtStart)
+			if r.CooldownOK != nil && !*r.CooldownOK {
+				a.coolMissed++
+			}
+		}
 		if !r.AllReady {
 			a.notReady = true
 		}
@@ -195,11 +207,11 @@ func scaleSection(dir string) string {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n## Pod scale-up (B0 vs B1 vs T)\n\nA Deployment of pause pods, each with one projected service account token (automount off), scaled from 0 on an otherwise idle cluster. **Time to Ready** = from the `kubectl scale` command until `readyReplicas` equals the target (median of repetitions, [min–max]). **Token latency** = kube-apiserver audit `stageTimestamp − requestReceivedTimestamp` of each kubelet TokenRequest, pooled over the repetitions (nearest-rank). **Coordinator** columns (T only) come from the coordinators' `signed` / `sign failed` log lines; **signer 503s** counts `HTTP 503` (signer at capacity/shed) in those lines. CPU = host busy %% over the scale window.\n\n")
-	fmt.Fprintf(&b, "| Replicas | System | reps | time to all Ready (s): median [min–max] | TokenRequests per rep (median) | token errors (all reps) | token latency p50 / p95 / max (ms) | coordinator latency p50 / p95 (ms) | coordinator sign failures | signer 503s | CPU busy %% (median) | load1 (median) | note |\n|---:|---|---:|---|---:|---:|---|---|---:|---:|---:|---:|---|\n")
+	fmt.Fprintf(&b, "| Replicas | System | reps | time to all Ready (s): median [min–max] | TokenRequests per rep (median) | token errors (all reps) | token latency p50 / p95 / max (ms) | coordinator latency p50 / p95 (ms) | coordinator sign failures | signer 503s | CPU busy %% (median) | load1 (median) | cooldown before rep (s): median [min–max]; load1 at start (median) | note |\n|---:|---|---:|---|---:|---:|---|---|---:|---:|---:|---:|---|---|\n")
 	for _, k := range keys {
 		a := byKey[k]
 		if a.skipped != "" && len(a.reps) == 0 {
-			fmt.Fprintf(&b, "| %d | %s | 0 | – | – | – | – | – | – | – | – | – | SKIPPED: %s |\n", k.size, k.sys, a.skipped)
+			fmt.Fprintf(&b, "| %d | %s | 0 | – | – | – | – | – | – | – | – | – | – | SKIPPED: %s |\n", k.size, k.sys, a.skipped)
 			continue
 		}
 		sort.Float64s(a.auditLat)
@@ -213,14 +225,21 @@ func scaleSection(dir string) string {
 		if a.notReady {
 			note = "**not all Ready within 900 s in some repetition**"
 		}
-		fmt.Fprintf(&b, "| %d | %s | %d | %s [%s] | %s | %d | %s / %s / %s | %s | %s | %s | %s | %s | %s |\n",
+		coolCol := "15 s fixed idle (7A procedure)"
+		if len(a.cool) > 0 {
+			coolCol = fmt.Sprintf("%s [%s]; load1 %s", f1(median(a.cool)), minmax(a.cool), f1(median(a.coolLoad)))
+			if a.coolMissed > 0 {
+				coolCol += fmt.Sprintf("; **%d rep(s) hit the 300 s cap before load1 < threshold**", a.coolMissed)
+			}
+		}
+		fmt.Fprintf(&b, "| %d | %s | %d | %s [%s] | %s | %d | %s / %s / %s | %s | %s | %s | %s | %s | %s | %s |\n",
 			k.size, k.sys, len(a.reps), f1(median(a.ms)), minmax(a.ms), f1(median(a.req)), a.tokErr,
 			f1(pct(a.auditLat, 50)), f1(pct(a.auditLat, 95)), f1(func() float64 {
 				if len(a.auditLat) == 0 {
 					return math.NaN()
 				}
 				return a.auditLat[len(a.auditLat)-1]
-			}()), coordCol, failCol, c503, f1(median(a.cpu)), f1(median(a.load)), note)
+			}()), coordCol, failCol, c503, f1(median(a.cpu)), f1(median(a.load)), coolCol, note)
 	}
 	return b.String()
 }

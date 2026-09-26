@@ -5,7 +5,9 @@
 //	summarize -title "..." -note "..." -out summary.md [TAG=]run1.csv [TAG=]run2.csv ...
 //	summarize -single DIR -title "..." -note "..." -out DIR/summary.md   (Phase 7A, single.go)
 //
-// TAG groups rows (e.g. pre-N43-fix, post-N43-fix). For each CSV the measured
+// TAG groups rows (e.g. pre-N43-fix, post-N43-fix). If <csv without .csv>.coord.jsonl
+// exists (Phase 7B), coordinator-side latency columns are added (loadCoord).
+// For each CSV the measured
 // RTT is read from <csv without .csv>.rtt.json (measured DURING the run) or,
 // failing that, rtt-L<N>ms.json in the same directory (measured BEFORE the
 // run). The quorum RTT is the 3rd-smallest per-signer RTT: a 3-of-5 quorum
@@ -25,6 +27,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type stats struct {
@@ -39,6 +42,11 @@ type stats struct {
 	rttQuorum                                float64 // ms, NaN if unknown
 	rttSource                                string
 	cfgDelay, conc                           int
+	// coordinator-side view (Phase 7B): from <csv>.coord.jsonl, requests that
+	// started inside the measured window only
+	coordOK, coordFail                                    int
+	coordP50, coordP95, coordFailP95, clientMinusCoordP50 float64
+	hasCoord                                              bool
 }
 
 var labelRe = regexp.MustCompile(`L(\d+)ms-c(\d+)`)
@@ -175,6 +183,7 @@ func load(tag, path string) ([]*stats, error) {
 		} else {
 			st.median, st.p95, st.p99, st.mean, st.stddev, st.min, st.max = math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
 		}
+		loadCoord(st, strings.TrimSuffix(path, ".csv")+".coord.jsonl", afirst[l])
 		side := strings.TrimSuffix(path, ".csv") + ".rtt.json"
 		if v, ok := quorumRTT(side); ok {
 			st.rttQuorum, st.rttSource = v, "during run"
@@ -189,6 +198,49 @@ func load(tag, path string) ([]*stats, error) {
 		res = append(res, st)
 	}
 	return res, nil
+}
+
+// loadCoord reads the coordinators' "signed" / "sign failed" JSON log lines for
+// one configuration and keeps requests whose start (time - latency_ms) is at or
+// after the first measured client request (warm-up excluded).
+func loadCoord(st *stats, path string, measuredStartNs int64) {
+	lines := readLines(path)
+	if lines == nil {
+		if _, err := os.Stat(path); err != nil {
+			return
+		}
+	}
+	st.hasCoord = true
+	var ok, bad []float64
+	for _, l := range lines {
+		var m map[string]any
+		if json.Unmarshal([]byte(l), &m) != nil {
+			continue
+		}
+		lat, okLat := m["latency_ms"].(float64)
+		ts, okTS := m["time"].(string)
+		if !okLat || !okTS {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339Nano, ts)
+		if err != nil {
+			continue
+		}
+		if start := t.UnixNano() - int64(lat*1e6); start < measuredStartNs {
+			continue
+		}
+		switch m["msg"] {
+		case "signed":
+			ok = append(ok, lat)
+		case "sign failed":
+			bad = append(bad, lat)
+		}
+	}
+	sort.Float64s(ok)
+	sort.Float64s(bad)
+	st.coordOK, st.coordFail = len(ok), len(bad)
+	st.coordP50, st.coordP95, st.coordFailP95 = pct(ok, 50), pct(ok, 95), pct(bad, 95)
+	st.clientMinusCoordP50 = st.median - st.coordP50
 }
 
 func f1(x float64) string {
@@ -281,23 +333,32 @@ func main() {
 					fmt.Fprintf(&b, " – |")
 					continue
 				}
-				fmt.Fprintf(&b, " RTT %s → %s / %s ms, **%.1f%% err**, goodput **%s**/s, fail-p95 %s ms |", f1(s.rttQuorum), f1(s.median), f1(s.p95), 100*float64(s.errs)/float64(s.n), f1(s.goodput), f1(s.failP95))
+				coord := ""
+				if s.hasCoord {
+					coord = fmt.Sprintf("; coordinator %s / %s ms (client − coordinator median %s ms)", f1(s.coordP50), f1(s.coordP95), f1(s.clientMinusCoordP50))
+				}
+				fmt.Fprintf(&b, " RTT %s → %s / %s ms, **%.1f%% err**, goodput **%s**/s, fail-p95 %s ms%s |", f1(s.rttQuorum), f1(s.median), f1(s.p95), 100*float64(s.errs)/float64(s.n), f1(s.goodput), f1(s.failP95), coord)
 			}
 			fmt.Fprintln(&b)
 		}
 		fmt.Fprintln(&b)
 	}
 
-	fmt.Fprintf(&b, "## All configurations\n\n| Set | Measured quorum RTT (ms) | RTT measured | Configured netem (ms) | Configuration | N | errors | error %% | median | p95 | p99 | mean | stddev | min | max | goodput (ok/s, whole run) | offered (all/s) | failed p95 |\n|---|---:|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
+	fmt.Fprintf(&b, "## All configurations\n\n| Set | Measured quorum RTT (ms) | RTT measured | Configured netem (ms) | Configuration | N | errors | error %% | median | p95 | p99 | mean | stddev | min | max | goodput (ok/s, whole run) | offered (all/s) | failed p95 | coordinator signed | coordinator p50 | coordinator p95 | client − coordinator median | coordinator sign failed | coordinator failed p95 |\n|---|---:|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
 	var errNotes []string
 	for _, s := range all {
 		cd := "–"
 		if s.cfgDelay >= 0 {
 			cd = strconv.Itoa(s.cfgDelay)
 		}
-		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %d | %d | %.1f | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
+		cOK, cP50, cP95, cDiff, cFail, cFailP95 := "–", "–", "–", "–", "–", "–"
+		if s.hasCoord {
+			cOK, cP50, cP95, cDiff, cFail, cFailP95 = strconv.Itoa(s.coordOK), f1(s.coordP50), f1(s.coordP95), f1(s.clientMinusCoordP50), strconv.Itoa(s.coordFail), f1(s.coordFailP95)
+		}
+		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %d | %d | %.1f | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
 			map[bool]string{true: s.tag, false: "–"}[s.tag != ""], f1(s.rttQuorum), s.rttSource, cd, s.label, s.n, s.errs, 100*float64(s.errs)/float64(s.n),
-			f1(s.median), f1(s.p95), f1(s.p99), f1(s.mean), f1(s.stddev), f1(s.min), f1(s.max), f1(s.goodput), f1(s.offered), f1(s.failP95))
+			f1(s.median), f1(s.p95), f1(s.p99), f1(s.mean), f1(s.stddev), f1(s.min), f1(s.max), f1(s.goodput), f1(s.offered), f1(s.failP95),
+			cOK, cP50, cP95, cDiff, cFail, cFailP95)
 		if s.errs > 0 {
 			errNotes = append(errNotes, fmt.Sprintf("- `%s%s`: %d errors; first: `%s`", map[bool]string{true: s.tag + "/", false: ""}[s.tag != ""], s.label, s.errs, s.firstErr))
 		}
