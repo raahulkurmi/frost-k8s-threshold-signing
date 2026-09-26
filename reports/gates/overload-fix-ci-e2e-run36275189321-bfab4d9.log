@@ -1,0 +1,421 @@
+
+================ Environment ================
+git commit: bfab4d9d5b877884790efffde58231a918a37140
+date (UTC): 20260926T221010Z
+Linux runnervmtr4k5 6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+cpus: 4
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       1.2Gi       8.0Gi        48Mi       6.8Gi        14Gi
+docker engine 28.0.4
+kind v0.31.0 go1.25.5 linux/amd64
+Client Version: v1.36.5
+go version go1.27.1 linux/amd64
+verify strategy: optimistic, sign deadline: 2s
+
+================ Setup: fresh certs, key ceremony, signer stack ================
+Generated in secrets/:
+  coordinator-grpc/tls.crt     DNS:coordinator-grpc  sha256=92:83:8C:6A:35:6E:8B:87:CC:A0:1B:BF:06:79:1D:17:67:FC:5A:74:8C:10:96:AA:BD:04:3A:AD:C9:47:65:EA
+  coordinator/tls.crt          DNS:coordinator  sha256=AA:EC:7B:A1:2B:17:AF:39:45:3F:EE:D7:B9:65:AC:C2:AB:BF:7B:12:45:D3:FE:8F:DA:05:27:72:D8:F7:62:F6
+  lb/tls.crt                   DNS:lb  sha256=99:52:71:76:B9:FD:CD:43:82:B9:1F:17:F3:48:0A:AD:F3:85:B3:93:87:0D:CF:78:00:4D:64:4E:75:6D:32:45
+  signer-1/tls.crt             DNS:signer-1  sha256=7D:3B:19:36:64:0C:55:BE:1E:23:F7:D7:15:F4:F0:29:DC:B6:9E:7C:05:BE:69:7B:F2:C7:89:80:D2:B8:91:31
+  signer-2/tls.crt             DNS:signer-2  sha256=F3:F8:FF:BB:1E:09:E1:67:31:E0:DD:1F:30:57:F6:DE:80:69:E4:C3:84:6D:0A:03:ED:64:65:E7:8B:48:56:5E
+  signer-3/tls.crt             DNS:signer-3  sha256=7A:E1:84:A7:04:86:2F:2A:E1:AD:CF:D3:F1:F2:25:95:BB:7A:8A:52:05:75:72:B2:E3:FF:ED:2C:EF:63:E5:6E
+  signer-4/tls.crt             DNS:signer-4  sha256=19:86:87:83:61:CF:4A:18:B0:47:12:9A:21:95:DF:C8:62:24:A7:B7:31:FC:BC:66:72:54:AF:5D:7E:0A:32:EA
+  signer-5/tls.crt             DNS:signer-5  sha256=23:7C:5E:3C:45:C3:D7:E9:6E:41:9F:BC:DF:D5:E2:7C:7F:60:A1:8C:0C:B2:B6:1E:9E:68:DF:8D:23:4E:F8:B6
+CA private key: secrets/ca/ca.key (keep offline; never mount or copy into an image)
+Generating 3-of-5 threshold RSA key, 2048-bit modulus (safe primes; this can take minutes)...
+Generated in 1m8.218s
+kid: dK3SAEtGTTGonYvl3WVxQw
+threshold: 3 of 5, modulus: 2048 bits
+SHA-256 of outputs:
+  f3073809418c73d697874353765dddc74511196d0912eb0b31740b3dfdc65f98  secrets/keys/public-meta.json
+  acf62bafa45c7dd0742dfd1253e2aa88cfc97e8224051c84d6c2157fa5fdc3fb  secrets/keys/share-1.json
+  838aa1dec02d5dfab9e24e38471a615ffd446850eae1b6e38df67b5550b48e98  secrets/keys/share-2.json
+  4299894c0b581be7cecf1bf626a257fabba611d7d7f1bc8e4291191e2fa5bbb6  secrets/keys/share-3.json
+  dfdf6280d08d5d719d2b92fd97fa9dc9d94a839620de5e67191c535c44465584  secrets/keys/share-4.json
+  440c33f47cff30cb66e81879cf9b5da454157f7f2b9476c88a82e9fe5321acbe  secrets/keys/share-5.json
+Distribute each share-<i>.json to signer <i> only, then securely delete secrets/keys (docs/KEY_CEREMONY.md).
+topology: single; signer addresses: 172.30.2.21:8443 172.30.2.22:8443 172.30.2.23:8443 172.30.2.24:8443 172.30.2.25:8443
+kid: dK3SAEtGTTGonYvl3WVxQw
+ coordinator-lb Pulling 
+ 6a0ac1617861 Pulling fs layer 
+ 82736a35d0e7 Pulling fs layer 
+ 583599bb7d38 Pulling fs layer 
+ aee4e54b3865 Pulling fs layer 
+ 781ff50d2644 Pulling fs layer 
+ 453da7dbc73e Pulling fs layer 
+ 4a8b0b2a5b19 Pulling fs layer 
+ 612c0c1df4c5 Pulling fs layer 
+ 781ff50d2644 Waiting 
+ 453da7dbc73e Waiting 
+ 4a8b0b2a5b19 Waiting 
+ 612c0c1df4c5 Waiting 
+ aee4e54b3865 Waiting 
+ 583599bb7d38 Downloading [==================================================>]     627B/627B
+ 583599bb7d38 Verifying Checksum 
+ 583599bb7d38 Download complete 
+ 82736a35d0e7 Downloading [>                                                  ]  32.13kB/1.871MB
+ 6a0ac1617861 Downloading [>                                                  ]  48.51kB/3.864MB
+ 82736a35d0e7 Downloading [=======>                                           ]  294.3kB/1.871MB
+ 6a0ac1617861 Downloading [=====>                                             ]  441.7kB/3.864MB
+ 82736a35d0e7 Downloading [==============================>                    ]  1.146MB/1.871MB
+ 6a0ac1617861 Downloading [====================>                              ]  1.572MB/3.864MB
+ 82736a35d0e7 Verifying Checksum 
+ 82736a35d0e7 Download complete 
+ aee4e54b3865 Downloading [==================================================>]     956B/956B
+ aee4e54b3865 Download complete 
+ 6a0ac1617861 Verifying Checksum 
+ 6a0ac1617861 Download complete 
+ 6a0ac1617861 Extracting [>                                                  ]  65.54kB/3.864MB
+ 6a0ac1617861 Extracting [==================================================>]  3.864MB/3.864MB
+ 6a0ac1617861 Extracting [==================================================>]  3.864MB/3.864MB
+ 6a0ac1617861 Pull complete 
+ 82736a35d0e7 Extracting [>                                                  ]  32.77kB/1.871MB
+ 82736a35d0e7 Extracting [==================================================>]  1.871MB/1.871MB
+ 453da7dbc73e Downloading [==================================================>]   1.21kB/1.21kB
+ 453da7dbc73e Verifying Checksum 
+ 453da7dbc73e Download complete 
+ 781ff50d2644 Downloading [==================================================>]     404B/404B
+ 781ff50d2644 Verifying Checksum 
+ 781ff50d2644 Download complete 
+ 4a8b0b2a5b19 Verifying Checksum 
+ 4a8b0b2a5b19 Download complete 
+ 82736a35d0e7 Pull complete 
+ 583599bb7d38 Extracting [==================================================>]     627B/627B
+ 583599bb7d38 Extracting [==================================================>]     627B/627B
+ 583599bb7d38 Pull complete 
+ aee4e54b3865 Extracting [==================================================>]     956B/956B
+ aee4e54b3865 Extracting [==================================================>]     956B/956B
+ aee4e54b3865 Pull complete 
+ 781ff50d2644 Extracting [==================================================>]     404B/404B
+ 781ff50d2644 Extracting [==================================================>]     404B/404B
+ 781ff50d2644 Pull complete 
+ 453da7dbc73e Extracting [==================================================>]   1.21kB/1.21kB
+ 453da7dbc73e Extracting [==================================================>]   1.21kB/1.21kB
+ 453da7dbc73e Pull complete 
+ 4a8b0b2a5b19 Extracting [==================================================>]  1.399kB/1.399kB
+ 4a8b0b2a5b19 Extracting [==================================================>]  1.399kB/1.399kB
+ 4a8b0b2a5b19 Pull complete 
+ 612c0c1df4c5 Downloading [>                                                  ]  212.3kB/20.25MB
+ 612c0c1df4c5 Downloading [==>                                                ]  1.064MB/20.25MB
+ 612c0c1df4c5 Downloading [========>                                          ]   3.62MB/20.25MB
+ 612c0c1df4c5 Downloading [==========================>                        ]  10.65MB/20.25MB
+ 612c0c1df4c5 Verifying Checksum 
+ 612c0c1df4c5 Download complete 
+ 612c0c1df4c5 Extracting [>                                                  ]  229.4kB/20.25MB
+ 612c0c1df4c5 Extracting [==================>                                ]  7.569MB/20.25MB
+ 612c0c1df4c5 Extracting [=========================================>         ]  16.97MB/20.25MB
+ 612c0c1df4c5 Extracting [==================================================>]  20.25MB/20.25MB
+ 612c0c1df4c5 Pull complete 
+ coordinator-lb Pulled 
+ Network tk8s_signer-net  Creating
+ Network tk8s_signer-net  Created
+ Network tk8s_lb-net  Creating
+ Network tk8s_lb-net  Created
+ Container tk8s-signer-3-1  Creating
+ Container tk8s-signer-1-1  Creating
+ Container tk8s-signer-5-1  Creating
+ Container tk8s-signer-4-1  Creating
+ Container tk8s-signer-2-1  Creating
+ Container tk8s-signer-4-1  Created
+ Container tk8s-signer-2-1  Created
+ Container tk8s-signer-5-1  Created
+ Container tk8s-signer-1-1  Created
+ Container tk8s-signer-3-1  Created
+ Container tk8s-grpc-proxy-2-1  Creating
+ Container tk8s-grpc-proxy-1-1  Creating
+ Container tk8s-grpc-proxy-3-1  Creating
+ Container tk8s-grpc-proxy-1-1  Created
+ Container tk8s-grpc-proxy-2-1  Created
+ Container tk8s-grpc-proxy-3-1  Created
+ Container tk8s-coordinator-lb-1  Creating
+ Container tk8s-coordinator-lb-1  Created
+ Container tk8s-signer-4-1  Starting
+ Container tk8s-signer-3-1  Starting
+ Container tk8s-signer-2-1  Starting
+ Container tk8s-signer-5-1  Starting
+ Container tk8s-signer-1-1  Starting
+ Container tk8s-signer-5-1  Started
+ Container tk8s-signer-3-1  Started
+ Container tk8s-signer-4-1  Started
+ Container tk8s-signer-1-1  Started
+ Container tk8s-signer-2-1  Started
+ Container tk8s-grpc-proxy-2-1  Starting
+ Container tk8s-grpc-proxy-3-1  Starting
+ Container tk8s-grpc-proxy-1-1  Starting
+ Container tk8s-grpc-proxy-1-1  Started
+ Container tk8s-grpc-proxy-2-1  Started
+ Container tk8s-grpc-proxy-3-1  Started
+ Container tk8s-coordinator-lb-1  Starting
+ Container tk8s-coordinator-lb-1  Started
+{"keys":[{"kid":"dK3SAEtGTTGonYvl3WVxQw","pkix_sha256":"74add2004b464d31a89d8be5dd6571439e0f88c006c209222decec37432299b5","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-26T22:11:34Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+SERVICE          STATE
+coordinator-lb   running
+grpc-proxy-1     running
+grpc-proxy-2     running
+grpc-proxy-3     running
+signer-1         running
+signer-2         running
+signer-3         running
+signer-4         running
+signer-5         running
+
+================ Setup: kind cluster (apiserver signs only via /home/runner/work/frost-k8s-threshold-signing/frost-k8s-threshold-signing/run/signer.sock) ================
+kind config template: test/e2e/kind-config.yaml.tmpl
+Creating cluster "tk8s" ...
+ • Ensuring node image (kindest/node:v1.36.5-tk8s) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.36.5-tk8s) 🖼
+ • Preparing nodes 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+ • Waiting ≤ 5m0s for control-plane = Ready ⏳  ...
+ ✓ Waiting ≤ 5m0s for control-plane = Ready ⏳
+ • Ready after 8s 💚
+Set kubectl context to "kind-tk8s"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-tk8s
+
+Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
+server version: v1.36.5
+node image: sha256:302215edd3081b5b313bf1dc049795491cfe2c3d8c62c678053027f54810ab83
+apiserver service-account flags:
+    - --service-account-issuer=https://kubernetes.default.svc.cluster.local
+    - --service-account-signing-endpoint=/var/run/frost-k8s/signer.sock
+controller-manager service-account flags:
+    - --use-service-account-credentials=true
+PASS SETUP: apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+deleted /etc/kubernetes/pki/sa.{key,pub} from the control-plane node
+pod/coredns-589f44dc88-dm6qv condition met
+pod/coredns-589f44dc88-nt44d condition met
+pod/etcd-tk8s-control-plane condition met
+pod/kindnet-5lvlf condition met
+pod/kindnet-7zqsr condition met
+pod/kube-apiserver-tk8s-control-plane condition met
+pod/kube-controller-manager-tk8s-control-plane condition met
+pod/kube-proxy-dpqhn condition met
+pod/kube-proxy-j22xh condition met
+pod/kube-scheduler-tk8s-control-plane condition met
+NAME                                         READY   STATUS    RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+coredns-589f44dc88-dm6qv                     1/1     Running   0          24s   10.244.0.4   tk8s-control-plane   <none>           <none>
+coredns-589f44dc88-nt44d                     1/1     Running   0          24s   10.244.0.3   tk8s-control-plane   <none>           <none>
+etcd-tk8s-control-plane                      1/1     Running   0          33s   172.18.0.2   tk8s-control-plane   <none>           <none>
+kindnet-5lvlf                                1/1     Running   0          20s   172.18.0.3   tk8s-worker          <none>           <none>
+kindnet-7zqsr                                1/1     Running   0          24s   172.18.0.2   tk8s-control-plane   <none>           <none>
+kube-apiserver-tk8s-control-plane            1/1     Running   0          32s   172.18.0.2   tk8s-control-plane   <none>           <none>
+kube-controller-manager-tk8s-control-plane   1/1     Running   0          32s   172.18.0.2   tk8s-control-plane   <none>           <none>
+kube-proxy-dpqhn                             1/1     Running   0          24s   172.18.0.2   tk8s-control-plane   <none>           <none>
+kube-proxy-j22xh                             1/1     Running   0          20s   172.18.0.3   tk8s-worker          <none>           <none>
+kube-scheduler-tk8s-control-plane            1/1     Running   0          32s   172.18.0.2   tk8s-control-plane   <none>           <none>
+
+================ E1: kubectl create token default -> RS256, threshold kid ================
+header: {"alg":"RS256","typ":"JWT","kid":"dK3SAEtGTTGonYvl3WVxQw"}
+claims: {"aud":["https://kubernetes.default.svc.cluster.local"],"exp":1790464343,"iat":1790460743,"iss":"https://kubernetes.default.svc.cluster.local","jti":"d57eb69e-2b9d-4a4d-82d6-081f6fd8860d","kubernetes.io":{"namespace":"default","serviceaccount":{"name":"default","uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9"}},"nbf":1790460743,"sub":"system:serviceaccount:default:default"}
+PASS E1: alg=RS256 kid=dK3SAEtGTTGonYvl3WVxQw (equals public-meta.json)
+
+================ E2: TokenReview of that token ================
+{"audiences":["https://kubernetes.default.svc.cluster.local"],"authenticated":true,"user":{"extra":{"authentication.kubernetes.io/credential-id":["JTI=d57eb69e-2b9d-4a4d-82d6-081f6fd8860d"]},"groups":["system:serviceaccounts","system:serviceaccounts:default","system:authenticated"],"uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9","username":"system:serviceaccount:default:default"}}
+PASS E2: authenticated=true username=system:serviceaccount:default:default
+
+================ E3 + (a) + (c): pod with projected token calls the API ================
+pod/e3-client created
+pod/e3-client condition met
+GET /api with automounted token: HTTP 200
+SelfSubjectReview with projected token: {"username":"system:serviceaccount:default:default","uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9","groups":["system:serviceaccounts","system:serviceaccounts:default","system:authenticated"],"extra":{"authentication.kubernetes.io/credential-id":["JTI=3ba784e4-9db8-4287-b17a-620f4659afd2"],"authentication.kubernetes.io/node-name":["tk8s-worker"],"authentication.kubernetes.io/node-uid":["b3ea277f-b7ce-4e82-b708-fb4725ef4093"],"authentication.kubernetes.io/pod-name":["e3-client"],"authentication.kubernetes.io/pod-uid":["9a7512a0-d04d-4846-8ba2-e5c267b1cf63"]}}
+PASS E3: pod reached the API (HTTP 200) and authenticated as system:serviceaccount:default:default with its projected token
+projected token header: {"alg":"RS256","typ":"JWT","kid":"dK3SAEtGTTGonYvl3WVxQw"}
+projected token claims: {"aud":["https://kubernetes.default.svc.cluster.local"],"exp":1790467943,"iat":1790460743,"iss":"https://kubernetes.default.svc.cluster.local","jti":"3ba784e4-9db8-4287-b17a-620f4659afd2","kubernetes.io":{"namespace":"default","node":{"name":"tk8s-worker","uid":"b3ea277f-b7ce-4e82-b708-fb4725ef4093"},"pod":{"name":"e3-client","uid":"9a7512a0-d04d-4846-8ba2-e5c267b1cf63"},"serviceaccount":{"name":"default","uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9"},"warnafter":1790464350},"nbf":1790460743,"sub":"system:serviceaccount:default:default"}
+projected token TokenReview: {"audiences":["https://kubernetes.default.svc.cluster.local"],"authenticated":true,"user":{"extra":{"authentication.kubernetes.io/credential-id":["JTI=3ba784e4-9db8-4287-b17a-620f4659afd2"],"authentication.kubernetes.io/node-name":["tk8s-worker"],"authentication.kubernetes.io/node-uid":["b3ea277f-b7ce-4e82-b708-fb4725ef4093"],"authentication.kubernetes.io/pod-name":["e3-client"],"authentication.kubernetes.io/pod-uid":["9a7512a0-d04d-4846-8ba2-e5c267b1cf63"]},"groups":["system:serviceaccounts","system:serviceaccounts:default","system:authenticated"],"uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9","username":"system:serviceaccount:default:default"}}
+projected token exp - iat = 7200s, warnafter - iat = 3607s (policy/Metadata max = 7200s)
+PASS REQ-a: kubelet-projected token issued and passes TokenReview; exp-iat=7200s warnafter-iat=3607s
+bound to Pod/e3-client: kubernetes.io={"namespace":"default","node":{"name":"tk8s-worker","uid":"b3ea277f-b7ce-4e82-b708-fb4725ef4093"},"pod":{"name":"e3-client","uid":"9a7512a0-d04d-4846-8ba2-e5c267b1cf63"},"serviceaccount":{"name":"default","uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9"}} authenticated=true
+bound to Node/tk8s-worker: kubernetes.io={"namespace":"default","node":{"name":"tk8s-worker","uid":"b3ea277f-b7ce-4e82-b708-fb4725ef4093"},"serviceaccount":{"name":"default","uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9"}} authenticated=true
+bound to Secret/e3-bound-secret: kubernetes.io={"namespace":"default","secret":{"name":"e3-bound-secret","uid":"9eedffc1-7d62-4fe1-b141-51db442158b6"},"serviceaccount":{"name":"default","uid":"881fd2c4-03c9-49a7-809b-cc93eaad21c9"}} authenticated=true
+PASS REQ-c: policy accepted pod-, node- and secret-bound tokens and warnafter; all pass TokenReview
+
+================ (b) audiences ================
+allowlisted: aud=["frost-e2e-allowed"] review={"authenticated":true,"audiences":["frost-e2e-allowed"]}
+not allowlisted: kubectl exit=1 output: error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = token signing failed: threshold not met
+coordinator log: {"time":"2026-09-26T22:12:26.98783396Z","level":"ERROR","msg":"sign failed","request_id":"5abf88652f1aac0f58c059bc","strategy":"optimistic","strategy_effective":"optimistic","fanout":"all","signers_contacted":5,"valid_shares":0,"failures":[{"signer_id":4,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":5,"reason":"refused (HTTP 403 policy): aud: 
+signer audit:    {"ts":"2026-09-26T22:12:26.986703407Z","signer_id":1,"request_id":"5abf88652f1aac0f58c059bc","signing_input_sha256":"1cfc9117c9ef427b6a1adb9567524175e3cf63620a59dace32437b06fd1dba95","client":"coordinator","decision":"deny","reason":"policy: aud: audience \"not-allowlisted\" is not allowed"}
+PASS REQ-b: allowlisted audience issued; non-allowlisted refused with generic error only (N33); reason in coordinator log and signer audit
+
+================ E4: Deployment with 20 replicas; controllers keep working ================
+deployment.apps/e4-web created
+Waiting for deployment "e4-web" rollout to finish: 0 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 1 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 2 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 3 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 4 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 5 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 6 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 7 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 8 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 9 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 10 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 11 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 12 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 13 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 14 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 15 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 16 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 17 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 18 of 20 updated replicas are available...
+Waiting for deployment "e4-web" rollout to finish: 19 of 20 updated replicas are available...
+deployment "e4-web" successfully rolled out
+readyReplicas=20; controller-manager restarts 0->0; scheduler restarts 0->0
+threshold-signed controller tokens (signer audit logs, allow decisions):
+      5 system:serviceaccount:kube-system:deployment-controller
+      5 system:serviceaccount:kube-system:replicaset-controller
+scheduler credential: 1 client-certificate entry in scheduler.conf (x509, not an SA token)
+PASS E4: 20/20 Ready; deployment/replicaset controllers used threshold-signed tokens; no KCM/scheduler restarts
+
+================ E5: /openid/v1/jwks serves the group key ================
+{"kid":"dK3SAEtGTTGonYvl3WVxQw","kty":"RSA","alg":"RS256","use":"sig","e":"AQAB","n_prefix":"yNnsEcCclQLkK7z0"}
+jwks modulus == public-meta.json modulus: yes
+jwks fetched from pod with its SA token (system:service-account-issuer-discovery): kid=dK3SAEtGTTGonYvl3WVxQw
+PASS E5: JWKS has exactly the threshold group key (kid dK3SAEtGTTGonYvl3WVxQw, RS256, modulus matches)
+
+================ E6: signer failures ================
+2 signers down: issue ok=1 kid=dK3SAEtGTTGonYvl3WVxQw
+3 signers down: issue ok=0 after 50ms; kubectl said: error: failed to create token: Internal error occurred: failed to generate token: while signing jwt: rpc error: code = Unavailable desc = token signing failed: threshold not met
+coordinator log: {"time":"2026-09-26T22:12:26.98783396Z","level":"ERROR","msg":"sign failed","request_id":"5abf88652f1aac0f58c059bc","strategy":"optimistic","strategy_effective":"optimistic","fanout":"all","signers_contacted":5,"valid_shares":0,"failures":[{"signer_id":4,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":5,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":1,"reason":"refused (HTTP 403 policy): aud: audience \"not-allowlisted\" is not allowed"},{"signer_id":2,"reason":"refused (HTTP 403 policy):
+previously issued tokens with 3 signers down: E1 token authenticated=true, projected token authenticated=true
+PASS E6: 2 down: issued; 3 down: refused with threshold error (50ms); old tokens still authenticate
+
+================ E7: signer restart -> issuance recovers ================
+signer start request -> first successful token: 421ms (0 failed attempts; includes one kubectl process start per attempt)
+signer-3 last 'signer ready' log: 2026-09-26T22:12:33.888429197Z
+PASS E7: issuance recovered 421ms after signer start request
+
+================ E8: coordinator replicas and nginx failover ================
+via socket:   {"keys":[{"kid":"dK3SAEtGTTGonYvl3WVxQw","pkix_sha256":"74add2004b464d31a89d8be5dd6571439e0f88c006c209222decec37432299b5","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-26T22:11:34Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replica 172.30.1.11 (mTLS lb, from lb-net): {"keys":[{"kid":"dK3SAEtGTTGonYvl3WVxQw","pkix_sha256":"74add2004b464d31a89d8be5dd6571439e0f88c006c209222decec37432299b5","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-26T22:11:34Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replica 172.30.1.12 (mTLS lb, from lb-net): {"keys":[{"kid":"dK3SAEtGTTGonYvl3WVxQw","pkix_sha256":"74add2004b464d31a89d8be5dd6571439e0f88c006c209222decec37432299b5","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-26T22:11:34Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replica 172.30.1.13 (mTLS lb, from lb-net): {"keys":[{"kid":"dK3SAEtGTTGonYvl3WVxQw","pkix_sha256":"74add2004b464d31a89d8be5dd6571439e0f88c006c209222decec37432299b5","exclude_from_oidc_discovery":false}],"data_timestamp":"2026-09-26T22:11:34Z","refresh_hint_seconds":3600,"max_token_expiration_seconds":7200}
+replicas 1,2 stopped: issue ok=1 kid=dK3SAEtGTTGonYvl3WVxQw
+rolling restart of all 3 replicas: 0/15 token requests failed
+PASS E8: 3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+
+================ N1: nothing but nginx (mTLS lb) can call Sign / FetchKeys ================
+control (lb-net, lb cert): Sign: OK header={"alg":"RS256","typ":"JWT","kid":"dK3SAEtGTTGonYvl3WVxQw"} sig_len=342
+  refused: default bridge -> 172.30.1.11 Sign (lb cert): Sign: rpc error: code = DeadlineExceeded desc = context deadline exceeded while waiting for connections to become ready
+  refused: default bridge -> 172.30.1.11 FetchKeys (lb cert): FetchKeys: rpc error: code = DeadlineExceeded desc = context deadline exceeded while waiting for connections to become ready
+  refused: lb-net, no client cert -> 172.30.1.11 Sign: Sign: rpc error: code = Unavailable desc = write tcp 172.30.1.1:51644->172.30.1.11:9090: write: broken pipe
+  refused: lb-net, no client cert -> 172.30.1.11 FetchKeys: FetchKeys: rpc error: code = Unavailable desc = write tcp 172.30.1.1:51648->172.30.1.11:9090: write: broken pipe
+  refused: lb-net, coordinator cert -> 172.30.1.11 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: remote error: tls: bad certificate"
+  refused: lb-net, signer-1 cert -> 172.30.1.11 FetchKeys: FetchKeys: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: remote error: tls: bad certificate"
+  refused: lb-net, plaintext gRPC -> 172.30.1.11 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: EOF"
+  refused: default bridge -> 172.30.1.12 Sign (lb cert): Sign: rpc error: code = DeadlineExceeded desc = context deadline exceeded while waiting for connections to become ready
+  refused: default bridge -> 172.30.1.12 FetchKeys (lb cert): FetchKeys: rpc error: code = DeadlineExceeded desc = context deadline exceeded while waiting for connections to become ready
+  refused: lb-net, no client cert -> 172.30.1.12 Sign: Sign: rpc error: code = Unavailable desc = write tcp 172.30.1.1:55566->172.30.1.12:9090: write: broken pipe
+  refused: lb-net, no client cert -> 172.30.1.12 FetchKeys: FetchKeys: rpc error: code = Unavailable desc = write tcp 172.30.1.1:55570->172.30.1.12:9090: write: broken pipe
+  refused: lb-net, coordinator cert -> 172.30.1.12 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: remote error: tls: bad certificate"
+  refused: lb-net, signer-1 cert -> 172.30.1.12 FetchKeys: FetchKeys: rpc error: code = Unavailable desc = write tcp 172.30.1.1:55592->172.30.1.12:9090: write: broken pipe
+  refused: lb-net, plaintext gRPC -> 172.30.1.12 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: EOF"
+  refused: default bridge -> 172.30.1.13 Sign (lb cert): Sign: rpc error: code = DeadlineExceeded desc = context deadline exceeded while waiting for connections to become ready
+  refused: default bridge -> 172.30.1.13 FetchKeys (lb cert): FetchKeys: rpc error: code = DeadlineExceeded desc = context deadline exceeded while waiting for connections to become ready
+  refused: lb-net, no client cert -> 172.30.1.13 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: remote error: tls: certificate required"
+  refused: lb-net, no client cert -> 172.30.1.13 FetchKeys: FetchKeys: rpc error: code = Unavailable desc = write tcp 172.30.1.1:37520->172.30.1.13:9090: write: broken pipe
+  refused: lb-net, coordinator cert -> 172.30.1.13 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: remote error: tls: bad certificate"
+  refused: lb-net, signer-1 cert -> 172.30.1.13 FetchKeys: FetchKeys: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: remote error: tls: bad certificate"
+  refused: lb-net, plaintext gRPC -> 172.30.1.13 Sign: Sign: rpc error: code = Unavailable desc = connection error: desc = "error reading server preface: EOF"
+  refused: lb-net -> signer-1 172.30.2.21:8443 TCP: connect 172.30.2.21:8443: refused/unreachable (dial tcp 172.30.2.21:8443: connect: network is unreachable)
+  refused: lb-net -> signer-2 172.30.2.22:8443 TCP: connect 172.30.2.22:8443: refused/unreachable (dial tcp 172.30.2.22:8443: connect: network is unreachable)
+  refused: lb-net -> signer-3 172.30.2.23:8443 TCP: connect 172.30.2.23:8443: refused/unreachable (dial tcp 172.30.2.23:8443: connect: network is unreachable)
+  refused: lb-net -> signer-4 172.30.2.24:8443 TCP: connect 172.30.2.24:8443: refused/unreachable (dial tcp 172.30.2.24:8443: connect: network is unreachable)
+  refused: lb-net -> signer-5 172.30.2.25:8443 TCP: connect 172.30.2.25:8443: refused/unreachable (dial tcp 172.30.2.25:8443: connect: network is unreachable)
+PASS N1: default-bridge and lb-net containers without the lb cert cannot call Sign/FetchKeys; lb-net cannot reach signers
+
+================ N2: no component port accepts a TCP connection from the host ================
+published ports of tk8s containers:
+tk8s-coordinator-lb-1: ports=[]
+tk8s-grpc-proxy-1-1: ports=[]
+tk8s-grpc-proxy-2-1: ports=[]
+tk8s-grpc-proxy-3-1: ports=[]
+tk8s-signer-3-1: ports=[]
+tk8s-signer-1-1: ports=[]
+tk8s-signer-5-1: ports=[]
+tk8s-signer-2-1: ports=[]
+tk8s-signer-4-1: ports=[]
+$ sudo ss -tlnp (VM host):
+  State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                   
+  LISTEN 0      4096      127.0.0.54:53         0.0.0.0:*    users:(("systemd-resolve",pid=406,fd=17))
+  LISTEN 0      4096       127.0.0.1:46205      0.0.0.0:*    users:(("docker-proxy",pid=11987,fd=7))  
+  LISTEN 0      4096         0.0.0.0:22         0.0.0.0:*    users:(("systemd",pid=1,fd=235))         
+  LISTEN 0      4096   127.0.0.53%lo:53         0.0.0.0:*    users:(("systemd-resolve",pid=406,fd=15))
+  LISTEN 0      4096            [::]:22            [::]:*    users:(("systemd",pid=1,fd=236))         
+  tk8s-coordinator-lb-1 listens on [41525 ] at [172.30.1.5 ]
+  tk8s-grpc-proxy-1-1 listens on [9090 33895 ] at [172.30.1.11 172.30.2.11 ]
+  tk8s-grpc-proxy-2-1 listens on [9090 46873 ] at [172.30.1.12 172.30.2.12 ]
+  tk8s-grpc-proxy-3-1 listens on [9090 32785 ] at [172.30.1.13 172.30.2.13 ]
+  tk8s-signer-3-1 listens on [8443 44679 ] at [172.30.2.23 ]
+  tk8s-signer-1-1 listens on [8443 42131 ] at [172.30.2.21 ]
+  tk8s-signer-5-1 listens on [8443 35127 ] at [172.30.2.25 ]
+  tk8s-signer-2-1 listens on [8443 44473 ] at [172.30.2.22 ]
+  tk8s-signer-4-1 listens on [8443 35383 ] at [172.30.2.24 ]
+  (unlisted high ports are Docker's embedded DNS resolver for 127.0.0.11 inside each container; 'ports=[80/tcp]' on nginx is image EXPOSE metadata, not a published port)
+  the only entry point is the Unix socket /home/runner/work/frost-k8s-threshold-signing/frost-k8s-threshold-signing/run/signer.sock: socket root:root 666 (nginx forces 0666), directory root:root 700
+  non-root user runner -> socket: refused (FetchKeys: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial unix /hom)
+PASS N2: 0 of 23 (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused
+
+================ N3: nginx cannot open a TCP connection to any signer ================
+  nginx netns -> 172.30.2.21:8443: connect 172.30.2.21:8443: refused/unreachable (dial tcp 172.30.2.21:8443: connect: network is unreachable)
+  nginx netns -> signer-1:8443: connect signer-1:8443: refused/unreachable (dial tcp: lookup signer-1 on 127.0.0.11:53: server misbehaving)
+  nginx netns -> 172.30.2.22:8443: connect 172.30.2.22:8443: refused/unreachable (dial tcp 172.30.2.22:8443: connect: network is unreachable)
+  nginx netns -> signer-2:8443: connect signer-2:8443: refused/unreachable (dial tcp: lookup signer-2 on 127.0.0.11:53: server misbehaving)
+  nginx netns -> 172.30.2.23:8443: connect 172.30.2.23:8443: refused/unreachable (dial tcp 172.30.2.23:8443: connect: network is unreachable)
+  nginx netns -> signer-3:8443: connect signer-3:8443: refused/unreachable (dial tcp: lookup signer-3 on 127.0.0.11:53: server misbehaving)
+  nginx netns -> 172.30.2.24:8443: connect 172.30.2.24:8443: refused/unreachable (dial tcp 172.30.2.24:8443: connect: network is unreachable)
+  nginx netns -> signer-4:8443: connect signer-4:8443: refused/unreachable (dial tcp: lookup signer-4 on 127.0.0.11:53: server misbehaving)
+  nginx netns -> 172.30.2.25:8443: connect 172.30.2.25:8443: refused/unreachable (dial tcp 172.30.2.25:8443: connect: network is unreachable)
+  nginx netns -> signer-5:8443: connect signer-5:8443: refused/unreachable (dial tcp: lookup signer-5 on 127.0.0.11:53: server misbehaving)
+  nginx networks: tk8s_lb-net 
+PASS N3: nginx (its network namespace) reaches no signer by IP or name
+
+================ (d) strategy used by every coordinator ================
+      8 {"strategy":"optimistic","deadline":"2s","signers":[1,2,3,4,5],"kid":"dK3SAEtGTTGonYvl3WVxQw"}
+PASS REQ-d: all 8 coordinator starts (incl. restarts) ran strategy=optimistic, deadline=2s, kid=dK3SAEtGTTGonYvl3WVxQw
+
+================ TIMING (N64): nginx and coordinator timing lines join by request_id ================
+Sign requests: nginx lines 71, coordinator lines 72, joined 71
+medians over joined requests (ms): nginx total 29 = nginx->coordinator 1.155 + queued before Sign 0.009 + coordinator Sign 28.259 + rest (nginx + return path) -0.1360000000000241
+PASS TIMING: 71 of 72 coordinator Sign lines joined an nginx line by request_id; median nginx total 29 ms, nginx->coordinator 1.155 ms, coordinator 28.259 ms
+
+================ Signer policy decisions (all signers, from audit logs) ================
+    343 allow
+      7 cancelled
+      5 deny
+      5 policy: aud: audience "not-allowlisted" is not allowed
+
+================ Summary ================
+git commit: bfab4d9d5b877884790efffde58231a918a37140
+kubernetes: v1.36.5, node image sha256:302215edd3081b5b313bf1dc049795491cfe2c3d8c62c678053027f54810ab83
+PASS  SETUP  apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+PASS  E1  alg=RS256 kid=dK3SAEtGTTGonYvl3WVxQw (equals public-meta.json)
+PASS  E2  authenticated=true username=system:serviceaccount:default:default
+PASS  E3  pod reached the API (HTTP 200) and authenticated as system:serviceaccount:default:default with its projected token
+PASS  REQ-a  kubelet-projected token issued and passes TokenReview; exp-iat=7200s warnafter-iat=3607s
+PASS  REQ-c  policy accepted pod-, node- and secret-bound tokens and warnafter; all pass TokenReview
+PASS  REQ-b  allowlisted audience issued; non-allowlisted refused with generic error only (N33); reason in coordinator log and signer audit
+PASS  E4  20/20 Ready; deployment/replicaset controllers used threshold-signed tokens; no KCM/scheduler restarts
+PASS  E5  JWKS has exactly the threshold group key (kid dK3SAEtGTTGonYvl3WVxQw, RS256, modulus matches)
+PASS  E6  2 down: issued; 3 down: refused with threshold error (50ms); old tokens still authenticate
+PASS  E7  issuance recovered 421ms after signer start request
+PASS  E8  3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+PASS  N1  default-bridge and lb-net containers without the lb cert cannot call Sign/FetchKeys; lb-net cannot reach signers
+PASS  N2  0 of 23 (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused
+PASS  N3  nginx (its network namespace) reaches no signer by IP or name
+PASS  REQ-d  all 8 coordinator starts (incl. restarts) ran strategy=optimistic, deadline=2s, kid=dK3SAEtGTTGonYvl3WVxQw
+PASS  TIMING  71 of 72 coordinator Sign lines joined an nginx line by request_id; median nginx total 29 ms, nginx->coordinator 1.155 ms, coordinator 28.259 ms
+E2E: PASS
+cluster, stack and generated secrets removed

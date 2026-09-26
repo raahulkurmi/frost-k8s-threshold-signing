@@ -1,0 +1,52 @@
+# make test on the operator Mac (darwin/arm64), tree identical in code to bfab4d9 (NOTES/README edited after), 2026-09-26
+go test -count=1 -timeout 30m ./...
+ok  	frost-k8s-threshold-signing/cmd/dealer	93.733s
+?   	frost-k8s-threshold-signing/cmd/grpc-proxy	[no test files]
+ok  	frost-k8s-threshold-signing/cmd/signer	23.536s
+?   	frost-k8s-threshold-signing/internal/audit	[no test files]
+ok  	frost-k8s-threshold-signing/internal/coordinator	67.404s
+?   	frost-k8s-threshold-signing/internal/dealer	[no test files]
+ok  	frost-k8s-threshold-signing/internal/grpcserver	45.345s
+?   	frost-k8s-threshold-signing/internal/jwtfmt	[no test files]
+?   	frost-k8s-threshold-signing/internal/keymeta	[no test files]
+?   	frost-k8s-threshold-signing/internal/keyshare	[no test files]
+ok  	frost-k8s-threshold-signing/internal/policy	2.065s
+ok  	frost-k8s-threshold-signing/internal/signer	92.600s
+?   	frost-k8s-threshold-signing/internal/testutil	[no test files]
+?   	frost-k8s-threshold-signing/internal/tlsconf	[no test files]
+?   	frost-k8s-threshold-signing/internal/wire	[no test files]
+ok  	frost-k8s-threshold-signing/test	42.688s
+?   	frost-k8s-threshold-signing/test/e2e/probe	[no test files]
+go test -count=1 -timeout 30m -tags testmalicious -run 'TestMaliciousSignerExcluded' -v ./test/
+=== RUN   TestMaliciousSignerExcluded
+testutil: generated 2048-bit 3-of-5 key in 5.555s
+=== RUN   TestMaliciousSignerExcluded/strict/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/strict/three_malicious
+2026/09/27 03:34:51 WARN excluded invalid signature share request_id=c6b6d6538aba292386ebefa7 signer_id=1 err="invalid signature share: invalid signature share with id 1"
+2026/09/27 03:34:51 WARN signer marked suspect: its shares are verified before combining request_id=c6b6d6538aba292386ebefa7 signer_id=1 until=2026-09-27T03:44:51.781+05:30
+2026/09/27 03:34:51 WARN excluded invalid signature share request_id=c6b6d6538aba292386ebefa7 signer_id=2 err="invalid signature share: invalid signature share with id 2"
+2026/09/27 03:34:51 WARN signer marked suspect: its shares are verified before combining request_id=c6b6d6538aba292386ebefa7 signer_id=2 until=2026-09-27T03:44:51.781+05:30
+2026/09/27 03:34:51 WARN excluded invalid signature share request_id=c6b6d6538aba292386ebefa7 signer_id=3 err="invalid signature share: invalid signature share with id 3"
+2026/09/27 03:34:51 WARN signer marked suspect: its shares are verified before combining request_id=c6b6d6538aba292386ebefa7 signer_id=3 until=2026-09-27T03:44:51.782+05:30
+2026/09/27 03:34:51 ERROR sign failed request_id=c6b6d6538aba292386ebefa7 strategy=strict strategy_effective=strict fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3}]" share_verifications=5 latency_ms=18.586
+    malicious_test.go:71: threshold not met: 2 valid shares, need 3; failures: [signer-1: invalid signature share: invalid signature share with id 1; signer-2: invalid signature share: invalid signature share with id 2; signer-3: invalid signature share: invalid signature share with id 3]
+=== RUN   TestMaliciousSignerExcluded/optimistic/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/optimistic/three_malicious
+2026/09/27 03:34:51 WARN optimistic combine failed final verification; verifying shares individually request_id=a915127079d39ee401081757 err="crypto/rsa: verification error"
+2026/09/27 03:34:51 WARN excluded invalid signature share request_id=a915127079d39ee401081757 signer_id=1 err="invalid signature share with id 1"
+2026/09/27 03:34:51 WARN signer marked suspect: its shares are verified before combining request_id=a915127079d39ee401081757 signer_id=1 until=2026-09-27T03:44:51.819+05:30
+2026/09/27 03:34:51 WARN excluded invalid signature share request_id=a915127079d39ee401081757 signer_id=3 err="invalid signature share with id 3"
+2026/09/27 03:34:51 WARN signer marked suspect: its shares are verified before combining request_id=a915127079d39ee401081757 signer_id=3 until=2026-09-27T03:44:51.824+05:30
+2026/09/27 03:34:51 WARN excluded invalid signature share request_id=a915127079d39ee401081757 signer_id=2 err="invalid signature share with id 2"
+2026/09/27 03:34:51 WARN signer marked suspect: its shares are verified before combining request_id=a915127079d39ee401081757 signer_id=2 until=2026-09-27T03:44:51.829+05:30
+2026/09/27 03:34:51 ERROR sign failed request_id=a915127079d39ee401081757 strategy=optimistic strategy_effective=optimistic fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]" share_verifications=5 latency_ms=23.089
+    malicious_test.go:71: threshold not met: 2 valid shares, need 3; failures: [signer-1: invalid signature share: invalid signature share with id 1; signer-3: invalid signature share: invalid signature share with id 3; signer-2: invalid signature share: invalid signature share with id 2]
+--- PASS: TestMaliciousSignerExcluded (5.69s)
+    --- PASS: TestMaliciousSignerExcluded/strict/one_malicious (0.02s)
+    --- PASS: TestMaliciousSignerExcluded/strict/three_malicious (0.02s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/one_malicious (0.02s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/three_malicious (0.02s)
+PASS
+ok  	frost-k8s-threshold-signing/test	6.933s
