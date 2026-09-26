@@ -56,9 +56,25 @@ for r in $REGIONS; do
   kp=$(aws_ ec2 describe-key-pairs --region "$r" --filters "$F" --query 'length(KeyPairs)' --output text)
   vol=$(aws_ ec2 describe-volumes --region "$r" --filters "$F" --query 'length(Volumes)' --output text)
   eip=$(aws_ ec2 describe-addresses --region "$r" --filters "$F" --query 'length(Addresses)' --output text)
-  tagged=$(aws_ resourcegroupstaggingapi get-resources --region "$r" --tag-filters "Key=$TAG_KEY,Values=$TAG_VAL" \
-    --query 'ResourceTagMappingList[].ResourceARN' --output text | tr '\t' '\n' | grep -v ':instance/' | grep -v ':security-group-rule/' | grep -c . || true)
-  printf '%-15s instances(non-terminated)=%s security-groups=%s key-pairs=%s volumes=%s elastic-ips=%s other-tagged(tagging API)=%s terminated=[%s]\n' "$r" "$li" "$sg" "$kp" "$vol" "$eip" "$tagged" "$term"
+  # The tagging API is eventually consistent and keeps ARNs of deleted resources for a
+  # while (seen: the root volumes and ENIs of just-terminated instances). Every ARN it
+  # lists is checked against EC2; only resources EC2 still finds count as remaining.
+  # A resource type not handled here always counts as remaining.
+  tagged=0 stale=0
+  for arn in $(aws_ resourcegroupstaggingapi get-resources --region "$r" --tag-filters "Key=$TAG_KEY,Values=$TAG_VAL" \
+    --query 'ResourceTagMappingList[].ResourceARN' --output text | tr '\t' '\n' | grep -v ':instance/' | grep -v ':security-group-rule/'); do
+    id="${arn##*/}"
+    case "$arn" in
+      *:volume/*)            ex=$(aws_ ec2 describe-volumes --region "$r" --volume-ids "$id" --query 'length(Volumes)' --output text 2>/dev/null || echo 0) ;;
+      *:network-interface/*) ex=$(aws_ ec2 describe-network-interfaces --region "$r" --network-interface-ids "$id" --query 'length(NetworkInterfaces)' --output text 2>/dev/null || echo 0) ;;
+      *:security-group/*)    ex=$(aws_ ec2 describe-security-groups --region "$r" --group-ids "$id" --query 'length(SecurityGroups)' --output text 2>/dev/null || echo 0) ;;
+      *:key-pair/*)          ex=$(aws_ ec2 describe-key-pairs --region "$r" --key-pair-ids "$id" --query 'length(KeyPairs)' --output text 2>/dev/null || echo 0) ;;
+      *:elastic-ip/*)        ex=$(aws_ ec2 describe-addresses --region "$r" --allocation-ids "$id" --query 'length(Addresses)' --output text 2>/dev/null || echo 0) ;;
+      *) ex=1; echo "  $r: unhandled tagged resource type, counted as remaining: $arn" ;;
+    esac
+    if [ "$ex" = 0 ]; then stale=$((stale+1)); else tagged=$((tagged+1)); echo "  $r: STILL EXISTS: $arn"; fi
+  done
+  printf '%-15s instances(non-terminated)=%s security-groups=%s key-pairs=%s volumes=%s elastic-ips=%s other-tagged(tagging API, existing in EC2)=%s stale-index-entries(deleted, EC2 NotFound)=%s terminated=[%s]\n' "$r" "$li" "$sg" "$kp" "$vol" "$eip" "$tagged" "$stale" "$term"
   left=$((left + li + sg + kp + vol + eip + tagged))
 done
 [ -f "$KEY_FILE" ] && { echo "local key still present: $KEY_FILE"; left=$((left+1)); }

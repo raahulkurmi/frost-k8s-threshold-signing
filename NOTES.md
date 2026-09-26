@@ -862,3 +862,37 @@ capture now fails the rep loudly. The summarizer shows "not captured" instead of
 - Pod scale-up: optimistic-hedged made exactly one TokenRequest per pod with 0 errors;
   strict-all needed 68 (50 pods) and 357 (100 pods) TokenRequests per repetition, with 47
   and 815 failed ones over 3 repetitions. All pods became Ready.
+
+### N62. Decision (2026-09-27): no 7B re-run; final numbers come from 7C
+All Phase 7A/7B AWS resources were torn down (`reports/aws/teardown-proof.txt`: zero
+tagged resources in all 5 regions; the tagging API's 12 lingering root-volume/ENI entries
+are stale index records, each NotFound in EC2, and `teardown.sh` now checks every such ARN
+against EC2). There is **no separate 7B re-run**, neither 3 runs per configuration nor the
+N61 scale-up with coordinator logs. Phase 7C will provision a new kubeadm cluster with
+same-region signers, and will also run T with the 5-region placement, 3 runs per
+configuration and the fixed scale-up logging. **The final T numbers, and every comparison
+against default Kubernetes (B0/B1), come from 7C.** 7B stays as one-run, T-only evidence.
+
+### N63. Revised overload analysis (after 7A and 7B)
+- **7A's collapse was dominated by co-location on 2 vCPU.** In 7A, kind, nginx, 3
+  coordinators, 5 signers and the load generator shared one m7i-flex.large; the host was
+  ~100 % busy from c=10 and T strict fell to 1.0–1.6 tokens/s at c=50. With the signers on
+  their own hosts (7B), **optimistic passes N49 at c=50 in all four cases** (all5 and
+  far-quorum × all and hedged): goodput c10 → c50 62.3 → 68.6, 54.5 → 69.2, 45.5 → 68.0,
+  45.3 → 64.3 tokens/s; 0 % errors; successful p95 ≤ 1126 ms; client − coordinator median
+  gap ~4 ms at every concurrency.
+- **Strict at c=50 is bound by coordinator-host CPU.** The coordinator verifies every share
+  (Shoup proof) before combining, on the same 2 vCPU as kube-apiserver, nginx and the load
+  generator: coordinator host 80–89 % busy in strict (already ~88 % at c=10) vs ~20 % in
+  optimistic. The client − coordinator median gap grows to 610–645 ms at c=50 (all5), i.e.
+  requests wait before the coordinator's deadline starts. Far-quorum (3 verifications per
+  token) is faster than all5 (5 per token) at c=50 in strict: 1228 vs 1899 ms client p50.
+  Strict fails N49-3 in 3 of 4 cases; its only failure reason is "no response before
+  deadline" (31 and 69 at c=50, all5).
+- **The "uncoordinated per-signer shedding" hypothesis (DAGOR, Zhou et al., SoCC 2018) is
+  NOT supported by 7B, because the signers were never the bottleneck.** No signer returned
+  HTTP 503 (at capacity / shed) in any of the 24 configurations. The only exclusions were the
+  2 stopped signers in far-quorum ("connection refused") and strict's deadline timeouts. The
+  hypothesis is **untested, not refuted**: 7B never pushed the signers into shedding.
+  Signer-host CPU was not measured in 7B (only the coordinator host's); the claim rests on
+  the zero 503s and on optimistic reaching ~69 tokens/s with 0 errors.
