@@ -247,6 +247,7 @@ func runSingle(dir, title, note, outPath string) error {
 	if len(errNotes) > 0 {
 		fmt.Fprintf(&b, "\nErrors:\n%s\n", strings.Join(errNotes, "\n"))
 	}
+	b.WriteString(scaleSection(dir))
 	fmt.Fprintf(&b, "\nSource CSVs (under `%s`):\n%s\n", dir, strings.Join(sources, "\n"))
 	return os.WriteFile(outPath, []byte(b.String()), 0o644)
 }

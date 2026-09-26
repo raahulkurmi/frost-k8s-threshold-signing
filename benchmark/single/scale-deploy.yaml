@@ -1,0 +1,30 @@
+# Pod scale-up benchmark: pause pods, each with exactly ONE projected service
+# account token (automount disabled), so every new pod causes one TokenRequest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scale-pause
+  namespace: default
+spec:
+  replicas: 0
+  selector:
+    matchLabels: {app: scale-pause}
+  template:
+    metadata:
+      labels: {app: scale-pause}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: pause
+        image: registry.k8s.io/pause:3.10
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests: {cpu: 1m, memory: 4Mi}
+        volumeMounts:
+        - {name: tok, mountPath: /var/run/secrets/tokens, readOnly: true}
+      volumes:
+      - name: tok
+        projected:
+          sources:
+          - serviceAccountToken: {path: token, expirationSeconds: 3600, audience: frost-e2e-allowed}

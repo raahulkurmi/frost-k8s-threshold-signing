@@ -16,6 +16,14 @@
 # <label>.metrics.json and into env.json. Before measuring, each system is
 # checked: apiserver flags, and the kid of an issued token.
 #
+# Pod scale-up (run SCALE_RUN only): a Deployment of pause pods, each with one
+# projected SA token, scaled 0 -> SCALE_SIZES replicas, SCALE_REPS times per size,
+# on an otherwise idle cluster (T: strict, fan-out all). Per repetition:
+# scale-command-to-all-Ready time, the apiserver audit events of the TokenRequests
+# (latency, errors), for T the coordinators' "signed"/"sign failed" logs (latency,
+# signer 503s), and host CPU/load. A size larger than the pods that fit on the
+# schedulable nodes is skipped and recorded with the reason.
+#
 # LABEL (every 7A result): single host, 2 vCPU (m7i-flex.large), all components
 # co-located; CPU-contended. B0/B1/T share the host, so comparisons stay valid.
 set -euo pipefail
@@ -29,6 +37,7 @@ STRATEGIES="${STRATEGIES:-strict optimistic}"
 FANOUTS="${FANOUTS:-all hedged}"
 HEDGE_DELAY="${HEDGE_DELAY:-50ms}"
 SYSTEMS="${SYSTEMS:-B0 B1 T}"
+SCALE_RUN="${SCALE_RUN:-1}" SCALE_SIZES="${SCALE_SIZES:-50 100}" SCALE_REPS="${SCALE_REPS:-3}"
 LABEL_TEXT="${LABEL_TEXT:-single host, 2 vCPU (m7i-flex.large), all components co-located; CPU-contended}"
 export FROST_UID="$(id -u)" GOTOOLCHAIN=go1.27.1 SIGN_DEADLINE=2s
 CLUSTER=tk8s KCTX=kind-tk8s
@@ -109,7 +118,60 @@ apiserver_mode() {
   elif grep -q 'service-account-signing-key-file' <<<"$m" && ! grep -q 'signing-endpoint' <<<"$m"; then echo in-tree
   else echo mixed; fi
 }
-render_ext_kind() { sed "s#__REPO__#$REPO#g" test/e2e/kind-config.yaml.tmpl > "$RES/kind-config-external.yaml"; echo "$RES/kind-config-external.yaml"; }
+render_kind() { local o="$RES/$(basename "$1" .tmpl)"; sed "s#__REPO__#$REPO#g" "$1" > "$o"; echo "$o"; }
+render_ext_kind() { render_kind benchmark/single/kind-external.yaml.tmpl; }
+CP="$CLUSTER-control-plane"
+audit_lines() { docker exec "$CP" sh -c 'wc -l < /var/log/kubernetes/audit.log' 2>/dev/null || echo 0; }
+
+# scale_bench SYS OUTDIR [compose...]: pod scale-up benchmark on the current cluster.
+scale_bench() {
+  local sys="$1" out="$2/scale"; shift 2
+  local -a comp=("$@")
+  mkdir -p "$out"
+  docker exec "$CP" test -f /var/log/kubernetes/audit.log || die "apiserver audit log missing"
+  K apply -f benchmark/single/scale-deploy.yaml >/dev/null
+  # warm-up (not measured): pull/start the pause image once on the worker
+  K scale deploy/scale-pause --replicas=1 >/dev/null
+  K wait deploy/scale-pause --for=jsonpath='{.status.readyReplicas}'=1 --timeout=300s >/dev/null
+  K scale deploy/scale-pause --replicas=0 >/dev/null
+  K wait --for=delete pod -l app=scale-pause --timeout=300s >/dev/null 2>&1 || true
+  local nodes fit used
+  nodes=$(K get nodes -o json | jq -r '.items[] | select(((.spec.taints // []) | map(.effect=="NoSchedule") | any) | not) | .metadata.name')
+  fit=$(K get nodes -o json | jq '[.items[] | select(((.spec.taints // []) | map(.effect=="NoSchedule") | any) | not) | .status.allocatable.pods | tonumber] | add')
+  used=$(K get pods -A -o json | jq --arg n "$nodes" '[.items[] | select(.status.phase!="Succeeded" and .status.phase!="Failed") | select(.spec.nodeName as $x | ($n | split("\n")) | index($x))] | length')
+  local free=$((fit - used)) size rep
+  echo "   scale: schedulable nodes [$(echo $nodes)], allocatable pods $fit, in use $used, free $free"
+  for size in $SCALE_SIZES; do
+    if [[ $size -gt $free ]]; then
+      echo "{\"system\": \"$sys\", \"replicas\": $size, \"skipped\": true, \"reason\": \"only $free pods fit on the schedulable nodes ($fit allocatable, $used in use)\"}" > "$out/$sys-n$size-skipped.json"
+      echo "   scale $sys n=$size: SKIPPED (only $free fit)"; continue
+    fi
+    for rep in $(seq 1 "$SCALE_REPS"); do
+      local base="$out/$sys-n$size-rep$rep" off since t0 t1 c0 i0 s0 c1 i1 s1 ready=true l1 l5
+      sleep 15   # idle before each repetition
+      off=$(audit_lines); since=$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)
+      read -r c0 i0 s0 < <(cpu_now)
+      t0=$(date +%s%N)
+      K scale deploy/scale-pause --replicas="$size" >/dev/null
+      K wait deploy/scale-pause --for=jsonpath='{.status.readyReplicas}'="$size" --timeout=900s >/dev/null || ready=false
+      t1=$(date +%s%N)
+      read -r c1 i1 s1 < <(cpu_now); read -r l1 l5 _ < /proc/loadavg
+      sleep 2   # let the last audit events and coordinator logs flush
+      docker exec "$CP" sh -c "tail -n +$((off+1)) /var/log/kubernetes/audit.log" > "$base.audit.jsonl"
+      if [[ ${#comp[@]} -gt 0 ]]; then
+        "${comp[@]}" logs --no-color --no-log-prefix --since "$since" grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 2>/dev/null | grep -E '"msg":"(signed|sign failed)"' > "$base.coord.jsonl" || true
+      fi
+      local nready; nready=$(K get deploy scale-pause -o jsonpath='{.status.readyReplicas}'); nready=${nready:-0}
+      awk -v sys="$sys" -v n="$size" -v rep="$rep" -v dt="$(( (t1-t0)/1000000 ))" -v ok="$ready" -v nr="$nready" -v ct=$((c1-c0)) -v ci=$((i1-i0)) -v cs=$((s1-s0)) -v l1="$l1" -v l5="$l5" \
+        'BEGIN{printf "{\"system\": \"%s\", \"replicas\": %d, \"rep\": %d, \"ms_to_all_ready\": %d, \"all_ready\": %s, \"ready_replicas\": %d, \"cpu_busy_pct\": %.1f, \"cpu_steal_pct\": %.2f, \"load1\": %s, \"load5\": %s}\n", sys, n, rep, dt, ok, nr, 100*(1-ci/ct), 100*cs/ct, l1, l5}' > "$base.json"
+      echo "   scale $sys n=$size rep=$rep: $(cat "$base.json"); audit events $(wc -l < "$base.audit.jsonl")"
+      [[ $ready == true ]] || K get events --field-selector reason=FailedScheduling -o custom-columns=MSG:.message --no-headers 2>/dev/null | sort | uniq -c | head -3 > "$base.not-ready.txt"
+      K scale deploy/scale-pause --replicas=0 >/dev/null
+      K wait --for=delete pod -l app=scale-pause --timeout=600s >/dev/null 2>&1 || true
+    done
+  done
+  K delete -f benchmark/single/scale-deploy.yaml --wait=true >/dev/null
+}
 set_t_variant() { # strategy fanout
   VERIFY_STRATEGY="$1" FANOUT="$2" HEDGE_DELAY="$HEDGE_DELAY" "${T_COMPOSE[@]}" up -d --force-recreate --no-deps grpc-proxy-1 grpc-proxy-2 grpc-proxy-3 >/dev/null 2>&1
   local i ok
@@ -129,11 +191,12 @@ for run in $(seq 1 "$RUNS"); do
   for sys in $SYSTEMS; do
     case "$sys" in
     B0)
-      kind_up benchmark/single/kind-b0.yaml
+      kind_up "$(render_kind benchmark/single/kind-b0.yaml.tmpl)"
       mode=$(apiserver_mode); kid=$(token_kid)
       echo "run$run B0: apiserver=$mode token kid=$kid" | tee -a "$CHECKS"
       [[ "$mode" == in-tree ]] || die "B0 apiserver is not using the in-tree key"
       for c in $CONCS; do bench "B0-c$c" "$c" "$OUT"; done
+      [[ $run == "$SCALE_RUN" ]] && scale_bench B0 "$OUT"
       kind_down;;
     B1)
       fresh_secrets
@@ -145,6 +208,7 @@ for run in $(seq 1 "$RUNS"); do
       echo "run$run B1: apiserver=$mode token kid=$kid (b1signer FetchKeys kid=$b1kid)" | tee -a "$CHECKS"
       [[ "$mode" == external && -n "$kid" && "$kid" == "$b1kid" ]] || die "B1 tokens are not signed by b1signer"
       for c in $CONCS; do bench "B1-c$c" "$c" "$OUT"; done
+      [[ $run == "$SCALE_RUN" ]] && scale_bench B1 "$OUT"
       kind_down; "${B1_COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1;;
     T)
       fresh_secrets
@@ -162,6 +226,7 @@ for run in $(seq 1 "$RUNS"); do
         set_t_variant "$st" "$fo"
         for c in $CONCS; do bench "T-$st-$fo-c$c" "$c" "$OUT"; done
       done; done
+      if [[ $run == "$SCALE_RUN" ]]; then set_t_variant strict all; scale_bench T-strict-all "$OUT" "${T_COMPOSE[@]}"; fi
       kind_down; "${T_COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1
       rm -rf secrets audit; sudo rm -rf run;;
     esac
@@ -178,6 +243,8 @@ done
   echo "  \"runs\": $RUNS, \"n\": $N, \"warmup\": $WARMUP, \"concurrency\": \"$CONCS\", \"systems\": \"$SYSTEMS\", \"t_strategies\": \"$STRATEGIES\", \"t_fanouts\": \"$FANOUTS\", \"hedge_delay\": \"$HEDGE_DELAY\", \"deadline\": \"$SIGN_DEADLINE\", \"rsa_bits\": 2048, \"t\": 3, \"n_signers\": 5,"
   echo "  \"n48_admission\": \"on (defaults: SIGNER_MAX_CONCURRENT=NumCPU, SIGNER_MAX_QUEUE=64)\", \"signer_admission_logged\": $(grep -h 'signer admission' "$CHECKS" | tail -1 | sed 's/.*admission //' || echo null),"
   echo "  \"client\": \"benchmark/tokenbench (client-go CreateToken, unthrottled) on the same host\","
+  echo "  \"apiserver_audit\": \"all systems: Metadata level for serviceaccounts/token create only (benchmark/single/audit/audit-policy.yaml)\","
+  echo "  \"scale_up\": {\"run\": $SCALE_RUN, \"sizes\": \"$SCALE_SIZES\", \"reps\": $SCALE_REPS, \"t_variant\": \"strict, fanout all\", \"per_rep\": $(cat "$RES"/run*/scale/*.json 2>/dev/null | jq -s . || echo '[]')},"
   echo "  \"system_checks\": $(jq -R . < "$CHECKS" | jq -s .),"
   echo "  \"per_config\": $(for f in "$RES"/run*/*.metrics.json; do jq -c --arg run "$(basename "$(dirname "$f")")" '. + {run: $run}' "$f"; done | jq -s .)"
   echo "}"
