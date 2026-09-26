@@ -792,3 +792,17 @@ make each signer log a TLS handshake EOF; they carry no request. The far-quorum
 scenario stops the two signers with the lowest measured RTT (chosen from the
 measurement, not assumed). EC2 Ubuntu syncs time with chrony (Amazon Time Sync);
 `clock-check.sh` forces `chronyc makestep` there.
+
+### N59. Phase 7A findings carried into 7B (m7i-flex.large, 2 vCPU, CPU-contended)
+- **Kubelet retries absorbed signing failures in the pod scale-up.** For T strict-all
+  the kubelet made 164 TokenRequests per repetition for 50 pods and 418 for 100 pods
+  (about 3–4 per pod; B0/B1 made exactly one per pod), with 322 and 768 failed
+  TokenRequests over 3 repetitions. Every pod still became Ready, 1.5–1.7× later than B0
+  (`benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md`).
+- **Strict-mode failures at c=50 exceeded the 2 s deadline at the client**: failed p95
+  3.6 s (strict-all) and 4.0 s (strict-hedged), successful p95 3.2–3.3 s. Client
+  latency includes time queued in kube-apiserver before the coordinator's deadline
+  starts, so the coordinator deadline does not bound what the requester sees. 7B
+  reports client-side and coordinator-side latency side by side for every configuration.
+- N49 on this host: N49-2 PASS for all four T variants; N49-1 and N49-3 FAIL for all four.
+  The overload fix is to be designed together after 7B; nothing is implemented yet.
