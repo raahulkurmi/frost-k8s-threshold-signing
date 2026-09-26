@@ -68,7 +68,9 @@ cleanup() {
   rm -rf secrets audit bin/bench
   sudo rm -rf run
 }
-trap 'rc=$?; cleanup; echo "cleanup done (generated keys wiped)"; exit $rc' EXIT
+trap 'rc=$?; [[ $rc -ne 0 ]] && echo "FAILED (rc=$rc) at line $LAST_LINE: $LAST_CMD" >&2; cleanup; echo "cleanup done (generated keys wiped)"; exit $rc' EXIT
+set -o functrace
+trap 'LAST_LINE=$LINENO LAST_CMD=$BASH_COMMAND' DEBUG
 
 echo "== build tools"
 mkdir -p bin/bench
@@ -111,7 +113,11 @@ kind_up() { # config
   local i; for i in $(seq 1 60); do K get sa default >/dev/null 2>&1 && break; sleep 1; done
 }
 kind_down() { kind delete cluster --name "$CLUSTER" >/dev/null 2>&1 || true; }
-token_kid() { K create token default --duration=600s | cut -d. -f1 | tr '_-' '/+' | base64 -d 2>/dev/null | jq -r .kid; }
+token_kid() { # kid from the JWT header of a freshly issued token (base64url, re-padded)
+  local h; h=$(K create token default --duration=600s | cut -d. -f1 | tr '_-' '/+') || { echo "token_kid: TokenRequest failed" >&2; return 1; }
+  while (( ${#h} % 4 )); do h="$h="; done
+  base64 -d <<<"$h" | jq -r .kid
+}
 apiserver_mode() {
   local m; m="$(docker exec "$CLUSTER-control-plane" cat /etc/kubernetes/manifests/kube-apiserver.yaml)"
   if grep -q 'service-account-signing-endpoint=/var/run/frost-k8s/signer.sock' <<<"$m" && ! grep -qE 'service-account-(signing-)?key-file' <<<"$m"; then echo external
