@@ -35,3 +35,5 @@ bin/
 .summarize
 reports/repro-logs/
 deploy/aws/state/
+__pycache__/
+*.pyc
