@@ -9,7 +9,10 @@
 #   STAGE     directory holding frost-signer (binary), common/{public-meta.json,policy.json,ca.crt}
 #             and signer-<id>/{share.json,tls.crt,tls.key} for exactly the listed ids
 #   COORD_IP  the only address allowed to reach the signer ports (coordinator host)
-#   ADMIN_IP  the only address allowed to SSH (operator machine)
+#   ADMIN_IP  the only address allowed to SSH (operator machine), or "any": SSH
+#             source restriction left to the cloud security group (Level 2 on AWS,
+#             where the operator's home IP is dynamic; NOTES N57). The signer ports
+#             are restricted to COORD_IP here in every case.
 #   HOST_IP   this host's address; signers listen on HOST_IP:PORT only
 set -euo pipefail
 [[ $EUID -eq 0 ]] || { echo "must run as root" >&2; exit 1; }
@@ -18,7 +21,15 @@ STAGE="$1" COORD_IP="$2" ADMIN_IP="$3" HOST_IP="$4"; shift 4
 SPECS=("$@")
 
 ip_ok() { [[ "$1" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; }
-for a in "$COORD_IP" "$ADMIN_IP" "$HOST_IP"; do ip_ok "$a" || { echo "bad IP $a" >&2; exit 2; }; done
+for a in "$COORD_IP" "$HOST_IP"; do ip_ok "$a" || { echo "bad IP $a" >&2; exit 2; }; done
+[[ "$ADMIN_IP" == any ]] || ip_ok "$ADMIN_IP" || { echo "bad IP $ADMIN_IP" >&2; exit 2; }
+if [[ "$ADMIN_IP" == any ]]; then
+  SSH_RULE='tcp dport 22 accept comment "ssh: source /32 enforced by the cloud security group (N57)"'
+  PING_RULE="ip saddr $COORD_IP icmp type echo-request accept comment \"ping for RTT measurement\""
+else
+  SSH_RULE="ip saddr $ADMIN_IP tcp dport 22 accept comment \"ssh from operator only\""
+  PING_RULE="ip saddr { $ADMIN_IP, $COORD_IP } icmp type echo-request accept comment \"ping for RTT measurement\""
+fi
 
 # Refuse staged material for any signer not assigned to this host.
 declare -A ASSIGNED=()
@@ -117,7 +128,8 @@ WantedBy=multi-user.target
 EOF
 done
 
-# Default-drop firewall: signer ports only from COORD_IP, SSH only from ADMIN_IP.
+# Default-drop firewall: signer ports only from COORD_IP, SSH only from ADMIN_IP
+# (or, with ADMIN_IP=any, from the sources the cloud security group admits).
 PORTLIST=$(IFS=,; echo "${PORTS[*]}")
 cat > /etc/nftables.conf <<EOF
 #!/usr/sbin/nft -f
@@ -129,9 +141,9 @@ table inet frost_filter {
     iif "lo" accept
     ct state established,related accept
     ct state invalid drop
-    ip saddr $ADMIN_IP tcp dport 22 accept comment "ssh from operator only"
+    $SSH_RULE
     ip saddr $COORD_IP ip daddr $HOST_IP tcp dport { $PORTLIST } accept comment "signer ports from coordinator host only"
-    ip saddr { $ADMIN_IP, $COORD_IP } icmp type echo-request accept comment "ping for RTT measurement"
+    $PING_RULE
     udp sport 67 udp dport 68 accept comment "DHCP lease renewal"
     icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert } accept
     counter drop comment "default deny"

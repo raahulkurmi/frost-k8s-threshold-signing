@@ -9,11 +9,8 @@ cd "$(dirname "$0")/../.."
 TOPO="${1:-deploy/multihost/topology.local.env}"
 # shellcheck disable=SC1090
 source "$TOPO"
-alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
-# multipass 1.16.4's client hangs if its stdout/stderr is /dev/null and the
-# remote command writes output (NOTES N42). Always hand it pipes; return its own
-# exit code.
-on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
+# shellcheck disable=SC1091
+source deploy/multihost/transport.sh
 SIGNER_VMS="$(for s in $SIGNERS; do r="${s#*:}"; echo "${r%%:*}"; done | sort -u | tr '\n' ' ')"
 for vm in $SIGNER_VMS; do
   on "$vm" sudo bash -c '

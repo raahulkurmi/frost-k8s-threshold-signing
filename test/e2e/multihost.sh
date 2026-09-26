@@ -10,7 +10,8 @@
 #      serves its signer stop/start/audit requests (control channel /tmp/frost-ctl)
 #   5. unless --keep: stops signers and shreds their shares and keys
 #
-# Topology label: multi-VM, SINGLE PHYSICAL HOST. Not infrastructure independence.
+# Topology label: from the topology file (TOPOLOGY_LABEL); Level 1 is multi-VM on
+# a SINGLE PHYSICAL HOST, not infrastructure independence.
 # Usage: test/e2e/multihost.sh [--keep] [topology.env]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -31,14 +32,12 @@ exec > >(tee "$RES/multihost-e2e.log") 2>&1
 
 # on: run a command on a VM with stdin from /dev/null (so it never swallows the
 # caller's input, e.g. inside `while read`); on_pipe: deliberately pass stdin.
-# Every remote call has a 300s alarm: a hung `multipass exec` becomes a visible
-# failure (exit 142), never a silent stall. (macOS has no `timeout`.)
-alarm() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$s" "$@"; }
-# multipass 1.16.4's client hangs if its stdout/stderr is /dev/null and the
-# remote command writes output (NOTES N42). Always hand it pipes; return its own
-# exit code.
-on() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" </dev/null 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
-on_pipe() { local vm="$1"; shift; alarm 300 multipass exec "$vm" -- "$@" 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
+# Every remote call has an alarm: a hung remote call becomes a visible failure
+# (exit 142), never a silent stall. (macOS has no `timeout`.) Transport
+# (multipass for Level 1, ssh for Level 2) comes from the topology.
+# shellcheck disable=SC1091
+source deploy/multihost/transport.sh
+TOPOLOGY_LABEL="${TOPOLOGY_LABEL:-multi-VM, single physical host (Level 1); NOT infrastructure independence}"
 # rc_on VM CMD: run CMD in bash on VM and print ONLY its exit code, as seen on
 # the VM. Needed because `multipass exec -- sudo -u USER cmd` can hang on the
 # client when cmd fails (NOTES N38); a timeout must never pass as "denied".
@@ -46,7 +45,6 @@ rc_on() { local vm="$1"; shift; on "$vm" bash -c "$* >/dev/null 2>&1; echo rc=\$
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
 id_port() { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { echo "${s##*:}"; return; }; done; }
 vm_ids()  { local s out=""; for s in $SIGNERS; do local r="${s#*:}"; [[ "${r%%:*}" == "$1" ]] && out="$out ${s%%:*}"; done; echo "$out"; }
-vm_ip()   { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }
 SIGNER_VMS="$(for s in $SIGNERS; do r="${s#*:}"; echo "${r%%:*}"; done | sort -u | tr '\n' ' ')"
 
 RESULT_LINES=""
@@ -60,9 +58,9 @@ tcp_from_vm() { on "$1" timeout 3 bash -c "exec 3<>/dev/tcp/$2/$3" >/dev/null 2>
 
 section "Environment (operator)"
 echo "git commit: $SHA"
-echo "topology: multi-VM, single physical host (Level 1); file $TOPO"
-echo "operator: $(sw_vers -productName 2>/dev/null) $(sw_vers -productVersion 2>/dev/null), $(sysctl -n hw.model) $(sysctl -n hw.ncpu) CPU, $(( $(sysctl -n hw.memsize) / 1073741824 )) GiB; $(multipass version | head -1)"
-multipass list
+echo "topology: $TOPOLOGY_LABEL; file $TOPO"
+echo "operator: $(sw_vers -productName 2>/dev/null) $(sw_vers -productVersion 2>/dev/null), $(sysctl -n hw.model) $(sysctl -n hw.ncpu) CPU, $(( $(sysctl -n hw.memsize) / 1073741824 )) GiB; transport: $(transport_desc)"
+if [[ "$TRANSPORT" == multipass ]]; then multipass list; else for h in $COORD_VM $SIGNER_VMS; do echo "  $h reach $(vm_ip "$h") bind $(vm_bind_ip "$h") ${HOST_PLACEMENT:+($(_map_get "$HOST_PLACEMENT" "$h"))}"; done; fi
 
 section "Clock check (mandatory, N50)"
 # Mandatory pre-run step (N50): force time resync and require every VM to be
@@ -174,7 +172,7 @@ if [[ $L5_OK == 1 ]]; then pass L5 "all 5 signers active as their own user, NoNe
 
 section "E2E on the coordinator host (TOPOLOGY=multihost), control channel served here"
 KEEPARG=""; [[ $KEEP == 1 ]] && KEEPARG="--keep"
-on "$COORD_VM" bash -lc "cd ~/tk8s && TOPOLOGY=multihost timeout 3600 test/e2e/run.sh $KEEPARG" > "$RES/e2e-coordinator-host.log" 2>&1 &
+on "$COORD_VM" bash -lc "cd ~/tk8s && ${E2E_ENV:+env $E2E_ENV} TOPOLOGY=multihost timeout 3600 test/e2e/run.sh $KEEPARG" > "$RES/e2e-coordinator-host.log" 2>&1 &
 E2E_PID=$!
 served=""
 serve() { # n request...
@@ -225,7 +223,7 @@ fi
 
 section "Summary"
 echo "git commit: $SHA"
-echo "topology: multi-VM, single physical host (Level 1); NOT infrastructure independence"
+echo "topology: $TOPOLOGY_LABEL"
 printf '%s\n' "$RESULT_LINES" | sed '/^$/d'
 echo "results: $RES"
 if [[ $FAILED -ne 0 ]]; then echo "MULTIHOST E2E: FAIL"; exit 1; fi

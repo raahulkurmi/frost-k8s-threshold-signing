@@ -203,6 +203,7 @@ func main() {
 	note := flag.String("note", "", "labelling note printed under the title")
 	outPath := flag.String("out", "summary.md", "output")
 	single := flag.String("single", "", "Phase 7A mode: results DIR with run<k>/<label>.csv (see single.go)")
+	scaleDir := flag.String("scale", "", "append the pod scale-up table from DIR/run*/scale/ (scale.go)")
 	flag.Parse()
 	if *single != "" {
 		if err := runSingle(*single, *title, *note, *outPath); err != nil {
@@ -303,6 +304,9 @@ func main() {
 	}
 	if len(errNotes) > 0 {
 		fmt.Fprintf(&b, "\nErrors:\n%s\n", strings.Join(errNotes, "\n"))
+	}
+	if *scaleDir != "" {
+		b.WriteString(scaleSection(*scaleDir))
 	}
 	fmt.Fprintf(&b, "\nSource CSVs:\n%s\n", strings.Join(sources, "\n"))
 	if err := os.WriteFile(*outPath, []byte(b.String()), 0o644); err != nil {

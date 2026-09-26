@@ -169,7 +169,11 @@ sudo bin/e2e/probe fetchkeys "unix://$SOCK" || die "signer stack did not come up
 "${COMPOSE[@]}" ps --format 'table {{.Service}}\t{{.State}}'
 
 section "Setup: kind cluster (apiserver signs only via $SOCK)"
-sed "s#__REPO__#$REPO#g" test/e2e/kind-config.yaml.tmpl > "$RESULTS/kind-config.yaml"
+# KIND_CONFIG_TMPL: default the e2e config; Phase 7B passes the same config plus
+# TokenRequest-only apiserver audit (benchmark/single/kind-external.yaml.tmpl).
+KIND_CONFIG_TMPL="${KIND_CONFIG_TMPL:-test/e2e/kind-config.yaml.tmpl}"
+echo "kind config template: $KIND_CONFIG_TMPL"
+sed "s#__REPO__#$REPO#g" "$KIND_CONFIG_TMPL" > "$RESULTS/kind-config.yaml"
 kind create cluster --config "$RESULTS/kind-config.yaml" --wait 300s
 CP="$CLUSTER-control-plane"
 echo "server version: $(K version -o json | jq -r .serverVersion.gitVersion)"
@@ -457,7 +461,8 @@ if [[ "$TOPOLOGY" == multihost ]]; then
     if probe_on "$C1" connect "${SIGNER_ADDRS[$((i-1))]}" -timeout 3s >/dev/null 2>&1; then echo "  coordinator -> signer-$i ${SIGNER_ADDRS[$((i-1))]}: allowed (control)"; else echo "  CONTROL FAILED: coordinator cannot reach signer-$i"; N4_OK=0; fi
   done
   S1HOST="${SIGNER_ADDRS[0]%%:*}"
-  for tgt in 1.1.1.1:443 8.8.8.8:53 "$S1HOST:22" "$S1HOST:8445" 192.168.252.1:22; do
+  # N4_OPERATOR_TARGET (from secrets/multihost.env): the operator machine's SSH port.
+  for tgt in 1.1.1.1:443 8.8.8.8:53 "$S1HOST:22" "$S1HOST:8445" "${N4_OPERATOR_TARGET:-192.168.252.1:22}"; do
     if out="$(probe_on "$C1" connect "$tgt" -timeout 3s 2>&1)"; then echo "  UNEXPECTED: coordinator reached $tgt"; N4_OK=0; else echo "  coordinator -> $tgt: blocked ($(cut -c1-90 <<<"$out"))"; fi
   done
   echo "  FROST-EGRESS chain:"; sudo iptables -S FROST-EGRESS | sed 's/^/    /'

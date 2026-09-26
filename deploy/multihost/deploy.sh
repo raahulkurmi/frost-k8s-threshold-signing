@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # deploy.sh: deploy the multi-host topology from the OPERATOR machine (the
 # dealer). It provisions no VMs and touches no cloud account: the hosts must
-# already exist (see deploy/multihost/README.md). For Level 1 it drives local
-# Multipass VMs; Level 2 would replace the transport functions with ssh/scp.
+# already exist (see deploy/multihost/README.md). The transport comes from the
+# topology (deploy/multihost/transport.sh): Level 1 drives local Multipass VMs
+# (TRANSPORT=multipass), Level 2 reaches EC2 hosts over ssh/scp (TRANSPORT=ssh).
 #
 #   1. builds the signer binary with the pinned toolchain; records its sha256
 #   2. runs the key ceremony in a 0700 temp dir: fresh certs + 3-of-5 key
@@ -22,14 +23,13 @@ source "$TOPO"
 export GOTOOLCHAIN=go1.27.1
 
 die() { echo "deploy: $*" >&2; exit 1; }
-command -v multipass >/dev/null || die "multipass not found"
 command -v jq >/dev/null || die "jq not found"
-
-vm_ip() { multipass info "$1" --format json | jq -r --arg v "$1" '.info[$v].ipv4[0] // empty'; }
-# multipass 1.16.4's client hangs if its stdout/stderr is /dev/null and the
-# remote command writes output (NOTES N42). Always hand it pipes; return its own
-# exit code.
-on() { local vm="$1"; shift; multipass exec "$vm" -- "$@" 2> >(cat >&2) | cat; return "${PIPESTATUS[0]}"; }
+# shellcheck disable=SC1091
+source deploy/multihost/transport.sh
+[[ "$TRANSPORT" != multipass ]] || command -v multipass >/dev/null || die "multipass not found"
+TOPOLOGY_LABEL="${TOPOLOGY_LABEL:-multi-VM, single physical host (Level 1); not infrastructure independence}"
+SSH_ALLOW="${SSH_ALLOW:-$ADMIN_IP}"   # signer-host nftables SSH source; "any" = enforced by the cloud SG only (N57)
+placement() { _map_get "${HOST_PLACEMENT:-}" "$1" || echo "local Multipass VM on the operator Mac"; }
 
 # --- topology: each signer id exactly once, 1..5 (portable to macOS bash 3.2) ---
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
@@ -47,7 +47,7 @@ VM_IP_LIST=""
 for vm in $SIGNER_VMS; do ip="$(vm_ip "$vm")"; [[ -n "$ip" ]] || die "no IP for $vm"; VM_IP_LIST="$VM_IP_LIST $vm=$ip"; done
 vm_ip_of() { local p; for p in $VM_IP_LIST; do [[ "${p%%=*}" == "$1" ]] && { echo "${p#*=}"; return; }; done; }
 echo "coordinator host $COORD_VM $COORD_IP; admin $ADMIN_IP"
-for vm in $SIGNER_VMS; do echo "signer host $vm $(vm_ip_of "$vm"): signers$(vm_ids "$vm")"; done
+for vm in $SIGNER_VMS; do echo "signer host $vm $(vm_ip_of "$vm") (binds $(vm_bind_ip "$vm"); $(placement "$vm")): signers$(vm_ids "$vm")"; done
 # Mandatory pre-run step (N50): force time resync and require every VM to be
 # within 1 s of the operator clock; a skewed signer refuses every token (N44).
 # shellcheck disable=SC1091
@@ -106,10 +106,10 @@ for vm in $SIGNER_VMS; do
   stage_host "$vm"
   specs=""
   for id in $(vm_ids "$vm"); do specs="$specs $id:$(id_port "$id")"; done
-  multipass transfer "$W/stage-$vm.tgz" "$vm:/tmp/frost-stage.tgz"
+  push "$vm" "$W/stage-$vm.tgz" /tmp/frost-stage.tgz
   on "$vm" sudo bash -c 'set -e; umask 077; rm -rf /root/frost-stage; mkdir /root/frost-stage; tar -xzf /tmp/frost-stage.tgz -C /root/frost-stage; shred -u /tmp/frost-stage.tgz'
   # shellcheck disable=SC2086
-  on "$vm" sudo bash -s -- /root/frost-stage "$COORD_IP" "$ADMIN_IP" "$(vm_ip_of "$vm")" $specs < deploy/multihost/setup-signer-host.sh
+  on_pipe "$vm" sudo bash -s -- /root/frost-stage "$COORD_IP" "$SSH_ALLOW" "$(vm_bind_ip "$vm")" $specs < deploy/multihost/setup-signer-host.sh
   hs="$(on "$vm" sha256sum /usr/local/bin/frost-signer | cut -d' ' -f1 | tr -d '\r')"
   [[ "$hs" == "$BIN_SHA" ]] || die "binary on $vm has sha256 $hs, built $BIN_SHA"
   HOST_SHA_LIST="$HOST_SHA_LIST $vm=$hs"
@@ -124,24 +124,24 @@ cp "$W/pki/tls/ca.crt" "$C/tls/"
 cp -r "$W/pki/tls/coordinator" "$W/pki/tls/coordinator-grpc" "$W/pki/tls/lb" "$C/tls/"
 ENDPOINTS=""
 for id in 1 2 3 4 5; do ENDPOINTS="${ENDPOINTS:+$ENDPOINTS,}$id=https://$(vm_ip_of "$(id_vm "$id")"):$(id_port "$id")"; done
-printf 'SIGNER_ENDPOINTS=%s\n' "$ENDPOINTS" > "$C/multihost.env"
+printf 'SIGNER_ENDPOINTS=%s\nN4_OPERATOR_TARGET=%s:22\n' "$ENDPOINTS" "$ADMIN_IP" > "$C/multihost.env"
 [[ -z "$(find "$C" -name 'share*' -o -name 'ca.key' -o -path '*signer-*')" ]] || die "REFUSING: share, CA key or signer cert staged for the coordinator host"
 COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -C "$C" -czf "$W/stage-coord.tgz" .
-multipass transfer "$W/stage-coord.tgz" "$COORD_VM:/tmp/frost-coord.tgz"
+push "$COORD_VM" "$W/stage-coord.tgz" /tmp/frost-coord.tgz
 on "$COORD_VM" bash -c 'set -e; cd ~/tk8s; rm -rf secrets; umask 077; mkdir secrets; tar -xzf /tmp/frost-coord.tgz -C secrets; shred -u /tmp/frost-coord.tgz; chmod 644 secrets/keys/public-meta.json secrets/tls/ca.crt secrets/tls/*/tls.crt'
 EGRESS=""
 for id in 1 2 3 4 5; do EGRESS="$EGRESS $(vm_ip_of "$(id_vm "$id")"):$(id_port "$id")"; done
 # shellcheck disable=SC2086
-on "$COORD_VM" sudo bash -s -- 172.30.3.0/24 $EGRESS < deploy/multihost/coordinator-egress.sh
+on_pipe "$COORD_VM" sudo bash -s -- 172.30.3.0/24 $EGRESS < deploy/multihost/coordinator-egress.sh
 
 # --- 5. public manifest ---
 mkdir -p reports/multihost
 MAN="reports/multihost/deploy-manifest.json"
 {
   echo "{"
-  echo "  \"topology\": \"multi-VM, single physical host (Level 1); not infrastructure independence\","
+  echo "  \"topology\": \"$TOPOLOGY_LABEL\", \"transport\": \"$TRANSPORT\","
   echo "  \"deployed_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"git_commit\": \"$(git rev-parse HEAD)\", \"kid\": \"$KID\","
-  echo "  \"coordinator_host\": {\"vm\": \"$COORD_VM\", \"ip\": \"$COORD_IP\"}, \"admin_ip\": \"$ADMIN_IP\","
+  echo "  \"coordinator_host\": {\"vm\": \"$COORD_VM\", \"ip\": \"$COORD_IP\", \"placement\": \"$(placement "$COORD_VM")\"}, \"admin_ip\": \"$ADMIN_IP\", \"signer_host_ssh_allow\": \"$SSH_ALLOW\","
   echo "  \"signer_binary\": {\"go\": \"$(go version | cut -d' ' -f3)\", \"goarch\": \"$ARCH\", \"sha256\": \"$BIN_SHA\"},"
   echo "  \"signers\": ["
   first=1
@@ -150,8 +150,8 @@ MAN="reports/multihost/deploy-manifest.json"
     fp="$(openssl x509 -in "$W/pki/tls/signer-$id/tls.crt" -noout -fingerprint -sha256 | cut -d= -f2)"
     [[ $first == 1 ]] || echo ","
     first=0
-    printf '    {"signer_id": %s, "host": "%s", "ip": "%s", "port": %s, "os_user": "frost-signer-%s", "share_index": %s, "cert_san": "signer-%s", "cert_sha256": "%s", "binary_sha256_on_host": "%s"}' \
-      "$id" "$vm" "$(vm_ip_of "$vm")" "$(id_port "$id")" "$id" "$id" "$id" "$fp" "$(host_sha "$vm")"
+    printf '    {"signer_id": %s, "host": "%s", "ip": "%s", "bind_ip": "%s", "placement": "%s", "port": %s, "os_user": "frost-signer-%s", "share_index": %s, "cert_san": "signer-%s", "cert_sha256": "%s", "binary_sha256_on_host": "%s"}' \
+      "$id" "$vm" "$(vm_ip_of "$vm")" "$(vm_bind_ip "$vm")" "$(placement "$vm")" "$(id_port "$id")" "$id" "$id" "$id" "$fp" "$(host_sha "$vm")"
   done
   echo; echo "  ]"; echo "}"
 } > "$MAN"
