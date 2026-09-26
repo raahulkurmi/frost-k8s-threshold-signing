@@ -7,6 +7,8 @@
 # Deployment, wait until its pods are gone and the host's load1 < SCALE_COOLDOWN_LOAD
 # (at most SCALE_COOLDOWN_MAX s, default 300), record the wait, re-create it at 0.
 # Unset (Phase 7A): 15 s idle before each repetition.
+# Optional SCALE_REP_OFFSET: number the repetitions from OFFSET+1 (Phase 7B runs
+# one repetition per call, so each can be invalidated and re-run on its own).
 
 # scale_cooldown: sets COOL_S, COOL_LOAD1, COOL_OK
 scale_cooldown() {
@@ -48,7 +50,7 @@ scale_bench() {
       echo "{\"system\": \"$sys\", \"replicas\": $size, \"skipped\": true, \"reason\": \"only $free pods fit on the schedulable nodes ($fit allocatable, $used in use)\"}" > "$out/$sys-n$size-skipped.json"
       echo "   scale $sys n=$size: SKIPPED (only $free fit)"; continue
     fi
-    for rep in $(seq 1 "$SCALE_REPS"); do
+    for rep in $(seq $((1 + ${SCALE_REP_OFFSET:-0})) $((SCALE_REPS + ${SCALE_REP_OFFSET:-0}))); do   # SCALE_REP_OFFSET: 7B runs one rep per call
       local base="$out/$sys-n$size-rep$rep" off since t0 t1 c0 i0 s0 c1 i1 s1 ready=true l1 l5
       local COOL_S=15 COOL_LOAD1=null COOL_OK=null
       if [[ -n "${SCALE_COOLDOWN_LOAD:-}" ]]; then scale_cooldown; else sleep 15; fi   # idle before each repetition

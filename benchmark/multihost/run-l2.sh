@@ -30,6 +30,7 @@ source deploy/multihost/transport.sh
 N="${N:-1000}" WARMUP="${WARMUP:-100}" CONCS="${CONCS:-1 10 50}" FANOUTS="${FANOUTS:-all hedged}"
 HEDGE_DELAY="${HEDGE_DELAY:-50ms}" SCENARIOS="${SCENARIOS:-all5 far-quorum}" SCALE="${SCALE:-1}"
 STRATEGIES="${STRATEGIES:-strict optimistic}" SCALE_VARIANTS="${SCALE_VARIANTS:-optimistic:hedged strict:all}"
+SCALE_SIZES_L2="${SCALE_SIZES_L2:-50 100}" SCALE_REPS_L2="${SCALE_REPS_L2:-3}"
 LABEL_TEXT="${LABEL_TEXT:-$TOPOLOGY_LABEL; real WAN, RTT measured per signer (TCP connect from the coordinator host), no netem}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
@@ -128,7 +129,87 @@ place() { _map_get "${HOST_PLACEMENT:-}" "$1" || echo unknown; }
 } > "$RES/env.json"
 jq . "$RES/env.json" >/dev/null || die "env.json invalid"
 
-CSVS=""
+# --- network-robust execution (NOTES N60) ---
+# Remote work (tokenbench, each scale-up rep) runs DETACHED on the coordinator
+# host, so an operator network drop cannot kill a measurement. Still, per the
+# rule, ANY ssh/scp failure while a configuration or rep is in progress marks it
+# INVALID: its files move to $RES/invalid/, the event (with the error) goes to
+# $RES/invalid-events.jsonl, the run waits until every host is reachable again and
+# re-runs it ONCE. Only configurations that completed without any failure are
+# passed to summary.md.
+EVENTS="$RES/invalid-events.jsonl"; : > "$EVENTS"
+ERRF=""; CFG_ERR=""
+# Failures are appended to "$ERRF.events" (a file, so failures inside $(...)
+# subshells are not lost); a configuration is valid only if that file is empty.
+_fail() { echo "$(date -u +%H:%M:%SZ) $1 rc=$2: $(tail -1 "$ERRF" 2>/dev/null | tr -d '\r"')" >> "$ERRF.events"; }
+# L2_FAULT_ONCE=1 (TEST ONLY, off by default): the first con call inside a
+# configuration fails once with a simulated ssh error, to exercise the INVALID path.
+con()   {
+  local rc=0
+  if [[ "${L2_FAULT_ONCE:-}" == 1 && -n "$ERRF" && ! -e "$RES/.fault-injected" ]]; then
+    touch "$RES/.fault-injected"; echo "ssh: connect to host (simulated): Network is unreachable [L2_FAULT_ONCE test hook]" >> "$ERRF"; _fail "on $1 ${2:-}" 255; return 255
+  fi
+  on "$@" 2>>"$ERRF" || rc=$?; [[ $rc -eq 0 ]] || _fail "on $1 ${2:-}" "$rc"; return $rc
+}
+cpull() { local rc=0; pull "$@" 2>>"$ERRF" || rc=$?; [[ $rc -eq 0 ]] || _fail "pull $2" "$rc"; return $rc; }
+cfg_failed() { [[ -s "$ERRF.events" ]]; }
+# rdetach NAME CMD: start CMD detached on the coordinator host (setsid nohup)
+rdetach() { con "$COORD_VM" bash -c "rm -f /tmp/$1.rc; setsid nohup bash -c '$2; echo \$? > /tmp/$1.rc' > /tmp/$1.log 2>&1 < /dev/null &"; }
+# rwait NAME MAXSEC: poll until the detached job wrote its exit code; poll
+# failures are recorded (CFG_ERR) but polling continues until MAXSEC.
+rwait() {
+  local t0 rc; t0=$(date +%s)
+  while :; do
+    # the remote command always succeeds; only an ssh failure makes con fail
+    rc="$(con "$COORD_VM" bash -c "cat /tmp/$1.rc 2>/dev/null; true")" && [[ -n "$rc" ]] && { echo "$rc"; return 0; }
+    (( $(date +%s) - t0 > $2 )) && { echo timeout; return 1; }
+    sleep 5
+  done
+}
+wait_net() { # until the coordinator and every signer host answer (max 30 min)
+  local t0 h ok; t0=$(date +%s)
+  while :; do
+    ok=1; for h in $COORD_VM $SIGNER_VMS; do on "$h" true >/dev/null 2>&1 || { ok=0; break; }; done
+    [[ $ok == 1 ]] && { echo "  connectivity OK after $(( $(date +%s) - t0 )) s"; return 0; }
+    (( $(date +%s) - t0 > 1800 )) && die "hosts unreachable for 30 min"
+    sleep 10
+  done
+}
+mark_invalid() { # kind name attempt files...
+  local kind="$1" name="$2" att="$3"; shift 3
+  local d="$RES/invalid/$name.attempt$att"; mkdir -p "$d"
+  local f; for f in "$@"; do [[ -e "$f" ]] && mv "$f" "$d/"; done
+  cp "$ERRF" "$d/errors.txt" 2>/dev/null || true
+  CFG_ERR="$(tr '\n' ';' < "$ERRF.events" 2>/dev/null)"
+  cp "$ERRF.events" "$d/events.txt" 2>/dev/null || true
+  jq -cn --arg t "$(date -u +%FT%TZ)" --arg k "$kind" --arg n "$name" --arg a "$att" --arg e "$CFG_ERR" \
+    '{time_utc: $t, kind: $k, name: $n, attempt: ($a|tonumber), error: $e}' >> "$EVENTS"
+  echo "  INVALID ($kind $name, attempt $att): $CFG_ERR"
+}
+
+run_config() { # sc st f c -> 0 only if every step succeeded without any ssh/scp failure
+  local sc="$1" st="$2" f="$3" c="$4" lab="T3of5-$2-$3-L0ms-c$4" dir="$RES/$1" cb ca load since rc
+  cb="$(con "$COORD_VM" awk '/^cpu /{t=0; for(i=2;i<=NF;i++) t+=$i; print t, $5+$6, $9}' /proc/stat)" || return 1
+  since="$(con "$COORD_VM" date -u +%Y-%m-%dT%H:%M:%S.%NZ)" || return 1
+  con "$COORD_VM" bash -c "nohup python3 /tmp/rtt_sampler.py /tmp/rtt.json $TARGETS >/dev/null 2>&1 & echo \$! > /tmp/rtt.pid" || return 1
+  rdetach "tb" "/tmp/tokenbench -context kind-tk8s -n $N -warmup $WARMUP -c $c -label $lab -out /tmp/$lab.csv" || return 1
+  rc="$(rwait tb 3600)" || return 1
+  con "$COORD_VM" bash -c 'kill -TERM $(cat /tmp/rtt.pid); while kill -0 $(cat /tmp/rtt.pid) 2>/dev/null; do sleep 0.2; done' || return 1
+  [[ "$rc" == 0 ]] || { echo "tokenbench exit $rc: $(on "$COORD_VM" tail -2 /tmp/tb.log 2>/dev/null | tr '\n' ' ')" >> "$ERRF.events"; return 1; }
+  cpull "$COORD_VM" /tmp/rtt.json "$dir/$lab.rtt.json" || return 1
+  sleep 1
+  con "$COORD_VM" bash -c "for r in 1 2 3; do docker logs --since '$since' tk8s-grpc-proxy-\$r-1 2>&1; done | grep -E '\"msg\":\"(signed|sign failed)\"' || true" > "$dir/$lab.coord.jsonl" || return 1
+  ca="$(con "$COORD_VM" awk '/^cpu /{t=0; for(i=2;i<=NF;i++) t+=$i; print t, $5+$6, $9}' /proc/stat)" || return 1
+  load="$(con "$COORD_VM" cat /proc/loadavg)" || return 1
+  cpull "$COORD_VM" "/tmp/$lab.csv" "$dir/$lab.csv" || return 1
+  con "$COORD_VM" rm -f "/tmp/$lab.csv" || return 1
+  local t0 i0 s0 t1 i1 s1; read -r t0 i0 s0 <<<"$cb"; read -r t1 i1 s1 <<<"$ca"
+  awk -v dt=$((t1-t0)) -v di=$((i1-i0)) -v ds=$((s1-s0)) -v la="$load" -v lab="$sc/$lab" \
+    'BEGIN{split(la,L," "); printf "{\"label\": \"%s\", \"coordinator_cpu_busy_pct\": %.1f, \"coordinator_cpu_steal_pct\": %.2f, \"load1\": %s, \"load5\": %s}\n", lab, 100*(1-di/dt), 100*ds/dt, L[1], L[2]}' > "$dir/$lab.metrics.json"
+  ! cfg_failed
+}
+
+CSVS=""; FINAL_INVALID=""
 trap 'echo "== restoring all signers"; signers_ctl start 1 2 3 4 5 || true; rm -rf "$TOOLS"' EXIT
 for sc in $SCENARIOS; do
   echo "================ scenario $sc ================"
@@ -143,36 +224,62 @@ for sc in $SCENARIOS; do
     set_variant "$st" "$f"
     for c in $CONCS; do
       lab="T3of5-${st}-${f}-L0ms-c${c}"
-      read -r t0 i0 s0 < <(cpu_now_remote)
-      since="$(on "$COORD_VM" date -u +%Y-%m-%dT%H:%M:%S.%NZ)"
-      rtt_start
-      on "$COORD_VM" /tmp/tokenbench -context kind-tk8s -n "$N" -warmup "$WARMUP" -c "$c" -label "$lab" -out "/tmp/$lab.csv"
-      rtt_stop "$RES/$sc/$lab.rtt.json"
-      sleep 1; coord_logs_since "$since" "$RES/$sc/$lab.coord.jsonl"
-      read -r t1 i1 s1 < <(cpu_now_remote)
-      load="$(on "$COORD_VM" cat /proc/loadavg)"
-      pull "$COORD_VM" "/tmp/$lab.csv" "$RES/$sc/$lab.csv"; on "$COORD_VM" rm -f "/tmp/$lab.csv"
-      awk -v dt=$((t1-t0)) -v di=$((i1-i0)) -v ds=$((s1-s0)) -v la="$load" -v lab="$sc/$lab" \
-        'BEGIN{split(la,L," "); printf "{\"label\": \"%s\", \"coordinator_cpu_busy_pct\": %.1f, \"coordinator_cpu_steal_pct\": %.2f, \"load1\": %s, \"load5\": %s}\n", lab, 100*(1-di/dt), 100*ds/dt, L[1], L[2]}' > "$RES/$sc/$lab.metrics.json"
-      echo "  $sc $lab: quorum RTT (3rd nearest running signer) $(jq -r '[.[].rtt_ms | select(. != null)] | sort | .[2]' "$RES/$sc/$lab.rtt.json") ms; coordinator log lines $(wc -l < "$RES/$sc/$lab.coord.jsonl" | tr -d ' '); $(cat "$RES/$sc/$lab.metrics.json")"
-      CSVS="$CSVS $sc-$st-$f=$RES/$sc/$lab.csv"
+      ok=0
+      for att in 1 2; do
+        ERRF="$(mktemp "${TMPDIR:-/tmp}/l2err.XXXXXX")"; CFG_ERR=""
+        if run_config "$sc" "$st" "$f" "$c"; then ok=1; rm -f "$ERRF" "$ERRF.events"; break; fi
+        mark_invalid config "$sc/$lab" "$att" "$RES/$sc/$lab.csv" "$RES/$sc/$lab.rtt.json" "$RES/$sc/$lab.coord.jsonl" "$RES/$sc/$lab.metrics.json"
+        rm -f "$ERRF" "$ERRF.events"
+        wait_net
+        if [[ $att == 1 ]]; then echo "  re-running $sc/$lab once"; set_variant "$st" "$f"; fi
+      done
+      if [[ $ok == 1 ]]; then
+        echo "  $sc $lab: quorum RTT (3rd nearest running signer) $(jq -r '[.[].rtt_ms | select(. != null)] | sort | .[2]' "$RES/$sc/$lab.rtt.json") ms; coordinator log lines $(wc -l < "$RES/$sc/$lab.coord.jsonl" | tr -d ' '); $(cat "$RES/$sc/$lab.metrics.json")"
+        CSVS="$CSVS $sc-$st-$f=$RES/$sc/$lab.csv"
+      else
+        FINAL_INVALID="$FINAL_INVALID $sc/$lab"; echo "  $sc/$lab: INVALID twice; excluded from summary.md"
+      fi
     done
   done; done
 done
 signers_ctl start 1 2 3 4 5
 
 if [[ $SCALE == 1 ]]; then
-  on "$COORD_VM" rm -rf /tmp/l2scale
+  con "$COORD_VM" rm -rf /tmp/l2scale || true
+  mkdir -p "$RES/run1/scale"
   for v in $SCALE_VARIANTS; do
-    echo "================ pod scale-up (T ${v%%:*}, fan-out ${v##*:}) ================"
-    on "$COORD_VM" bash -lc "cd ~/tk8s && benchmark/multihost/scale-remote.sh /tmp/l2scale ${v%%:*} ${v##*:}"
+    sv="T-${v%%:*}-${v##*:}"
+    echo "================ pod scale-up ($sv) ================"
+    for size in $SCALE_SIZES_L2; do
+      for rep in $(seq 1 "$SCALE_REPS_L2"); do
+        ok=0
+        for att in 1 2; do
+          ERRF="$(mktemp "${TMPDIR:-/tmp}/l2err.XXXXXX")"; CFG_ERR=""
+          con "$COORD_VM" rm -rf /tmp/l2rep || true
+          if rdetach "sc" "cd ~/tk8s && SCALE_SIZES=$size SCALE_REPS=1 SCALE_REP_OFFSET=$((rep - 1)) benchmark/multihost/scale-remote.sh /tmp/l2rep ${v%%:*} ${v##*:}" \
+             && rc="$(rwait sc 2400)" && [[ "$rc" == 0 ]] \
+             && con "$COORD_VM" tar -C /tmp/l2rep/scale -czf /tmp/l2rep.tgz . \
+             && cpull "$COORD_VM" /tmp/l2rep.tgz "$RES/l2rep.tgz" && ! cfg_failed; then
+            tar -C "$RES/run1/scale" -xzf "$RES/l2rep.tgz"; rm -f "$RES/l2rep.tgz"
+            echo "   $sv n=$size rep=$rep: $(cat "$RES/run1/scale/$sv-n$size-rep$rep.json" 2>/dev/null || cat "$RES/run1/scale/$sv-n$size-skipped.json")"
+            ok=1; rm -f "$ERRF" "$ERRF.events"; break
+          fi
+          cfg_failed || echo "scale-remote exit ${rc:-?}: $(on "$COORD_VM" tail -3 /tmp/sc.log 2>/dev/null | tr '\n' ' ')" >> "$ERRF.events"
+          mkdir -p "$RES/invalid/tmp"; cpull "$COORD_VM" /tmp/l2rep.tgz "$RES/invalid/tmp/partial.tgz" >/dev/null 2>&1 || true
+          mark_invalid scale-rep "$sv-n$size-rep$rep" "$att" "$RES/l2rep.tgz" "$RES/invalid/tmp/partial.tgz"
+          rm -f "$ERRF" "$ERRF.events"; wait_net
+          [[ $att == 1 ]] && echo "  re-running scale-up $sv n=$size rep=$rep once"
+        done
+        [[ $ok == 1 ]] || { FINAL_INVALID="$FINAL_INVALID scale/$sv-n$size-rep$rep"; echo "  scale $sv n=$size rep=$rep: INVALID twice; excluded"; }
+      done
+    done
   done
-  on "$COORD_VM" tar -C /tmp/l2scale -czf /tmp/l2scale.tgz scale
-  mkdir -p "$RES/run1"; pull "$COORD_VM" /tmp/l2scale.tgz "$RES/l2scale.tgz"; tar -C "$RES/run1" -xzf "$RES/l2scale.tgz"; rm -f "$RES/l2scale.tgz"
   jq -s . "$RES"/run1/scale/*.json > "$RES/scale-per-rep.json"
-  jq --slurpfile s "$RES/scale-per-rep.json" '. + {scale_up: {sizes: "50 100", reps: 3, t_variants: "optimistic-hedged, strict-all", cooldown: "delete Deployment, wait pods gone and coordinator-host load1 < 1.0, max 300 s (recorded per rep)", per_rep: $s[0]}}' "$RES/env.json" > "$RES/env.json.tmp" && mv "$RES/env.json.tmp" "$RES/env.json"
+  jq --slurpfile s "$RES/scale-per-rep.json" --arg sz "$SCALE_SIZES_L2" --arg nr "$SCALE_REPS_L2" '. + {scale_up: {sizes: $sz, reps: ($nr|tonumber), t_variants: "optimistic-hedged, strict-all", cooldown: "delete Deployment, wait pods gone and coordinator-host load1 < 1.0, max 300 s (recorded per rep)", per_rep: $s[0]}}' "$RES/env.json" > "$RES/env.json.tmp" && mv "$RES/env.json.tmp" "$RES/env.json"
 fi
-jq --slurpfile m <(cat "$RES"/*/*.metrics.json | jq -s .) '. + {per_config: $m[0]}' "$RES/env.json" > "$RES/env.json.tmp" && mv "$RES/env.json.tmp" "$RES/env.json"
+jq --slurpfile m <(cat "$RES"/*/*.metrics.json | jq -s .) --slurpfile ev <(jq -s . "$EVENTS") --arg fi "${FINAL_INVALID# }" \
+  '. + {per_config: $m[0], invalid_events: $ev[0], excluded_after_two_invalid_attempts: $fi}' "$RES/env.json" > "$RES/env.json.tmp" && mv "$RES/env.json.tmp" "$RES/env.json"
+echo "invalid events: $(wc -l < "$EVENTS" | tr -d ' '); excluded after two invalid attempts: [${FINAL_INVALID# }]"
 
 # shellcheck disable=SC2086
 "$TOOLS/summarize" -title "Phase 7B Level 2: T 3-of-5 across 5 AWS regions" \
