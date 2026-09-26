@@ -33,8 +33,8 @@ SHA-256 `fba4a0c8c5d3ad001154bdf44bbececcdb9ef6e598d5a0da5379b7700026478f`, iden
 Two layers on every signer host:
 1. **AWS security group** (per region): inbound tcp/22 only from the operator's current
    public /32; inbound signer port only from the coordinator's Elastic IP /32; nothing else.
-   Every rule and every operator-IP change is logged in `deploy/aws/state/sg-rules.txt`
-   (copied next to this report as `sg-rules.txt`).
+   Every rule and every operator-IP change is logged by `deploy/aws/provision.sh`; the
+   committed copy is `reports/aws/sg-rules.txt`.
 2. **nftables** on the host (default drop): signer port only from the coordinator EIP. SSH
    is accepted from any source **at this layer** and restricted to the operator /32 by the
    security group, because the operator's home IP is dynamic and a host rule pinned to an
