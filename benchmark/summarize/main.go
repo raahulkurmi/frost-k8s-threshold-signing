@@ -3,6 +3,7 @@
 // nothing is typed by hand.
 //
 //	summarize -title "..." -note "..." -out summary.md [TAG=]run1.csv [TAG=]run2.csv ...
+//	summarize -single DIR -title "..." -note "..." -out DIR/summary.md   (Phase 7A, single.go)
 //
 // TAG groups rows (e.g. pre-N43-fix, post-N43-fix). For each CSV the measured
 // RTT is read from <csv without .csv>.rtt.json (measured DURING the run) or,
@@ -201,7 +202,15 @@ func main() {
 	title := flag.String("title", "Benchmark summary", "title")
 	note := flag.String("note", "", "labelling note printed under the title")
 	outPath := flag.String("out", "summary.md", "output")
+	single := flag.String("single", "", "Phase 7A mode: results DIR with run<k>/<label>.csv (see single.go)")
 	flag.Parse()
+	if *single != "" {
+		if err := runSingle(*single, *title, *note, *outPath); err != nil {
+			fmt.Fprintln(os.Stderr, "summarize:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	var all []*stats
 	var sources []string
 	for _, a := range flag.Args() {

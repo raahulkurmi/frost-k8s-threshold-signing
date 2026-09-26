@@ -723,3 +723,28 @@ repro.yml or scripts/repro.sh.
 - A bug found while wiring this: each step function's `set -euo pipefail` leaked into
   the main script (bash `set` is not function-local), so a failing step would have
   aborted before REPRO.md was written. Steps now run in a subshell.
+
+## Phase 7A notes
+
+### N54. B1 baseline: a single-key signer, benchmark-only
+`benchmark/b1signer` is a single-key RS256 ExternalJWTSigner used **only** as the B1
+baseline of the Phase 7A comparison (B0 in-tree / B1 single-key external / T threshold).
+It is in the separate `benchmark/` module, has its own image (`frost-k8s/b1signer:bench`)
+and compose file (`benchmark/single/docker-compose.b1.yml`), and nothing in the threshold
+system (cmd/, deploy/, images) references it. The threshold runtime still has no
+single-key path (hard rule). For fairness it reuses the coordinator's `grpcserver`,
+`tlsconf.CoordinatorGRPCServer`, and `jwtfmt` header/claims checks, runs as 3 replicas at
+the coordinators' lb-net addresses behind the unchanged nginx config and unix socket, so B1
+vs T differs only in the signing backend. Difference kept on purpose: B1 applies no claims
+policy (in T the policy runs in each signer, and its cost is part of T). The B1 key is
+generated per run (`secrets/b1/key.pem`, 0600) and wiped at exit with all other secrets.
+
+### N55. make repro on a fresh EC2 instance: two findings
+1. Ubuntu 24.04 cloud images (EC2 AMI) ship **no `make`**, so `make repro` cannot start
+   on a truly fresh host. `scripts/repro.sh` installs make itself, so on such a host the
+   entry point is `scripts/repro.sh` (what `make repro` runs); REPRO.md records which one
+   was used.
+2. `kind build node-image --type release` downloads the release tarball without
+   retrying; attempt 1 on EC2 failed with `unexpected EOF` from dl.k8s.io. The step now
+   retries up to 3 times (each attempt logged); the image is still built only from the
+   official release.

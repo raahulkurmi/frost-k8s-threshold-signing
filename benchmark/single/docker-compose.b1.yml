@@ -1,0 +1,55 @@
+# Phase 7A B1 baseline (BENCHMARK ONLY; NOTES N54). Same path as T:
+#   kube-apiserver --unix socket ../../run/signer.sock--> nginx (same image, same
+#   deploy/nginx-grpc.conf) --lb-net, mTLS "lb"--> 3 replicas at the coordinators'
+#   addresses 172.30.1.11-13:9090, server cert "coordinator-grpc".
+# The replicas sign locally with ONE RSA key (secrets/b1/key.pem, generated per
+# run by benchmark/single/run.sh and wiped after). No signers, no signer-net.
+x-b1: &b1
+  build:
+    context: ../..
+    dockerfile: benchmark/b1signer/Dockerfile
+  image: frost-k8s/b1signer:bench
+  user: "${FROST_UID:?set FROST_UID}"
+  read_only: true
+  restart: unless-stopped
+  environment:
+    B1_KEY_FILE: /etc/b1/key.pem
+    POLICY_FILE: /etc/frost/policy.json
+    TCP_ADDR: 0.0.0.0:9090
+    GRPC_TLS_CERT: /etc/frost/grpc-tls/tls.crt
+    GRPC_TLS_KEY: /etc/frost/grpc-tls/tls.key
+    GRPC_TLS_CA: /etc/frost/ca.crt
+  volumes:
+    - ../../secrets/b1/key.pem:/etc/b1/key.pem:ro
+    - ../../deploy/policy.json:/etc/frost/policy.json:ro
+    - ../../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+    - ../../secrets/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+
+services:
+  grpc-proxy-1:
+    <<: *b1
+    networks: {lb-net: {ipv4_address: 172.30.1.11}}
+  grpc-proxy-2:
+    <<: *b1
+    networks: {lb-net: {ipv4_address: 172.30.1.12}}
+  grpc-proxy-3:
+    <<: *b1
+    networks: {lb-net: {ipv4_address: 172.30.1.13}}
+  coordinator-lb:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c", "rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
+    depends_on: [grpc-proxy-1, grpc-proxy-2, grpc-proxy-3]
+    volumes:
+      - ../../deploy/nginx-grpc.conf:/etc/nginx/nginx.conf:ro
+      - ../../run:/var/run/frost-k8s
+      - ../../secrets/tls/lb:/etc/nginx/lb-tls:ro
+      - ../../secrets/tls/ca.crt:/etc/nginx/ca.crt:ro
+    networks: {lb-net: {ipv4_address: 172.30.1.5}}
+
+networks:
+  lb-net:
+    driver: bridge
+    internal: true
+    driver_opts: {com.docker.network.bridge.inhibit_ipv4: "true"}
+    ipam: {config: [{subnet: 172.30.1.0/24}]}
