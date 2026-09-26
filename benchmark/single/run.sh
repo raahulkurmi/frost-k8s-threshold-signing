@@ -39,7 +39,7 @@ HEDGE_DELAY="${HEDGE_DELAY:-50ms}"
 SYSTEMS="${SYSTEMS:-B0 B1 T}"
 SCALE_RUN="${SCALE_RUN:-1}" SCALE_SIZES="${SCALE_SIZES:-50 100}" SCALE_REPS="${SCALE_REPS:-3}"
 LABEL_TEXT="${LABEL_TEXT:-single host, 2 vCPU (m7i-flex.large), all components co-located; CPU-contended}"
-export FROST_UID="$(id -u)" GOTOOLCHAIN=go1.27.1 SIGN_DEADLINE=2s
+export PATH="/usr/local/go/bin:$PATH" FROST_UID="$(id -u)" GOTOOLCHAIN=go1.27.1 SIGN_DEADLINE=2s
 CLUSTER=tk8s KCTX=kind-tk8s
 SOCK="$REPO/run/signer.sock"
 T_COMPOSE=(docker compose -p tk8s -f deploy/docker-compose.yml)
