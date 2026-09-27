@@ -106,3 +106,57 @@ func TestSevenCSummary(t *testing.T) {
 		t.Log(s)
 	}
 }
+
+// Stress fixture: 10 requests (2 failed); every request gets 5 computed shares;
+// successful ones combine 3 -> surplus 2 each; signer 5 sheds twice.
+func TestStressSection(t *testing.T) {
+	dir := t.TempDir()
+	rd := filepath.Join(dir, "run1")
+	os.MkdirAll(rd, 0o755)
+	lab := "T-sameregion-optimistic-c50"
+	base := filepath.Join(rd, lab)
+	var csv, co strings.Builder
+	csv.WriteString("label,seq,start_unix_ns,latency_ns,ok,error\n")
+	audits := make([]strings.Builder, 6)
+	for i := 0; i < 10; i++ {
+		id := fmt.Sprintf("req%02d", i)
+		ok := i >= 2
+		fmt.Fprintf(&csv, "%s,%d,%d,%d,%d,%s\n", lab, i, int64(1_790_000_000_000_000_000)+int64(i)*int64(1e8), int64(700e6), map[bool]int{true: 1, false: 0}[ok], map[bool]string{true: "", false: "x"}[ok])
+		if ok {
+			fmt.Fprintf(&co, `{"msg":"signed","time":"2026-09-27T10:00:00Z","request_id":%q,"combined":[1,2,3],"latency_ms":700}`+"\n", id)
+		} else {
+			fmt.Fprintf(&co, `{"msg":"sign failed","time":"2026-09-27T10:00:00Z","request_id":%q,"latency_ms":2000}`+"\n", id)
+		}
+		for s := 1; s <= 5; s++ {
+			fmt.Fprintf(&audits[s], `{"ts":"2026-09-27T10:00:00Z","signer_id":%d,"request_id":%q,"decision":"allow"}`+"\n", s, id)
+		}
+	}
+	audits[5].WriteString(`{"ts":"2026-09-27T10:00:01Z","signer_id":5,"request_id":"x1","decision":"shed"}` + "\n" + `{"ts":"2026-09-27T10:00:01Z","signer_id":5,"request_id":"x2","decision":"shed"}` + "\n")
+	os.WriteFile(base+".csv", []byte(csv.String()), 0o644)
+	os.WriteFile(base+".coord.jsonl", []byte(co.String()), 0o644)
+	for s := 1; s <= 5; s++ {
+		os.WriteFile(fmt.Sprintf("%s.audit-signer%d.jsonl", base, s), []byte(audits[s].String()), 0o644)
+	}
+	os.WriteFile(base+".metrics.json", []byte(`{"cpu_busy_pct": 10, "cpu_steal_pct": 0, "load1": 1, "load5": 1,
+	  "signers": [{"signer_id":1,"host":"ts-1","process_cpu_pct":24.0,"host_busy_pct":13.0},{"signer_id":2,"host":"ts-2","process_cpu_pct":25.0,"host_busy_pct":14.0}],
+	  "signer_cpu_mean_pct": 24.5, "signer_cpu_max_pct": 25.0}`), 0o644)
+	out := filepath.Join(dir, "summary.md")
+	if err := runSingle(dir, "t", "", out); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(out)
+	s := string(b)
+	for _, want := range []string{
+		"| T-sameregion-optimistic-c50 | 1 |", "| 24.5 | 25.0 | 1: 24.0, 2: 25.0 | 13.5 |",
+		// 50 computed / 10 requests = 5.00; wasted 10/50 = 20 %; surplus 8*2/50 = 32 %; 2 sheds, all at signer 5
+		"| 5.00 | 20.0 | 32.0 | 2.0 | 0.0 / 0.0 / 0.0 / 0.0 / 2.0 | no |",
+		"NOT OBSERVED",
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("summary missing %q", want)
+		}
+	}
+	if t.Failed() {
+		t.Log(s)
+	}
+}

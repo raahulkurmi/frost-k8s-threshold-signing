@@ -95,12 +95,15 @@ use_system() {
       pin="$(con coord bash -c "openssl pkey -in ~/tk8s/secrets-b1/key.pem -pubout -outform DER | openssl dgst -sha256 -binary | head -c 16 | base64 | tr '+/' '-_' | tr -d '='")"
       lbset=t5 ;;
     T-5region-*|T-sameregion-*)
-      local st="${sys##*-}" sec=secrets-t5; lbset=t5
-      [[ "$sys" == T-sameregion-* ]] && { sec=secrets-tsame; lbset=tsame; }
-      coord_compose coordinator-node.t.yml COORD_SECRETS=$sec VERIFY_STRATEGY=$st FANOUT=all -- up -d --force-recreate >/dev/null
+      # T-<placement>-<strategy>[-<fanout>]; fan-out defaults to all
+      local rest="${sys#T-5region-}" sec=secrets-t5; lbset=t5
+      [[ "$sys" == T-sameregion-* ]] && { rest="${sys#T-sameregion-}"; sec=secrets-tsame; lbset=tsame; }
+      local st="${rest%%-*}" fo="${rest#*-}"; [[ "$fo" == "$rest" ]] && fo=all
+      coord_compose coordinator-node.t.yml COORD_SECRETS=$sec VERIFY_STRATEGY=$st FANOUT=$fo -- up -d --force-recreate >/dev/null
       # shellcheck disable=SC2046
       coord_egress $(t_endpoints $sec)
       wait_backend_ready "$st" || die "coordinators not ready with strategy=$st"
+      con coord bash -c "docker logs c7-grpc-proxy-1-1 2>&1 | grep '\"coordinator ready\"' | tail -1 | jq -e 'select(.fanout==\"$fo\")' >/dev/null" || die "coordinators not running fanout=$fo"
       pin="$(con coord bash -c "jq -r .kid ~/tk8s/$sec/keys/public-meta.json")" ;;
     *) die "unknown system $sys" ;;
   esac
@@ -127,4 +130,29 @@ cpu_sample() { con "$1" awk '/^cpu /{t=0; for(i=2;i<=NF;i++) t+=$i; print t, $5+
 cpu_json() { # BEFORE AFTER LOADAVG -> {"busy":..,"steal":..,"load1":..}
   awk -v a="$1" -v b="$2" -v la="$3" 'BEGIN{split(a,x," "); split(b,y," "); split(la,l," "); dt=y[1]-x[1]; if (dt<=0) dt=1;
     printf "{\"cpu_busy_pct\": %.1f, \"cpu_steal_pct\": %.2f, \"load1\": %s}", 100*(1-(y[2]-x[2])/dt), 100*(y[3]-x[3])/dt, l[1]}'
+}
+
+# ---- signers of a T system (lever check, stress test) ----
+t_signer_hosts() { # SYS -> "id:host ..."
+  local p=t5; [[ "$1" == T-sameregion-* ]] && p=ts
+  echo "1:$p-1 2:$p-2 3:$p-3 4:$p-4 5:$p-5"
+}
+# signer_cpu_snapshot SYS OUT: per signer "id host wall_ns cpu_usage_ns host_total host_idle", in parallel
+signer_cpu_snapshot() {
+  local sys="$1" out="$2" pair id h
+  : > "$out"
+  for pair in $(t_signer_hosts "$sys"); do
+    id="${pair%%:*}" h="${pair#*:}"
+    ( v="$(con "$h" bash -c "echo \$(date +%s%N) \$(systemctl show frost-signer-$id -p CPUUsageNSec --value) \$(awk '/^cpu /{t=0; for(i=2;i<=NF;i++) t+=\$i; print t, \$5+\$6}' /proc/stat)")" && echo "$id $h $v" >> "$out" ) &
+  done
+  wait
+  [[ "$(wc -l < "$out" | tr -d ' ')" == 5 ]]
+}
+# signer_cpu_json BEFORE AFTER -> {"signers":[{signer_id, host, process_cpu_pct (of one vCPU), host_busy_pct}], mean, max}
+signer_cpu_json() {
+  local b="$1" a="$2"
+  join <(sort "$b") <(sort "$a") | awk '{
+      id=$1; wall=$8-$3; cpu=$9-$4; ht=$10-$5; hi=$11-$6; if (wall<=0) wall=1; if (ht<=0) ht=1;
+      printf "{\"signer_id\": %d, \"host\": \"%s\", \"process_cpu_pct\": %.1f, \"host_busy_pct\": %.1f}\n", id, $2, 100*cpu/wall, 100*(1-hi/ht)
+    }' | jq -s '{signers: ., signer_cpu_mean_pct: ((map(.process_cpu_pct) | add) / length), signer_cpu_max_pct: (map(.process_cpu_pct) | max)}'
 }

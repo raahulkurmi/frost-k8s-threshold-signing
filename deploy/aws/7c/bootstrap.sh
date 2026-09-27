@@ -76,7 +76,7 @@ step_cp_tools() {
   [[ "$(grep -c "server $COORD_PRIV:909[012]" "$conf")" == 3 && "$(grep -c 'lb-tls/ca.crt' "$conf")" == 1 ]] || die "nginx.conf rendering failed"
   push cp "$conf" /tmp/nginx.conf; rm -f "$conf"
   push cp $D/frost-nginx.yaml /tmp/frost-nginx.yaml; push cp $D/switch.sh /tmp/switch.sh; push cp $D/check.sh /tmp/check.sh
-  push cp $D/scale-rep.sh /tmp/scale-rep.sh; push cp benchmark/single/scale-deploy.yaml /tmp/scale-deploy.yaml; push cp bin/7c/frost-probe /tmp/frost-probe
+  push cp $D/nginx-lines.sh /tmp/nginx-lines.sh; push cp $D/scale-rep.sh /tmp/scale-rep.sh; push cp benchmark/single/scale-deploy.yaml /tmp/scale-deploy.yaml; push cp bin/7c/frost-probe /tmp/frost-probe
   on cp sudo bash -c 'set -e
     install -m 0644 /tmp/nginx.conf /etc/frost-7c/nginx.conf
     install -m 0600 /tmp/frost-nginx.yaml /etc/frost-7c/frost-nginx.yaml
@@ -84,11 +84,12 @@ step_cp_tools() {
     install -m 0755 /tmp/switch.sh /usr/local/bin/frost-7c-switch
     install -m 0755 /tmp/check.sh /usr/local/bin/frost-7c-check
     install -m 0755 /tmp/scale-rep.sh /usr/local/bin/frost-7c-scale-rep
+    install -m 0755 /tmp/nginx-lines.sh /usr/local/bin/frost-7c-nginx-lines
     install -m 0755 /tmp/frost-probe /usr/local/bin/frost-probe
     install -d -m 0700 /etc/frost-7c/lb
     for f in tls.crt tls.key ca.crt; do [ -s /etc/frost-7c/lb/$f ] || install -m 0600 /etc/frost-7c/lb-t5/$f /etc/frost-7c/lb/$f; done
     install -m 0600 /etc/frost-7c/frost-nginx.yaml /etc/kubernetes/manifests/frost-nginx.yaml
-    rm -f /tmp/nginx.conf /tmp/frost-nginx.yaml /tmp/switch.sh /tmp/check.sh /tmp/scale-rep.sh /tmp/scale-deploy.yaml /tmp/frost-probe
+    rm -f /tmp/nginx.conf /tmp/frost-nginx.yaml /tmp/switch.sh /tmp/check.sh /tmp/scale-rep.sh /tmp/nginx-lines.sh /tmp/scale-deploy.yaml /tmp/frost-probe
     stat -c "%n %U:%G %a" /var/run/frost-k8s /etc/frost-7c/lb /etc/frost-7c/lb/tls.key'
   for _ in $(seq 1 60); do on cp sudo test -S /var/run/frost-k8s/signer.sock && break; sleep 2; done
   on cp sudo test -S /var/run/frost-k8s/signer.sock || die "nginx socket not created"

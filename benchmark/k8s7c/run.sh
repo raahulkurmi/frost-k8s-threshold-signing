@@ -56,7 +56,10 @@ measure() { # SYS C RUN -> 0 iff clean
   local sys="$1" c="$2" run="$3" lab="$1-c$2" dir="$RES/run$3" rc since_c since_p b_cp b_co b_lg a_cp a_co a_lg l_cp l_co l_lg
   mkdir -p "$dir"
   since_c="$(con coord date -u +%Y-%m-%dT%H:%M:%S.%NZ)" || return 1
-  since_p="$(con cp date -u +%Y-%m-%dT%H:%M:%S.%NZ)" || return 1
+  since_p="$(con cp date +%s.%N)" || return 1
+  local since_a; since_a="$(date -u +%Y-%m-%dT%H:%M:%S)"
+  local scb="" sca=""
+  if [[ -n "${SIGNER_CPU:-}" ]] && is_t "$sys"; then scb="$(mktemp)"; signer_cpu_snapshot "$sys" "$scb" || { echo "signer cpu snapshot failed" >> "$ERRF.events"; return 1; }; fi
   b_cp="$(cpu_sample cp)" && b_co="$(cpu_sample coord)" && b_lg="$(cpu_sample lg)" || return 1
   if is_t "$sys"; then
     local sec=secrets-t5; [[ "$sys" == T-sameregion-* ]] && sec=secrets-tsame
@@ -73,19 +76,33 @@ measure() { # SYS C RUN -> 0 iff clean
   sleep 1
   if [[ "$sys" != B0* ]]; then
     local np; np="$(nginx_pod)" || return 1
-    con cp bash -c "kubectl -n kube-system logs $np --since-time=$since_p | grep '\"src\":\"nginx\"' | jq -c 'select(.uri | endswith(\"/Sign\"))'" > "$dir/$lab.nginx.jsonl" || return 1
+    # all kubelet log files (current + rotated + gzipped), not `kubectl logs` (N70)
+    con cp bash -c "sudo /usr/local/bin/frost-7c-nginx-lines $since_p | jq -c 'select(.uri | endswith(\"/Sign\"))'" > "$dir/$lab.nginx.jsonl" || return 1
   fi
   if is_t "$sys"; then
     con coord bash -c "for r in 1 2 3; do docker logs --since '$since_c' c7-grpc-proxy-\$r-1 2>&1; done | grep -E '\"msg\":\"(signed|sign failed)\"' || true" > "$dir/$lab.coord.jsonl" || return 1
   fi
   a_cp="$(cpu_sample cp)" && a_co="$(cpu_sample coord)" && a_lg="$(cpu_sample lg)" || return 1
+  local sj='{}'
+  if [[ -n "$scb" ]]; then
+    sca="$(mktemp)"; signer_cpu_snapshot "$sys" "$sca" || { echo "signer cpu snapshot failed" >> "$ERRF.events"; return 1; }
+    sj="$(signer_cpu_json "$scb" "$sca")"; rm -f "$scb" "$sca"
+  fi
+  if [[ -n "${SIGNER_AUDIT:-}" ]] && is_t "$sys"; then   # stress test: shares computed / shed per signer
+    local pair id h
+    for pair in $(t_signer_hosts "$sys"); do
+      id="${pair%%:*}" h="${pair#*:}"
+      # audit lines start with {"ts":"<RFC3339>: compare the first 19 timestamp characters
+      con "$h" sudo awk -v s="$since_a" 'substr($0, 8, 19) >= s' "/var/lib/frost-signer-$id/audit.log" | gzip -9 > "$dir/$lab.audit-signer$id.jsonl.gz" || return 1
+    done
+  fi
   l_cp="$(con cp cat /proc/loadavg)" && l_co="$(con coord cat /proc/loadavg)" && l_lg="$(con lg cat /proc/loadavg)" || return 1
   cpull lg "/tmp/$lab.csv" "$dir/$lab.csv" || return 1
   con lg rm -f "/tmp/$lab.csv" || return 1
   jq -cn --arg lab "$lab" --argjson cp "$(cpu_json "$b_cp" "$a_cp" "$l_cp")" --argjson co "$(cpu_json "$b_co" "$a_co" "$l_co")" --argjson lg "$(cpu_json "$b_lg" "$a_lg" "$l_lg")" \
     --arg l5 "$(awk '{print $2}' <<<"$l_cp")" \
     '{label: $lab, cpu_busy_pct: $cp.cpu_busy_pct, cpu_steal_pct: $cp.cpu_steal_pct, load1: $cp.load1, load5: ($l5|tonumber), cpu_host: "control plane",
-      control_plane: $cp, coordinator_node: $co, load_generator: $lg}' > "$dir/$lab.metrics.json"
+      control_plane: $cp, coordinator_node: $co, load_generator: $lg} + $sig' --argjson sig "$sj" > "$dir/$lab.metrics.json"
   ! cfg_failed
 }
 phase_tokens() {
@@ -169,6 +186,81 @@ phase_scale() {
   done
 }
 
+# ------------------------------------------------------------------- lever check (N70)
+# T-same-region optimistic at c=50, uncapped signers: fan-out all vs hedged, 3 runs,
+# signer CPU sampled. Tests whether signer compute bounds throughput.
+phase_lever() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_CPU=1
+  local run sys ok att
+  for run in $(seq 1 "$RUNS"); do
+    echo "================ lever check run $run/$RUNS ($(date -u +%T)) ================"
+    source deploy/multihost/clock-check.sh
+    # shellcheck disable=SC2086
+    clock_check $ALL_HOSTS || die "clock check failed (N50)"
+    # shellcheck disable=SC2046
+    for sys in $(rotate $((run - 1)) T-sameregion-optimistic-all T-sameregion-optimistic-hedged); do
+      use_system "$sys" /tmp/c7check.json; jq -c --argjson run "$run" --arg phase lever '. + {run: $run, phase: $phase}' /tmp/c7check.json >> "$CHECKS"
+      ok=0
+      for att in 1 2; do
+        cfg_begin
+        if measure "$sys" 50 "$run"; then ok=1; cfg_end; break; fi
+        local d="$RES/run$run" l="$sys-c50"
+        mark_invalid "$EVENTS" config "run$run/$l" "$att" "$RES" "$d/$l.csv" "$d/$l.coord.jsonl" "$d/$l.nginx.jsonl" "$d/$l.rtt.json" "$d/$l.metrics.json"
+        cfg_end; wait_net
+        [[ $att == 1 ]] && use_system "$sys" /tmp/c7check.json
+      done
+      [[ $ok == 1 ]] && echo "  run$run $sys c=50: $(tail -n +2 "$RES/run$run/$sys-c50.csv" | awk -F, '{n++; if($5!="1")e++} END{printf "%d rows, %d errors", n, e}'); signer CPU mean $(jq -r .signer_cpu_mean_pct "$RES/run$run/$sys-c50.metrics.json")% max $(jq -r .signer_cpu_max_pct "$RES/run$run/$sys-c50.metrics.json")%"
+    done
+  done
+}
+
+# ------------------------------------------------------------------- stress test (N70)
+# STRESS TEST, not a realistic workload: T-same-region signers CPU-capped
+# (systemd CPUQuota=STRESS_QUOTA) with SIGNER_MAX_CONCURRENT=1; T-same-region
+# optimistic, fan-out all; c = STRESS_CONCS; 3 runs; signer CPU and signer audit
+# logs (shares computed / shed) captured per configuration.
+stress_caps() { # on|off
+  local id
+  for id in 1 2 3 4 5; do
+    if [[ "$1" == on ]]; then
+      on "ts-$id" sudo bash -c "set -e; f=/etc/frost-signer-$id/env; sed -i '/^SIGNER_MAX_CONCURRENT=/d' \$f; echo SIGNER_MAX_CONCURRENT=1 >> \$f; systemctl restart frost-signer-$id; systemctl set-property --runtime frost-signer-$id CPUQuota=${STRESS_QUOTA:-25%}; sleep 1; systemctl is-active --quiet frost-signer-$id"
+    else
+      on "ts-$id" sudo bash -c "set -e; f=/etc/frost-signer-$id/env; sed -i '/^SIGNER_MAX_CONCURRENT=/d' \$f; systemctl set-property --runtime frost-signer-$id CPUQuota=; systemctl restart frost-signer-$id; sleep 1; systemctl is-active --quiet frost-signer-$id"
+    fi
+    echo "  ts-$id signer-$id: $(on "ts-$id" bash -c "systemctl show frost-signer-$id -p CPUQuotaPerSecUSec --value; sudo journalctl -u frost-signer-$id -o cat --no-pager | grep '\"signer ready\"' | tail -1 | jq -c '{max_concurrent, max_queue}'" | tr '\n' ' ')"
+  done
+}
+phase_stress() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_CPU=1 SIGNER_AUDIT=1
+  local concs="${STRESS_CONCS:-10 25 50 100 150 200}" run c ok att sys=T-sameregion-optimistic
+  echo "== STRESS TEST (CPU-capped signers, SIGNER_MAX_CONCURRENT=1): applying caps"
+  stress_caps on
+  for run in $(seq 1 "$RUNS"); do
+    echo "================ stress run $run/$RUNS ($(date -u +%T)) ================"
+    source deploy/multihost/clock-check.sh
+    # shellcheck disable=SC2086
+    clock_check $ALL_HOSTS || die "clock check failed (N50)"
+    use_system "$sys" /tmp/c7check.json; jq -c --argjson run "$run" --arg phase stress '. + {run: $run, phase: $phase}' /tmp/c7check.json >> "$CHECKS"
+    # shellcheck disable=SC2086
+    for c in $(rotate $((run - 1)) $concs); do
+      ok=0
+      for att in 1 2; do
+        cfg_begin
+        if measure "$sys" "$c" "$run"; then ok=1; cfg_end; break; fi
+        local d="$RES/run$run" l="$sys-c$c"
+        mark_invalid "$EVENTS" config "run$run/$l" "$att" "$RES" "$d/$l.csv" "$d/$l.coord.jsonl" "$d/$l.nginx.jsonl" "$d/$l.rtt.json" "$d/$l.metrics.json" "$d"/"$l".audit-signer*.jsonl.gz
+        cfg_end; wait_net
+        [[ $att == 1 ]] && use_system "$sys" /tmp/c7check.json
+      done
+      [[ $ok == 1 ]] && echo "  run$run c=$c: $(tail -n +2 "$RES/run$run/$sys-c$c.csv" | awk -F, '{n++; if($5!="1")e++} END{printf "%d rows, %d errors", n, e}'); signer CPU mean $(jq -r .signer_cpu_mean_pct "$RES/run$run/$sys-c$c.metrics.json")% max $(jq -r .signer_cpu_max_pct "$RES/run$run/$sys-c$c.metrics.json")%"
+    done
+  done
+  echo "== removing stress caps"
+  stress_caps off
+}
+
 # ------------------------------------------------------------------- env + summary
 write_env() {
   local h hosts=""
@@ -198,6 +290,8 @@ phase_summary() {
 
 case "$PHASE" in
   tokens) phase_tokens; phase_summary;;
+  lever) phase_lever; phase_summary;;
+  stress) phase_stress; phase_summary;;
   scale) phase_scale; phase_summary;;
   summary) phase_summary;;
   *) die "unknown phase $PHASE";;
