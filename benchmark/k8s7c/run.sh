@@ -189,8 +189,9 @@ write_env() {
 }
 phase_summary() {
   write_env
-  ( cd benchmark && go run ./summarize -single "$REPO/$RES" -title "Phase 7C: B0 vs B1 vs T (kubeadm v1.36.5, AWS)" \
-      -note "LABEL: $LABEL_TEXT. $RUNS runs; N=$N after $WARMUP warm-up per configuration; fan-out all; commit ${SHA:0:7}." -out "$REPO/$RES/summary.md" )
+  local abs="$RES"; [[ "$abs" == /* ]] || abs="$REPO/$RES"
+  ( cd benchmark && go run ./summarize -single "$abs" -title "Phase 7C: B0 vs B1 vs T (kubeadm v1.36.5, AWS)" \
+      -note "LABEL: $LABEL_TEXT. $RUNS runs; N=$N after $WARMUP warm-up per configuration; fan-out all; commit ${SHA:0:7}." -out "$abs/summary.md" )
   sed -i '' "s#$REPO/##g" "$RES/summary.md" 2>/dev/null || sed -i "s#$REPO/##g" "$RES/summary.md"
   echo "summary: $RES/summary.md"
 }
