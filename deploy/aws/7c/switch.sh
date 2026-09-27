@@ -47,5 +47,15 @@ kubectl -n kube-flannel rollout restart ds/kube-flannel-ds >/dev/null
 kubectl -n kube-system rollout status deploy/coredns --timeout=300s >/dev/null
 kubectl -n kube-system rollout status ds/kube-proxy --timeout=300s >/dev/null
 kubectl -n kube-flannel rollout status ds/kube-flannel-ds --timeout=300s >/dev/null
-kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=300s >/dev/null
+# Every kube-system pod Ready and none terminating. (`kubectl wait --all` races
+# with the rollout: an old pod deleted between its list and its wait fails it
+# with NotFound.)
+settled=""
+for _ in $(seq 1 150); do
+  counts="$(kubectl -n kube-system get pods -o json | jq -r '[([.items[] | select(.metadata.deletionTimestamp != null)] | length),
+    ([.items[] | select(.metadata.deletionTimestamp == null) | select(([.status.conditions[]? | select(.type=="Ready" and .status=="True")] | length) == 0)] | length)] | @tsv')"
+  [[ "$counts" == "0	0" ]] && { settled=1; break; }
+  sleep 2
+done
+[[ -n "$settled" ]] || { echo "kube-system pods did not settle (terminating, not-ready: $counts)" >&2; exit 5; }
 echo "mode=$(k8s7c mode "$M/kube-apiserver.yaml") stamp=$STAMP"
