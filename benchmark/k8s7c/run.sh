@@ -178,8 +178,8 @@ write_env() {
     --arg k8s "$(on cp kubectl version -o json | jq -r .serverVersion.gitVersion)" \
     --arg nodes "$(on cp kubectl get nodes --no-headers | awk '{print $1":"$2":"$3}' | tr '\n' ' ')" \
     --slurpfile checks "$CHECKS" --slurpfile ev "$EVENTS" \
-    --argjson per_config "$(cat "$RES"/run*/*.metrics.json 2>/dev/null | jq -s . || echo '[]')" \
-    --argjson scale "$(cat "$RES"/run1/scale/*.json 2>/dev/null | jq -s . || echo '[]')" \
+    --argjson per_config "$({ cat "$RES"/run*/*.metrics.json 2>/dev/null || true; } | jq -s .)" \
+    --argjson scale "$({ cat "$RES"/run1/scale/*.json 2>/dev/null || true; } | jq -s .)" \
     '{label: $label, git_commit: $sha, hosts: $hosts, kubernetes: $k8s, nodes: $nodes, workers_for_benchmark_pods: 2,
       systems: $systems, runs: $runs, n: $n, warmup: $w, concurrency: $concs, scale_sizes: $sizes, scale_reps: $reps,
       fanout: "all", deadline: "2s", rsa_bits: 2048, t: 3, n_signers: 5,
