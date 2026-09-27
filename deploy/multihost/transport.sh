@@ -43,9 +43,10 @@ ssh)
   # remote shell sees exactly the argv that `multipass exec` would pass.
   _q() { local a out=""; for a in "$@"; do out="$out $(printf '%q' "$a")"; done; echo "$out"; }
   # shellcheck disable=SC2046
-  on()      { local h="$1"; shift; alarm 600 ssh $(_ssh_opts) "ubuntu@$(vm_ip "$h")" "$(_q "$@")" </dev/null; }
+  # ON_ALARM (seconds, default 600) overrides the per-call alarm for long steps.
+  on()      { local h="$1"; shift; alarm "${ON_ALARM:-600}" ssh $(_ssh_opts) "ubuntu@$(vm_ip "$h")" "$(_q "$@")" </dev/null; }
   # shellcheck disable=SC2046
-  on_pipe() { local h="$1"; shift; alarm 600 ssh $(_ssh_opts) "ubuntu@$(vm_ip "$h")" "$(_q "$@")"; }
+  on_pipe() { local h="$1"; shift; alarm "${ON_ALARM:-600}" ssh $(_ssh_opts) "ubuntu@$(vm_ip "$h")" "$(_q "$@")"; }
   # shellcheck disable=SC2046
   push()    { alarm 600 scp -q $(_ssh_opts) "$2" "ubuntu@$(vm_ip "$1"):$3"; }
   # shellcheck disable=SC2046

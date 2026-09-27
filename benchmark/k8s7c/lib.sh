@@ -104,14 +104,21 @@ use_system() {
       pin="$(con coord bash -c "jq -r .kid ~/tk8s/$sec/keys/public-meta.json")" ;;
     *) die "unknown system $sys" ;;
   esac
-  local swlog; swlog="$(mktemp "${TMPDIR:-/tmp}/c7switch.XXXXXX")"
-  if ! con cp sudo /usr/local/bin/frost-7c-switch "$mode" "$stamp" $lbset > "$swlog" 2>&1; then
-    echo "switch output:"; tail -20 "$swlog"; rm -f "$swlog"; die "switch to $sys failed"
-  fi
-  rm -f "$swlog"
+  # A switch can take several minutes (switch.sh bounds its own waits); the ssh
+  # alarm is raised to 25 min for it. It is idempotent, so a failure is retried once.
+  local swlog try rc t0 sw_s; swlog="$(mktemp "${TMPDIR:-/tmp}/c7switch.XXXXXX")"
+  for try in 1 2; do
+    t0=$(date +%s); rc=0
+    ON_ALARM=1500 con cp sudo /usr/local/bin/frost-7c-switch "$mode" "$stamp-try$try" $lbset > "$swlog" 2>&1 || rc=$?
+    sw_s=$(( $(date +%s) - t0 ))
+    [[ $rc == 0 ]] && break
+    echo "switch to $sys failed (try $try, rc $rc, ${sw_s} s); output:"; tail -20 "$swlog"
+    [[ $try == 2 ]] && { rm -f "$swlog"; die "switch to $sys failed twice"; }
+  done
+  rm -f "$swlog"; stamp="$stamp-try$try"
   local j
   j="$(con cp sudo /usr/local/bin/frost-7c-check "$mode" $pin)" || { echo "$j" > "$out"; die "check failed for $sys: $j"; }
-  jq -c --arg sys "$sys" --arg stamp "$stamp" '. + {system: $sys, stamp: $stamp}' <<<"$j" > "$out"
+  jq -c --arg sys "$sys" --arg stamp "$stamp" --argjson sw "$sw_s" --argjson tries "$try" '. + {system: $sys, stamp: $stamp, switch_seconds: $sw, switch_tries: $tries}' <<<"$j" > "$out"
   log "system $sys ready: $(cat "$out")"
 }
 
