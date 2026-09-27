@@ -955,8 +955,13 @@ unforgeability. Under optimistic:
    verifications and a second join (≈ 2× a strict request), at most once per signer per
    `SuspectCooldown`, and at most `FallbackAfter` times per `FallbackWindow` in total before
    strict takes over;
-3. suspicion is per coordinator replica and in memory: each of the 3 replicas learns it
-   separately, and a restart forgets it.
+3. **the extra-work bound applies per coordinator replica and resets on restart.**
+   Suspicion and the fallback counter are in memory in each replica, so with R replicas a
+   bad signer can cause up to R failed combines per `SuspectCooldown` (one per replica),
+   and up to R × `FallbackAfter` failed combines per `FallbackWindow`, before every replica
+   is protected. A replica restart clears its suspects and its fallback state, so the
+   bound restarts from zero. With the deployed R = 3: ≤ 3 failed combines per bad signer
+   per 10 min, ≤ 9 per minute in total.
 
 The guards are on both paths, unchanged:
 - `fetch` checks the mTLS identity (`signer-<id>`), response `signer_id` and
@@ -968,6 +973,11 @@ Tests: `TestBreakerTripMarksSuspect`, `TestBreakerWorkBound`, `TestBreakerRecove
 (suspect verified during the cooldown, fast path after it), `TestBreakerFallbackToStrict`,
 unit tests with a fake clock (`TestBreakerSuspectCooldown`, `TestBreakerFallbackWindow`,
 `TestBreakerConfigValidation`, `TestVerifyGate`); T5 passes under the new default.
-**Local kind validation blocked:** before `make check-images`/`make e2e`, free swap on the
-Mac was 730 MB, below the 2 GB floor for kind runs, so tk8s was not started (see the
-Phase 7C/overload-fix report).
+**Validation.** `make test` PASS on the operator Mac
+(`reports/gates/overload-fix-make-test-local-bfab4d9.log`). A local kind run was not
+possible: free swap on the Mac was 730 MB, below the 2 GB floor for kind runs, so tk8s was
+not started. **Decision (2026-09-27): CI run 36275189321 is accepted as the kind
+validation, including `make check-images`** (all jobs green at `bfab4d9`; e2e 18/18 PASS
+with strategy=optimistic, TIMING 71/72 joined:
+`reports/gates/overload-fix-ci-e2e-run36275189321-bfab4d9.log`). The under-load timing
+breakdown (c=1/10/50) moves to Phase 7C.
