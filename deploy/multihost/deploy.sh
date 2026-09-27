@@ -30,6 +30,10 @@ source deploy/multihost/transport.sh
 TOPOLOGY_LABEL="${TOPOLOGY_LABEL:-multi-VM, single physical host (Level 1); not infrastructure independence}"
 SSH_ALLOW="${SSH_ALLOW:-$ADMIN_IP}"   # signer-host nftables SSH source; "any" = enforced by the cloud SG only (N57)
 placement() { _map_get "${HOST_PLACEMENT:-}" "$1" || echo "local Multipass VM on the operator Mac"; }
+# Phase 7C options (NOTES N67); the defaults keep Level 1/2 behaviour:
+COORD_SECRETS_DIR="${COORD_SECRETS_DIR:-secrets}"   # dir under ~/tk8s on the coordinator host
+LB_HOST="${LB_HOST:-}" LB_DIR="${LB_DIR:-}"         # if set: nginx's lb cert + CA go there (root, 0600), not to the coordinator host
+MANIFEST_OUT="${MANIFEST_OUT:-reports/multihost/deploy-manifest.json}"
 
 # --- topology: each signer id exactly once, 1..5 (portable to macOS bash 3.2) ---
 id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#*:}"; echo "${s%%:*}"; return; }; done; }
@@ -109,7 +113,9 @@ for vm in $SIGNER_VMS; do
   push "$vm" "$W/stage-$vm.tgz" /tmp/frost-stage.tgz
   on "$vm" sudo bash -c 'set -e; umask 077; rm -rf /root/frost-stage; mkdir /root/frost-stage; tar -xzf /tmp/frost-stage.tgz -C /root/frost-stage; shred -u /tmp/frost-stage.tgz'
   # shellcheck disable=SC2086
-  on_pipe "$vm" sudo bash -s -- /root/frost-stage "$COORD_IP" "$SSH_ALLOW" "$(vm_bind_ip "$vm")" $specs < deploy/multihost/setup-signer-host.sh
+  # SIGNER_SOURCE_IP: the address the signers see the coordinator connect from
+  # (7C same-region: its private IP); default its reach address.
+  on_pipe "$vm" sudo bash -s -- /root/frost-stage "${SIGNER_SOURCE_IP:-$COORD_IP}" "$SSH_ALLOW" "$(vm_bind_ip "$vm")" $specs < deploy/multihost/setup-signer-host.sh
   hs="$(on "$vm" sha256sum /usr/local/bin/frost-signer | cut -d' ' -f1 | tr -d '\r')"
   [[ "$hs" == "$BIN_SHA" ]] || die "binary on $vm has sha256 $hs, built $BIN_SHA"
   HOST_SHA_LIST="$HOST_SHA_LIST $vm=$hs"
@@ -121,22 +127,31 @@ C="$W/stage-coord"
 mkdir -p "$C/keys" "$C/tls"
 cp "$W/keys/public-meta.json" "$C/keys/"
 cp "$W/pki/tls/ca.crt" "$C/tls/"
-cp -r "$W/pki/tls/coordinator" "$W/pki/tls/coordinator-grpc" "$W/pki/tls/lb" "$C/tls/"
+cp -r "$W/pki/tls/coordinator" "$W/pki/tls/coordinator-grpc" "$C/tls/"
+[[ -n "$LB_HOST" ]] || cp -r "$W/pki/tls/lb" "$C/tls/"
 ENDPOINTS=""
-for id in 1 2 3 4 5; do ENDPOINTS="${ENDPOINTS:+$ENDPOINTS,}$id=https://$(vm_ip_of "$(id_vm "$id")"):$(id_port "$id")"; done
+for id in 1 2 3 4 5; do ENDPOINTS="${ENDPOINTS:+$ENDPOINTS,}$id=https://$(vm_service_ip "$(id_vm "$id")"):$(id_port "$id")"; done
 printf 'SIGNER_ENDPOINTS=%s\nN4_OPERATOR_TARGET=%s:22\n' "$ENDPOINTS" "$ADMIN_IP" > "$C/multihost.env"
 [[ -z "$(find "$C" -name 'share*' -o -name 'ca.key' -o -path '*signer-*')" ]] || die "REFUSING: share, CA key or signer cert staged for the coordinator host"
 COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -C "$C" -czf "$W/stage-coord.tgz" .
 push "$COORD_VM" "$W/stage-coord.tgz" /tmp/frost-coord.tgz
-on "$COORD_VM" bash -c 'set -e; cd ~/tk8s; rm -rf secrets; umask 077; mkdir secrets; tar -xzf /tmp/frost-coord.tgz -C secrets; shred -u /tmp/frost-coord.tgz; chmod 644 secrets/keys/public-meta.json secrets/tls/ca.crt secrets/tls/*/tls.crt'
+on "$COORD_VM" bash -c "set -e; cd ~/tk8s; rm -rf $COORD_SECRETS_DIR; umask 077; mkdir $COORD_SECRETS_DIR; tar -xzf /tmp/frost-coord.tgz -C $COORD_SECRETS_DIR; shred -u /tmp/frost-coord.tgz; chmod 644 $COORD_SECRETS_DIR/keys/public-meta.json $COORD_SECRETS_DIR/tls/ca.crt $COORD_SECRETS_DIR/tls/*/tls.crt"
+if [[ -n "$LB_HOST" ]]; then
+  L="$W/stage-lb"; mkdir -p "$L"
+  cp "$W/pki/tls/lb/tls.crt" "$W/pki/tls/lb/tls.key" "$W/pki/tls/ca.crt" "$L/"
+  COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -C "$L" -czf "$W/stage-lb.tgz" .
+  push "$LB_HOST" "$W/stage-lb.tgz" /tmp/frost-lb.tgz
+  on "$LB_HOST" sudo bash -c "set -e; umask 077; rm -rf $LB_DIR; install -d -o root -g root -m 0700 $LB_DIR; tar -xzf /tmp/frost-lb.tgz -C $LB_DIR; chown -R root:root $LB_DIR; chmod 0600 $LB_DIR/*; shred -u /tmp/frost-lb.tgz"
+  echo "lb client cert + CA installed on $LB_HOST:$LB_DIR (root, 0600)"
+fi
 EGRESS=""
-for id in 1 2 3 4 5; do EGRESS="$EGRESS $(vm_ip_of "$(id_vm "$id")"):$(id_port "$id")"; done
+for id in 1 2 3 4 5; do EGRESS="$EGRESS $(vm_service_ip "$(id_vm "$id")"):$(id_port "$id")"; done
 # shellcheck disable=SC2086
 on_pipe "$COORD_VM" sudo bash -s -- 172.30.3.0/24 $EGRESS < deploy/multihost/coordinator-egress.sh
 
 # --- 5. public manifest ---
 mkdir -p reports/multihost
-MAN="reports/multihost/deploy-manifest.json"
+MAN="$MANIFEST_OUT"; mkdir -p "$(dirname "$MAN")"
 {
   echo "{"
   echo "  \"topology\": \"$TOPOLOGY_LABEL\", \"transport\": \"$TRANSPORT\","

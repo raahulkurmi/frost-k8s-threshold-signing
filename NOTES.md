@@ -996,3 +996,14 @@ not shrunk unilaterally. If the fallback is 1 worker, every system's scale-up is
 the same 1-worker cluster; token benchmarks may be reused if the worker count is recorded.
 - Request **d54be0b2167647c4b59a05d04108c29cyFO4OQwl**, submitted **2026-09-27T08:40:50Z**
   (14:10:50 IST), desired 24, status at submission **PENDING**, case id none yet.
+- **Approved:** status `CASE_CLOSED`, case 179049863300507, last updated
+  **2026-09-27T08:44:47Z** (4 min after submission). `get-service-quota` for ap-south-1
+  L-1216C47A now returns **24**. Phase 1 (12 vCPU) and phase 2 (+10 → 22 vCPU) both fit
+  (`deploy/aws/provision-7c.sh check`, 2026-09-27T08:55Z).
+- Correction to the fallback analysis given before the approval: "drop one worker" alone
+  did **not** fit 16 vCPU (control plane + 1 worker + coordinator node + load generator
+  + 5 signers = 9 instances = 18 vCPU). Any 16-vCPU layout for T-same-region needs
+  co-location. The operator's proposal (control plane + 2 workers + 5 signers; coordinators
+  on a tainted worker; load generator on the control plane; 1 pod worker, so ≤ ~100 pods;
+  every system re-run on that layout, co-location in every label) was the recommended
+  fallback. Moot now that the quota is approved.

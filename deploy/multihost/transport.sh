@@ -10,6 +10,8 @@
 #                                  public IP is NAT'd, so signers bind the private IP)
 #   SSH_PRE_HOOK                    run once when sourced (refresh the SG /32 rules)
 #
+#   HOST_SERVICE="name=ip ..."      optional: address OTHER hosts use to reach a signer's
+#                                  service port (7C same-region signers: private IPs); default: reach address
 # Functions: alarm SECS CMD..., on HOST CMD... (stdin /dev/null), on_pipe HOST CMD...
 # (stdin passed), vm_ip HOST (reach), vm_bind_ip HOST, push HOST SRC DST,
 # pull HOST SRC DST, transport_desc.
@@ -55,3 +57,4 @@ ssh)
   ;;
 *) echo "transport: unknown TRANSPORT=$TRANSPORT" >&2; exit 2 ;;
 esac
+vm_service_ip() { _map_get "${HOST_SERVICE:-}" "$1" || vm_ip "$1"; }
