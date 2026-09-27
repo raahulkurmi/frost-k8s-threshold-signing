@@ -56,6 +56,7 @@ step_cluster() {
 step_coord() {
   push coord $D/docker-setup.sh /tmp/docker-setup.sh
   on coord sudo bash /tmp/docker-setup.sh ubuntu
+  drop_master coord   # the docker group applies to new login sessions only
   on coord bash -c "set -e; if [ ! -d ~/repo/.git ]; then git clone -q --no-tags https://github.com/raahulkurmi/frost-k8s-threshold-signing.git ~/repo; fi; cd ~/repo; git fetch -q origin; git checkout -q --detach $SHA; ln -sfn ~/repo ~/tk8s; git log -1 --format='coordinator node clone at %h %s'"
   on coord bash -lc "cd ~/tk8s && docker build -q -f deploy/docker/Dockerfile.proxy -t frost-k8s/coordinator:dev . && docker build -q -f benchmark/b1signer/Dockerfile -t frost-k8s/b1signer:bench . && docker image ls --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep frost-k8s"
   on coord bash -c 'set -e; mkdir -p ~/tk8s/secrets-b1; umask 077; [ -s ~/tk8s/secrets-b1/key.pem ] || openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ~/tk8s/secrets-b1/key.pem 2>/dev/null; echo "B1 key (benchmark only): $(stat -c "%a %U" ~/tk8s/secrets-b1/key.pem)"'

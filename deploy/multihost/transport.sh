@@ -31,6 +31,7 @@ multipass)
   push()    { multipass transfer "$2" "$1:$3"; }
   pull()    { multipass transfer "$1:$2" "$3"; }
   transport_desc() { multipass version | head -1; }
+  drop_master() { :; }
   ;;
 ssh)
   : "${HOST_ADDRS:?TRANSPORT=ssh needs HOST_ADDRS}" "${SSH_KEY:?TRANSPORT=ssh needs SSH_KEY}"
@@ -50,6 +51,10 @@ ssh)
   # shellcheck disable=SC2046
   pull()    { alarm 600 scp -q $(_ssh_opts) "ubuntu@$(vm_ip "$1"):$2" "$3"; }
   transport_desc() { echo "ssh ($(ssh -V 2>&1)), public-key fingerprint $(ssh-keygen -lf "$SSH_KEY.pub" 2>/dev/null | awk '{print $2}')"; }
+  # drop_master HOST: close the multiplexed connection, so the next call is a new
+  # login session (e.g. to pick up a new group membership)
+  # shellcheck disable=SC2046
+  drop_master() { ssh $(_ssh_opts) -O exit "ubuntu@$(vm_ip "$1")" >/dev/null 2>&1 || true; }
   if [[ -n "${SSH_PRE_HOOK:-}" && -z "${_TRANSPORT_HOOK_DONE:-}" ]]; then
     export _TRANSPORT_HOOK_DONE=1
     $SSH_PRE_HOOK >/dev/null || { echo "transport: SSH_PRE_HOOK failed: $SSH_PRE_HOOK" >&2; exit 1; }
