@@ -1,0 +1,159 @@
+LABEL: lever check: T-same-region optimistic, c=50, uncapped t3.micro signers, fan-out all vs hedged; 7C cluster
+phase lever; commit 6b2f6bb118839aea851d77fc8163ea80ae066344; systems: B0 B1 T-5region-optimistic T-5region-strict T-sameregion-optimistic T-sameregion-strict; results benchmark/results/20260927T185001Z-6b2f6bb-7C-lever
+================ lever check run 1/3 (18:50:02) ================
+clock-check: coord  chrony offset    -0.001 ms (last offset -0.002 ms) [primary]; round-trip skew    +28 ms (exec round trip 103 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +20 ms (exec round trip 98 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +21 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.000 ms (last offset 0.024 ms) [primary]; round-trip skew    +28 ms (exec round trip 108 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.000 ms (last offset -0.005 ms) [primary]; round-trip skew    +47 ms (exec round trip 231 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +89 ms (exec round trip 374 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.000 ms (last offset 0.002 ms) [primary]; round-trip skew    +83 ms (exec round trip 345 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.001 ms (last offset -0.007 ms) [primary]; round-trip skew   +165 ms (exec round trip 568 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +27 ms (exec round trip 88 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.004 ms (last offset 0.005 ms) [primary]; round-trip skew    +28 ms (exec round trip 91 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +28 ms (exec round trip 89 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset     0.010 ms (last offset 0.015 ms) [primary]; round-trip skew    +23 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +23 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +22 ms (exec round trip 99 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +21 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[18:52:06Z] system T-sameregion-optimistic-all ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic-all","stamp":"T-sameregion-optimistic-all-20260927T185020Z-try1","switch_seconds":104,"switch_tries":1}
+  run1 T-sameregion-optimistic-all c=50: 1000 rows, 0 errors; signer CPU mean 129.06% max 129.4%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[18:54:28Z] system T-sameregion-optimistic-hedged ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic-hedged","stamp":"T-sameregion-optimistic-hedged-20260927T185231Z-try1","switch_seconds":115,"switch_tries":1}
+  run1 T-sameregion-optimistic-hedged c=50: 1000 rows, 0 errors; signer CPU mean 148.4% max 148.6%
+================ lever check run 2/3 (18:54:49) ================
+clock-check: coord  chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +28 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +22 ms (exec round trip 75 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +20 ms (exec round trip 79 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +25 ms (exec round trip 95 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +43 ms (exec round trip 216 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +85 ms (exec round trip 362 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +78 ms (exec round trip 332 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset     0.003 ms (last offset 0.005 ms) [primary]; round-trip skew   +157 ms (exec round trip 564 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +24 ms (exec round trip 77 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.000 ms (last offset -0.015 ms) [primary]; round-trip skew    +25 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +25 ms (exec round trip 75 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.003 ms (last offset -0.003 ms) [primary]; round-trip skew    +19 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +19 ms (exec round trip 81 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +22 ms (exec round trip 77 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +21 ms (exec round trip 73 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[18:57:07Z] system T-sameregion-optimistic-hedged ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic-hedged","stamp":"T-sameregion-optimistic-hedged-20260927T185509Z-try1","switch_seconds":115,"switch_tries":1}
+  run2 T-sameregion-optimistic-hedged c=50: 1000 rows, 0 errors; signer CPU mean 149.88% max 150.1%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[18:59:28Z] system T-sameregion-optimistic-all ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic-all","stamp":"T-sameregion-optimistic-all-20260927T185727Z-try1","switch_seconds":119,"switch_tries":1}
+  run2 T-sameregion-optimistic-all c=50: 1000 rows, 0 errors; signer CPU mean 133.85999999999999% max 134.1%
+================ lever check run 3/3 (18:59:52) ================
+clock-check: coord  chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +24 ms (exec round trip 104 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +17 ms (exec round trip 97 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset    -0.001 ms (last offset -0.002 ms) [primary]; round-trip skew    +14 ms (exec round trip 108 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +22 ms (exec round trip 103 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +45 ms (exec round trip 234 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +74 ms (exec round trip 405 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +97 ms (exec round trip 444 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew   +154 ms (exec round trip 585 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +20 ms (exec round trip 123 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +20 ms (exec round trip 83 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +25 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +10 ms (exec round trip 135 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.000 ms (last offset -0.004 ms) [primary]; round-trip skew    +11 ms (exec round trip 105 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 99 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[19:02:19Z] system T-sameregion-optimistic-all ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic-all","stamp":"T-sameregion-optimistic-all-20260927T190011Z-try1","switch_seconds":125,"switch_tries":1}
+  run3 T-sameregion-optimistic-all c=50: 1000 rows, 0 errors; signer CPU mean 130.04000000000002% max 130.2%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[19:06:04Z] system T-sameregion-optimistic-hedged ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic-hedged","stamp":"T-sameregion-optimistic-hedged-20260927T190245Z-try1","switch_seconds":196,"switch_tries":1}
+  run3 T-sameregion-optimistic-hedged c=50: 1000 rows, 0 errors; signer CPU mean 145.66% max 145.8%
+summary: benchmark/results/20260927T185001Z-6b2f6bb-7C-lever/summary.md
