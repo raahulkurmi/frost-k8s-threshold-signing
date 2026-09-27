@@ -1045,3 +1045,29 @@ the same 1-worker cluster; token benchmarks may be reused if the worker count is
 - **Summary:** `summarize -single` gained the final comparison (Δ vs B0 in ms and ×),
   the c1 breakdown, coordinator-side columns, TokenRequests per pod and the B0 anchor
   drift table (`TestSevenCSummary`).
+
+### N68. Phase 7C bring-up: findings and fixes (2026-09-27)
+- **Provisioning:** phase 1 (10 instances) and phase 2 (5 T-same-region signers) launched
+  09:15–09:18Z; 22 of 24 vCPU in ap-south-1. Two script fixes: AWS rejects `>` in
+  security-group rule descriptions; the quota check double-counted already-launched roles.
+- **Clock check too slow for 15 hosts:** after `chronyc makestep` the kernel's sync flag
+  takes 6–17 s to return (measured). Waiting for it from the operator, host by host, took
+  >30 min. The resync and its wait now run on every host in parallel, with one
+  measurement call per host: 16 s for 15 hosts. The idempotent resync is retried on ssh
+  connection failures (exit 255) instead of failing the check.
+- **Docker group:** a new group membership applies only to new login sessions, but the ssh
+  master connection predates it; `drop_master` closes it after the Docker install.
+- **Switch race:** `kubectl wait --all` after the CoreDNS rollout failed with NotFound (an
+  old pod deleted between list and wait). It is replaced by a loop: every kube-system pod
+  Ready and none terminating. A switch takes about 2 min.
+- **pipefail:** `cat missing | jq -s . || echo '[]'` emitted `[]` twice (jq printed, then
+  the pipeline failed), which made `env.json` empty in the driver smoke run.
+- **Signer binaries:** T-5-region hosts run sha256 `0dd3fa23…`, T-same-region hosts
+  `1f744909…`. Both are built from identical `cmd/signer` source at different commits (Go
+  embeds the VCS revision). Within each T system all 5 hosts run one identical binary.
+- **Bootstrap checks** (`reports/aws/7c/bootstrap-checks.jsonl`): all six systems ok.
+  Signing mode as expected; token kid equals the expected key (B0: in-tree
+  `a3iC7qgl…`, 43 chars; B1 `3HfosoOu…`; T-5-region `EV_rkpqm…`; T-same-region
+  `wvQG_NBR…`), pinned independently for B1/T; TokenReview authenticated.
+- Driver smoke (N=20; B1, T-same optimistic): breakdown joined 20/20 at c=1. It was
+  deleted after the check; the real run is `benchmark/results/20260927T123218Z-7faa09c-7C`.
