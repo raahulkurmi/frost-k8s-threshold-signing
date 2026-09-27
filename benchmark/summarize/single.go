@@ -207,6 +207,9 @@ func runSingle(dir, title, note, outPath string) error {
 		}
 	}
 
+	b.WriteString(finalSection(append([]string(nil), systems...), agg, byCfg, dir))
+	b.WriteString(breakdownSection(dir, runs, systems, agg))
+
 	// N49 check for every T variant.
 	fmt.Fprintf(&b, "\n## N49 check (T variants; thresholds fixed before the run)\n\nN49-1 goodput(c=50) ≥ 0.8 × goodput(c=10); N49-2 error rate at c=10 ≤ 1%%; N49-3 failed p95 at c=50 ≤ 2200 ms and successful p95 at c=50 ≤ 2000 ms. Values are medians of runs; a criterion with no data is FAIL.\n\n| T variant | goodput c10 | goodput c50 | ratio | N49-1 | err%% c10 | N49-2 | failed p95 c50 | ok p95 c50 | N49-3 |\n|---|---:|---:|---:|---|---:|---|---:|---:|---|\n")
 	pf := func(ok bool) string {
@@ -233,7 +236,7 @@ func runSingle(dir, title, note, outPath string) error {
 	}
 
 	// Every run of every configuration.
-	fmt.Fprintf(&b, "\n## All configurations, every run\n\n| Configuration | Run | N | errors | error %% | median | p95 | p99 | mean | stddev | min | max | goodput (ok/s) | offered (all/s) | failed p95 | CPU busy %% | CPU steal %% | load1 | load5 |\n|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
+	fmt.Fprintf(&b, "\n## All configurations, every run\n\n| Configuration | Run | N | errors | error %% | median | p95 | p99 | mean | stddev | min | max | goodput (ok/s) | offered (all/s) | failed p95 | CPU busy %% | CPU steal %% | load1 | load5 | coordinator p50 / p95 | client − coordinator median | coordinator sign failed |\n|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|\n")
 	var errNotes []string
 	for _, l := range cfgs {
 		for _, c := range byCfg[l] {
@@ -242,9 +245,13 @@ func runSingle(dir, title, note, outPath string) error {
 			if c.m != nil {
 				mb, ms, l1, l5 = c.m.CPUBusyPct, c.m.CPUStealPct, c.m.Load1, c.m.Load5
 			}
-			fmt.Fprintf(&b, "| %s | %s | %d | %d | %.1f | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
+			cp, cd, cf := "–", "–", "–"
+			if s.hasCoord {
+				cp, cd, cf = f1(s.coordP50)+" / "+f1(s.coordP95), f1(s.clientMinusCoordP50), fmt.Sprint(s.coordFail)
+			}
+			fmt.Fprintf(&b, "| %s | %s | %d | %d | %.1f | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
 				l, c.run, s.n, s.errs, errPct(s), f1(s.median), f1(s.p95), f1(s.p99), f1(s.mean), f1(s.stddev), f1(s.min), f1(s.max),
-				f1(s.goodput), f1(s.offered), f1(s.failP95), f1(mb), f1(ms), f1(l1), f1(l5))
+				f1(s.goodput), f1(s.offered), f1(s.failP95), f1(mb), f1(ms), f1(l1), f1(l5), cp, cd, cf)
 			if s.errs > 0 {
 				errNotes = append(errNotes, fmt.Sprintf("- `%s/%s`: %d errors; first: `%s`", c.run, l, s.errs, s.firstErr))
 			}
@@ -254,6 +261,7 @@ func runSingle(dir, title, note, outPath string) error {
 		fmt.Fprintf(&b, "\nErrors:\n%s\n", strings.Join(errNotes, "\n"))
 	}
 	b.WriteString(scaleSection(dir))
+	b.WriteString(driftSection(dir))
 	fmt.Fprintf(&b, "\nSource CSVs (under `%s`):\n%s\n", dir, strings.Join(sources, "\n"))
 	return os.WriteFile(outPath, []byte(b.String()), 0o644)
 }

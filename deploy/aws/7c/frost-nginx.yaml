@@ -1,0 +1,27 @@
+# Phase 7C: nginx as a kubeadm static pod on the CONTROL-PLANE node. kube-apiserver
+# reaches the external signer only through a local Unix socket
+# (pkg/serviceaccount/externaljwt/plugin/plugin.go dials "unix", v1.36.5), so the
+# socket must be served on this node; nginx forwards over mTLS ("lb" client cert)
+# to the coordinators on the dedicated coordinator node (NOTES N67). Access control
+# is the socket directory /var/run/frost-k8s (root:root 0700).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frost-nginx
+  namespace: kube-system
+  labels: {app: frost-nginx}
+spec:
+  hostNetwork: true
+  priorityClassName: system-node-critical
+  containers:
+  - name: nginx
+    image: nginx:1.29-alpine
+    command: ["/bin/sh", "-c", "rm -f /var/run/frost-k8s/signer.sock && exec nginx -g 'daemon off;'"]
+    volumeMounts:
+    - {name: conf, mountPath: /etc/nginx/nginx.conf, readOnly: true}
+    - {name: lb, mountPath: /etc/nginx/lb-tls, readOnly: true}
+    - {name: sock, mountPath: /var/run/frost-k8s}
+  volumes:
+  - {name: conf, hostPath: {path: /etc/frost-7c/nginx.conf, type: File}}
+  - {name: lb, hostPath: {path: /etc/frost-7c/lb, type: Directory}}
+  - {name: sock, hostPath: {path: /var/run/frost-k8s, type: Directory}}

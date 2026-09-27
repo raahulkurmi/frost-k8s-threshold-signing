@@ -117,29 +117,34 @@ func coordStats(path string) (lat []float64, fails, n503 int, present bool) {
 	return
 }
 
-func scaleSection(dir string) string {
+type scaleKey struct {
+	sys  string
+	size int
+}
+
+// scaleAgg aggregates the repetitions of one (system, size).
+type scaleAgg struct {
+	reps                []scaleRep
+	cool, coolLoad      []float64
+	coolMissed          int
+	ms, cpu, load, req  []float64
+	auditLat, coordLat  []float64
+	tokErr, cFail, n503 int
+	coord, notReady     bool
+	coordMissing        bool // coordinator log empty although TokenRequests were audited
+	skipped             string
+}
+
+// loadScale reads DIR/run*/scale/*.json (+ .audit.jsonl, .coord.jsonl), keys sorted
+// by size, then B0/B1 before T variants.
+func loadScale(dir string) (map[scaleKey]*scaleAgg, []scaleKey) {
 	files, _ := filepath.Glob(filepath.Join(dir, "run[0-9]*", "scale", "*.json"))
 	if len(files) == 0 {
-		return ""
+		return nil, nil
 	}
 	sort.Strings(files)
-	type key struct {
-		sys  string
-		size int
-	}
-	type agg struct {
-		reps                []scaleRep
-		cool, coolLoad      []float64
-		coolMissed          int
-		ms, cpu, load, req  []float64
-		auditLat, coordLat  []float64
-		tokErr, cFail, n503 int
-		coord, notReady     bool
-		coordMissing        bool // coordinator log empty although TokenRequests were audited
-		skipped             string
-	}
-	byKey := map[key]*agg{}
-	var keys []key
+	byKey := map[scaleKey]*scaleAgg{}
+	var keys []scaleKey
 	for _, f := range files {
 		b, err := os.ReadFile(f)
 		if err != nil {
@@ -149,10 +154,10 @@ func scaleSection(dir string) string {
 		if json.Unmarshal(b, &r) != nil {
 			continue
 		}
-		k := key{r.System, r.Replicas}
+		k := scaleKey{r.System, r.Replicas}
 		a := byKey[k]
 		if a == nil {
-			a = &agg{}
+			a = &scaleAgg{}
 			byKey[k] = a
 			keys = append(keys, k)
 		}
@@ -203,6 +208,14 @@ func scaleSection(dir string) string {
 		}
 		return sysRank(keys[i].sys) < sysRank(keys[j].sys)
 	})
+	return byKey, keys
+}
+
+func scaleSection(dir string) string {
+	byKey, keys := loadScale(dir)
+	if len(keys) == 0 {
+		return ""
+	}
 	minmax := func(xs []float64) string {
 		if len(xs) == 0 {
 			return "–"

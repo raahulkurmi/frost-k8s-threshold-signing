@@ -1,0 +1,34 @@
+# Phase 7C B1 baseline (BENCHMARK ONLY; NOTES N54, N67): 3 single-key signers in
+# the coordinators' place: same node, same ports 9090-9092, same mTLS server cert
+# ("coordinator-grpc", from the T-5-region PKI in B1_TLS) and the same nginx on the
+# control plane. The key (secrets-b1/key.pem) is generated for 7C and shredded at
+# teardown. No signers are contacted (egress from coord-net: none).
+x-b1: &b1
+  build: {context: ../../.., dockerfile: benchmark/b1signer/Dockerfile}
+  image: frost-k8s/b1signer:bench
+  user: "${FROST_UID:?set FROST_UID}"
+  read_only: true
+  restart: unless-stopped
+  environment:
+    B1_KEY_FILE: /etc/b1/key.pem
+    POLICY_FILE: /etc/frost/policy.json
+    TCP_ADDR: 0.0.0.0:9090
+    GRPC_TLS_CERT: /etc/frost/grpc-tls/tls.crt
+    GRPC_TLS_KEY: /etc/frost/grpc-tls/tls.key
+    GRPC_TLS_CA: /etc/frost/ca.crt
+  volumes:
+    - ../../../secrets-b1/key.pem:/etc/b1/key.pem:ro
+    - ../../policy.json:/etc/frost/policy.json:ro
+    - ../../../${B1_TLS:?set B1_TLS}/tls/ca.crt:/etc/frost/ca.crt:ro
+    - ../../../${B1_TLS}/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+  networks: [coord-net]
+
+services:
+  grpc-proxy-1: {<<: *b1, ports: ["${COORD_PRIV_IP:?set COORD_PRIV_IP}:9090:9090"]}
+  grpc-proxy-2: {<<: *b1, ports: ["${COORD_PRIV_IP}:9091:9090"]}
+  grpc-proxy-3: {<<: *b1, ports: ["${COORD_PRIV_IP}:9092:9090"]}
+
+networks:
+  coord-net:
+    driver: bridge
+    ipam: {config: [{subnet: 172.30.3.0/24}]}

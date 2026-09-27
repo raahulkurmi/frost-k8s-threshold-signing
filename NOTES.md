@@ -1007,3 +1007,41 @@ the same 1-worker cluster; token benchmarks may be reused if the worker count is
   on a tainted worker; load generator on the control plane; 1 pod worker, so ≤ ~100 pods;
   every system re-run on that layout, co-location in every label) was the recommended
   fallback. Moot now that the quota is approved.
+
+### N67. Phase 7C design: one kubeadm cluster, systems switched by manifest (benchmark tooling)
+- **Cluster:** kubeadm v1.36.5 (pkgs.k8s.io, pinned `1.36.5-1.1`, held), containerd from
+  docker.com (systemd cgroups), flannel v0.28.9 (manifest sha256 pinned in
+  `deploy/aws/7c/versions.env`). 1 control plane (m7i-flex.large, ap-south-1a) + 2 workers
+  (c7i-flex.large, 1b/1c). The TokenRequest-only apiserver audit policy is set at
+  `kubeadm init`, identical for every system.
+- **nginx on the control plane, coordinators on a dedicated node.** kube-apiserver reaches
+  the external signer only through a local Unix socket
+  (`pkg/serviceaccount/externaljwt/plugin/plugin.go` dials `"unix"`, v1.36.5). So nginx
+  runs as a static pod on the control plane (`deploy/aws/7c/frost-nginx.yaml`, socket dir
+  root:root 0700) and forwards over mTLS to the 3 coordinators on a dedicated
+  c7i-flex.large (ports 9090–9092 on its private IP, reachable only from the control
+  plane). B1 replaces the coordinators on the same node, ports and certs. The load
+  generator (tokenbench) runs on its own t3.small.
+- **Switching** (`deploy/aws/7c/switch.sh`, `benchmark/k8s7c` tool): B0 = kubeadm's pristine
+  manifests; B1/T = the external variant derived from them. The in-tree key flags and the
+  endpoint are mutually exclusive (`pkg/kubeapiserver/options/authentication.go:624`).
+  Every switch stamps both manifests, so kube-apiserver always restarts (it refetches the
+  external signer's keys at startup; its key cache otherwise refreshes only after
+  RefreshHintSeconds = 3600 s) and kube-controller-manager drops tokens cached from the
+  previous signer. Then coredns, kube-proxy and flannel are restarted (they hold SA
+  tokens) and everything must be Ready. **Before every measurement** `check.sh` verifies the
+  running manifest's mode, that a new token's kid is the expected key (in-tree: sa.pub;
+  external: FetchKeys, pinned to the public-meta kid for T and to the B1 key's kid for B1),
+  alg RS256, and TokenReview.
+- **Two T systems, two dealer keys:** T-5-region (`secrets-t5`, lb set `lb-t5`) and
+  T-same-region (`secrets-tsame`, `lb-tsame`), each from its own `deploy.sh` run. No share
+  index exists on two hosts. deploy.sh gained opt-in `COORD_SECRETS_DIR`,
+  `LB_HOST`/`LB_DIR`, `HOST_SERVICE`, `SIGNER_SOURCE_IP` and `MANIFEST_OUT`; the defaults keep
+  Level 1/2 behaviour.
+- **Measurements** (`benchmark/k8s7c/run.sh`): token runs rotate the system order per run;
+  the scale-up interleaves systems per rep (rotated), with the 7B cooldown on the control
+  plane plus coordinator-node load1 < 1.0. Both use the N60 INVALID + one re-run rule and
+  the chrony-primary clock check before every run.
+- **Summary:** `summarize -single` gained the final comparison (Δ vs B0 in ms and ×),
+  the c1 breakdown, coordinator-side columns, TokenRequests per pod and the B0 anchor
+  drift table (`TestSevenCSummary`).

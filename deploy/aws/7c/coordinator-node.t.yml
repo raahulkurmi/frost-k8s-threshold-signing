@@ -1,0 +1,46 @@
+# Phase 7C coordinator node (dedicated EC2 instance, not a Kubernetes node): 3
+# threshold coordinators listening with mTLS (server "coordinator-grpc", client
+# must be "lb") on the node's private IP, ports 9090-9092; nginx on the control
+# plane is the only client (security group + NOTES N67). COORD_SECRETS selects the
+# T system: secrets-t5 (T-5-region) or secrets-tsame (T-same-region), each written
+# by deploy/multihost/deploy.sh (public meta, coordinator certs, SIGNER_ENDPOINTS
+# only; never a share). Egress from coord-net is limited to that system's signer
+# IP:port pairs (coordinator-egress.sh, N4).
+x-coordinator: &coordinator
+  build: {context: ../../.., dockerfile: deploy/docker/Dockerfile.proxy}
+  image: frost-k8s/coordinator:dev
+  user: "${FROST_UID:?set FROST_UID}"
+  read_only: true
+  restart: unless-stopped
+  env_file: ["../../../${COORD_SECRETS:?set COORD_SECRETS}/multihost.env"]
+  environment:
+    META_FILE: /etc/frost/public-meta.json
+    POLICY_FILE: /etc/frost/policy.json
+    TLS_CERT: /etc/frost/tls/tls.crt
+    TLS_KEY: /etc/frost/tls/tls.key
+    TLS_CA: /etc/frost/ca.crt
+    TCP_ADDR: 0.0.0.0:9090
+    GRPC_TLS_CERT: /etc/frost/grpc-tls/tls.crt
+    GRPC_TLS_KEY: /etc/frost/grpc-tls/tls.key
+    GRPC_TLS_CA: /etc/frost/ca.crt
+    SIGN_DEADLINE: ${SIGN_DEADLINE:-2s}
+    VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
+    FANOUT: ${FANOUT:-all}
+    HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
+  volumes:
+    - ../../../${COORD_SECRETS}/keys/public-meta.json:/etc/frost/public-meta.json:ro
+    - ../../policy.json:/etc/frost/policy.json:ro
+    - ../../../${COORD_SECRETS}/tls/ca.crt:/etc/frost/ca.crt:ro
+    - ../../../${COORD_SECRETS}/tls/coordinator:/etc/frost/tls:ro
+    - ../../../${COORD_SECRETS}/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+  networks: [coord-net]
+
+services:
+  grpc-proxy-1: {<<: *coordinator, ports: ["${COORD_PRIV_IP:?set COORD_PRIV_IP}:9090:9090"]}
+  grpc-proxy-2: {<<: *coordinator, ports: ["${COORD_PRIV_IP}:9091:9090"]}
+  grpc-proxy-3: {<<: *coordinator, ports: ["${COORD_PRIV_IP}:9092:9090"]}
+
+networks:
+  coord-net:
+    driver: bridge
+    ipam: {config: [{subnet: 172.30.3.0/24}]}
