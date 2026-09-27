@@ -67,7 +67,8 @@ fits() {
     run=$(aws_ ec2 describe-instances --region "$r" --filters "Name=instance-state-name,Values=pending,running" \
       --query 'Reservations[].Instances[].CpuOptions.[CoreCount,ThreadsPerCore]' --output text | awk '{s+=$1*$2} END{print s+0}')
     want=0
-    while read -r line; do [[ -z "$line" || "$(field "$line" 2)" != "$r" ]] && continue; want=$((want + 2)); done <<<"$plan"   # every Free Plan type here has 2 vCPU
+    # every Free Plan type here has 2 vCPU; roles already launched are counted in "running"
+    while read -r line; do [[ -z "$line" || "$(field "$line" 2)" != "$r" ]] && continue; [[ -n "$(inst_of "$(field "$line" 1)")" ]] && continue; want=$((want + 2)); done <<<"$plan"
     echo "  $r: quota $q vCPU, running $run, planned +$want -> $((run + want))"
     (( run + want <= q )) || ok=1
   done
@@ -134,8 +135,8 @@ cmd_phase1() {
   for role in cp w1 w2; do launch_role "$(echo "$PHASE1" | grep "^$role:")" "$nodes"; done
   launch_role "$(echo "$PHASE1" | grep '^lg:')" "$lgsg"
   wait_running cp w1 w2 lg
-  allow_ports $R "$coordsg" 9090 9092 "$(private_ip $R "$(inst_of cp)")/32" "nginx on the control plane -> coordinators"
-  allow_ports $R "$nodes" 6443 6443 "$(private_ip $R "$(inst_of lg)")/32" "load generator -> kube-apiserver"
+  allow_ports $R "$coordsg" 9090 9092 "$(private_ip $R "$(inst_of cp)")/32" "nginx on the control plane to the coordinators"
+  allow_ports $R "$nodes" 6443 6443 "$(private_ip $R "$(inst_of lg)")/32" "load generator to kube-apiserver"
   local line r sg id
   for id in 1 2 3 4 5; do
     line=$(echo "$PHASE1" | grep "^t5-$id:"); r=$(field "$line" 2)
