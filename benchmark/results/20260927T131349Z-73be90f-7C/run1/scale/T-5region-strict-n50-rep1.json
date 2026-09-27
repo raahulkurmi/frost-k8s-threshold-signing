@@ -1,0 +1,20 @@
+{
+  "system": "T-5region-strict",
+  "replicas": 50,
+  "rep": 1,
+  "ms_to_all_ready": 3843,
+  "all_ready": true,
+  "ready_replicas": 50,
+  "cpu_busy_pct": 39.0,
+  "cpu_steal_pct": 0.00,
+  "load1": 0.58,
+  "load5": 0.53,
+  "cooldown_s": 1,
+  "load1_at_start": 0.58,
+  "cooldown_reached": true,
+  "t_start": "2026-09-27T16:19:24.584798298Z",
+  "t_end": "2026-09-27T16:19:28.434071220Z",
+  "schedulable_nodes": 2,
+  "cpu_host": "control plane",
+  "coordinator_node_cooldown_s_before": 11
+}

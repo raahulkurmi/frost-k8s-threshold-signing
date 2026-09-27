@@ -1,0 +1,483 @@
+LABEL: 7C: kubeadm v1.36.5 on AWS; control plane aws:ap-south-1a:m7i-flex.large, 2 workers (aws:ap-south-1b:c7i-flex.large, aws:ap-south-1c:c7i-flex.large); coordinators (or B1) on a dedicated aws:ap-south-1a:c7i-flex.large; load generator aws:ap-south-1a:t3.small; nginx on the control plane
+phase scale; commit 9a5e7d4b748d92dc985aac3405f9b61a0dafd1e0; systems: B0 B1 T-5region-optimistic T-5region-strict T-sameregion-optimistic T-sameregion-strict; results benchmark/results/20260927T131349Z-73be90f-7C
+================ scale rep 1/3 (15:32:21) ================
+clock-check: coord  chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +23 ms (exec round trip 99 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +23 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 105 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +24 ms (exec round trip 97 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.002 ms (last offset 0.005 ms) [primary]; round-trip skew    +48 ms (exec round trip 210 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +88 ms (exec round trip 362 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +63 ms (exec round trip 397 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset     0.003 ms (last offset 0.003 ms) [primary]; round-trip skew   +151 ms (exec round trip 592 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset     0.000 ms (last offset 0.002 ms) [primary]; round-trip skew    +25 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.000 ms (last offset -0.005 ms) [primary]; round-trip skew    +25 ms (exec round trip 88 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset    -0.003 ms (last offset -0.003 ms) [primary]; round-trip skew    +24 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +25 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +28 ms (exec round trip 89 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +26 ms (exec round trip 104 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.001 ms (last offset -0.002 ms) [primary]; round-trip skew    +25 ms (exec round trip 91 ms) [secondary]; NTPSynchronized=yes
+[15:34:41Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20260927T153239Z-try1","switch_seconds":120,"switch_tries":1}
+   B0 n=50 rep=1: {"ms_to_all_ready":3572,"all_ready":true,"cooldown_s":1,"load1_at_start":0.26,"skipped":null,"reason":null}
+   B0 n=100 rep=1: {"ms_to_all_ready":7051,"all_ready":true,"cooldown_s":1,"load1_at_start":0.46,"skipped":null,"reason":null}
+   B0 n=200 rep=1: {"ms_to_all_ready":15286,"all_ready":true,"cooldown_s":2,"load1_at_start":0.93,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[15:37:27Z] system B1 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_from":"signer FetchKeys","pinned_kid":"3HfosoOuMBbJWoOfxtE_lg","alg":"RS256","tokenreview_authenticated":"true","system":"B1","stamp":"B1-20260927T153526Z-try1","switch_seconds":119,"switch_tries":1}
+   B1 n=50 rep=1: {"ms_to_all_ready":3643,"all_ready":true,"cooldown_s":1,"load1_at_start":0.47,"skipped":null,"reason":null}
+   B1 n=100 rep=1: {"ms_to_all_ready":7225,"all_ready":true,"cooldown_s":1,"load1_at_start":0.77,"skipped":null,"reason":null}
+   B1 n=200 rep=1: {"system":"B1","replicas":200,"skipped":true,"reason":"only 199 pods fit on 2 schedulable nodes (220 allocatable, 21 in use)"}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[15:39:47Z] system T-5region-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic","stamp":"T-5region-optimistic-20260927T153754Z-try1","switch_seconds":111,"switch_tries":1}
+   T-5region-optimistic n=50 rep=1: {"ms_to_all_ready":3896,"all_ready":true,"cooldown_s":1,"load1_at_start":0.61,"skipped":null,"reason":null}
+   T-5region-optimistic n=100 rep=1: {"ms_to_all_ready":7928,"all_ready":true,"cooldown_s":2,"load1_at_start":0.95,"skipped":null,"reason":null}
+   T-5region-optimistic n=200 rep=1: {"system":"T-5region-optimistic","replicas":200,"skipped":true,"reason":"only 188 pods fit on 2 schedulable nodes (220 allocatable, 32 in use)"}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[15:42:15Z] system T-5region-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-strict","stamp":"T-5region-strict-20260927T154014Z-try1","switch_seconds":118,"switch_tries":1}
+   T-5region-strict n=50 rep=1: {"ms_to_all_ready":3861,"all_ready":true,"cooldown_s":2,"load1_at_start":0.31,"skipped":null,"reason":null}
+   T-5region-strict n=100 rep=1: {"ms_to_all_ready":7532,"all_ready":true,"cooldown_s":1,"load1_at_start":0.42,"skipped":null,"reason":null}
+   T-5region-strict n=200 rep=1: {"system":"T-5region-strict","replicas":200,"skipped":true,"reason":"only 196 pods fit on 2 schedulable nodes (220 allocatable, 24 in use)"}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[15:46:16Z] system T-sameregion-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic","stamp":"T-sameregion-optimistic-20260927T154243Z-try1","switch_seconds":211,"switch_tries":1}
+   T-sameregion-optimistic n=50 rep=1: {"ms_to_all_ready":3702,"all_ready":true,"cooldown_s":1,"load1_at_start":0.58,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=100 rep=1: {"ms_to_all_ready":7568,"all_ready":true,"cooldown_s":1,"load1_at_start":0.49,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=200 rep=1: {"system":"T-sameregion-optimistic","replicas":200,"skipped":true,"reason":"only 194 pods fit on 2 schedulable nodes (220 allocatable, 26 in use)"}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[15:52:24Z] system T-sameregion-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-strict","stamp":"T-sameregion-strict-20260927T154644Z-try1","switch_seconds":338,"switch_tries":1}
+   T-sameregion-strict n=50 rep=1: {"ms_to_all_ready":4037,"all_ready":true,"cooldown_s":1,"load1_at_start":0.16,"skipped":null,"reason":null}
+LABEL: 7C: kubeadm v1.36.5 on AWS; control plane aws:ap-south-1a:m7i-flex.large, 2 workers (aws:ap-south-1b:c7i-flex.large, aws:ap-south-1c:c7i-flex.large); coordinators (or B1) on a dedicated aws:ap-south-1a:c7i-flex.large; load generator aws:ap-south-1a:t3.small; nginx on the control plane
+phase scale; commit 1e77bee58d3e4f1440705469cd5f78daa20ecdbe; systems: B0 B1 T-5region-optimistic T-5region-strict T-sameregion-optimistic T-sameregion-strict; results benchmark/results/20260927T131349Z-73be90f-7C
+================ scale rep 1/3 (15:53:14) ================
+clock-check: coord  chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +20 ms (exec round trip 77 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +20 ms (exec round trip 62 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +27 ms (exec round trip 84 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.001 ms (last offset 0.002 ms) [primary]; round-trip skew    +17 ms (exec round trip 80 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +55 ms (exec round trip 248 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.002 ms (last offset -0.003 ms) [primary]; round-trip skew    +82 ms (exec round trip 352 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +80 ms (exec round trip 338 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew   +159 ms (exec round trip 584 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.002 ms (last offset -0.004 ms) [primary]; round-trip skew    +22 ms (exec round trip 103 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.003 ms (last offset 0.004 ms) [primary]; round-trip skew    +23 ms (exec round trip 83 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +24 ms (exec round trip 103 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +27 ms (exec round trip 91 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.000 ms (last offset -0.034 ms) [primary]; round-trip skew    +21 ms (exec round trip 86 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +21 ms (exec round trip 88 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +18 ms (exec round trip 95 ms) [secondary]; NTPSynchronized=yes
+[15:59:21Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20260927T155333Z-try1","switch_seconds":347,"switch_tries":1}
+   B0 n=50 rep=1: {"ms_to_all_ready":3695,"all_ready":true,"cooldown_s":1,"load1_at_start":0.82,"skipped":null,"reason":null}
+   B0 n=100 rep=1: {"ms_to_all_ready":7373,"all_ready":true,"cooldown_s":1,"load1_at_start":0.70,"skipped":null,"reason":null}
+   B0 n=200 rep=1: {"ms_to_all_ready":16818,"all_ready":true,"cooldown_s":2,"load1_at_start":0.69,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[16:06:13Z] system B1 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_from":"signer FetchKeys","pinned_kid":"3HfosoOuMBbJWoOfxtE_lg","alg":"RS256","tokenreview_authenticated":"true","system":"B1","stamp":"B1-20260927T160007Z-try1","switch_seconds":365,"switch_tries":1}
+   B1 n=50 rep=1: {"ms_to_all_ready":3752,"all_ready":true,"cooldown_s":1,"load1_at_start":0.32,"skipped":null,"reason":null}
+   B1 n=100 rep=1: {"ms_to_all_ready":7405,"all_ready":true,"cooldown_s":1,"load1_at_start":0.43,"skipped":null,"reason":null}
+   B1 n=200 rep=1: {"ms_to_all_ready":15790,"all_ready":true,"cooldown_s":2,"load1_at_start":0.33,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[16:12:56Z] system T-5region-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic","stamp":"T-5region-optimistic-20260927T160700Z-try1","switch_seconds":353,"switch_tries":1}
+   T-5region-optimistic n=50 rep=1: {"ms_to_all_ready":3813,"all_ready":true,"cooldown_s":2,"load1_at_start":0.18,"skipped":null,"reason":null}
+   T-5region-optimistic n=100 rep=1: {"ms_to_all_ready":7726,"all_ready":true,"cooldown_s":2,"load1_at_start":0.30,"skipped":null,"reason":null}
+   T-5region-optimistic n=200 rep=1: {"ms_to_all_ready":15461,"all_ready":true,"cooldown_s":4,"load1_at_start":0.31,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[16:19:22Z] system T-5region-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-strict","stamp":"T-5region-strict-20260927T161342Z-try1","switch_seconds":338,"switch_tries":1}
+   T-5region-strict n=50 rep=1: {"ms_to_all_ready":3843,"all_ready":true,"cooldown_s":1,"load1_at_start":0.58,"skipped":null,"reason":null}
+   T-5region-strict n=100 rep=1: {"ms_to_all_ready":7461,"all_ready":true,"cooldown_s":1,"load1_at_start":0.49,"skipped":null,"reason":null}
+   T-5region-strict n=200 rep=1: {"ms_to_all_ready":15800,"all_ready":true,"cooldown_s":4,"load1_at_start":0.45,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[16:26:03Z] system T-sameregion-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic","stamp":"T-sameregion-optimistic-20260927T162008Z-try1","switch_seconds":352,"switch_tries":1}
+   T-sameregion-optimistic n=50 rep=1: {"ms_to_all_ready":3680,"all_ready":true,"cooldown_s":1,"load1_at_start":0.83,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=100 rep=1: {"ms_to_all_ready":7169,"all_ready":true,"cooldown_s":16,"load1_at_start":0.93,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=200 rep=1: {"ms_to_all_ready":15132,"all_ready":true,"cooldown_s":2,"load1_at_start":0.86,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[16:32:44Z] system T-sameregion-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-strict","stamp":"T-sameregion-strict-20260927T162705Z-try1","switch_seconds":336,"switch_tries":1}
+   T-sameregion-strict n=50 rep=1: {"ms_to_all_ready":3904,"all_ready":true,"cooldown_s":1,"load1_at_start":0.33,"skipped":null,"reason":null}
+   T-sameregion-strict n=100 rep=1: {"ms_to_all_ready":7788,"all_ready":true,"cooldown_s":1,"load1_at_start":0.36,"skipped":null,"reason":null}
+   T-sameregion-strict n=200 rep=1: {"ms_to_all_ready":15292,"all_ready":true,"cooldown_s":2,"load1_at_start":0.62,"skipped":null,"reason":null}
+================ scale rep 2/3 (16:33:30) ================
+clock-check: coord  chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +20 ms (exec round trip 96 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.001 ms (last offset 0.002 ms) [primary]; round-trip skew    +20 ms (exec round trip 83 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset    -0.005 ms (last offset -0.006 ms) [primary]; round-trip skew    +20 ms (exec round trip 91 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +20 ms (exec round trip 79 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.000 ms (last offset -0.002 ms) [primary]; round-trip skew    +43 ms (exec round trip 208 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset     0.000 ms (last offset -0.003 ms) [primary]; round-trip skew    +85 ms (exec round trip 376 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +84 ms (exec round trip 364 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew   +153 ms (exec round trip 566 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +20 ms (exec round trip 98 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.001 ms (last offset 0.003 ms) [primary]; round-trip skew     +4 ms (exec round trip 114 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +19 ms (exec round trip 92 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.002 ms (last offset -0.003 ms) [primary]; round-trip skew    +20 ms (exec round trip 84 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +21 ms (exec round trip 93 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +18 ms (exec round trip 92 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +21 ms (exec round trip 99 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[16:39:54Z] system B1 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_from":"signer FetchKeys","pinned_kid":"3HfosoOuMBbJWoOfxtE_lg","alg":"RS256","tokenreview_authenticated":"true","system":"B1","stamp":"B1-20260927T163350Z-try1","switch_seconds":361,"switch_tries":1}
+   B1 n=50 rep=2: {"ms_to_all_ready":3656,"all_ready":true,"cooldown_s":1,"load1_at_start":0.05,"skipped":null,"reason":null}
+   B1 n=100 rep=2: {"ms_to_all_ready":7552,"all_ready":true,"cooldown_s":2,"load1_at_start":0.04,"skipped":null,"reason":null}
+   B1 n=200 rep=2: {"ms_to_all_ready":15878,"all_ready":true,"cooldown_s":3,"load1_at_start":0.03,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[16:46:50Z] system T-5region-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic","stamp":"T-5region-optimistic-20260927T164040Z-try1","switch_seconds":367,"switch_tries":1}
+   T-5region-optimistic n=50 rep=2: {"ms_to_all_ready":3921,"all_ready":true,"cooldown_s":1,"load1_at_start":0.18,"skipped":null,"reason":null}
+   T-5region-optimistic n=100 rep=2: {"ms_to_all_ready":7599,"all_ready":true,"cooldown_s":1,"load1_at_start":0.53,"skipped":null,"reason":null}
+   T-5region-optimistic n=200 rep=2: {"ms_to_all_ready":16262,"all_ready":true,"cooldown_s":4,"load1_at_start":0.41,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[16:53:21Z] system T-5region-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-strict","stamp":"T-5region-strict-20260927T164736Z-try1","switch_seconds":342,"switch_tries":1}
+   T-5region-strict n=50 rep=2: {"ms_to_all_ready":3878,"all_ready":true,"cooldown_s":1,"load1_at_start":0.75,"skipped":null,"reason":null}
+   T-5region-strict n=100 rep=2: {"ms_to_all_ready":7579,"all_ready":true,"cooldown_s":1,"load1_at_start":0.63,"skipped":null,"reason":null}
+   T-5region-strict n=200 rep=2: {"ms_to_all_ready":16670,"all_ready":true,"cooldown_s":7,"load1_at_start":0.98,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[17:00:15Z] system T-sameregion-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic","stamp":"T-sameregion-optimistic-20260927T165421Z-try1","switch_seconds":351,"switch_tries":1}
+   T-sameregion-optimistic n=50 rep=2: {"ms_to_all_ready":3838,"all_ready":true,"cooldown_s":1,"load1_at_start":0.09,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=100 rep=2: {"ms_to_all_ready":7447,"all_ready":true,"cooldown_s":1,"load1_at_start":0.07,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=200 rep=2: {"ms_to_all_ready":16034,"all_ready":true,"cooldown_s":2,"load1_at_start":0.55,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[17:06:50Z] system T-sameregion-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-strict","stamp":"T-sameregion-strict-20260927T170104Z-try1","switch_seconds":343,"switch_tries":1}
+   T-sameregion-strict n=50 rep=2: {"ms_to_all_ready":3751,"all_ready":true,"cooldown_s":1,"load1_at_start":0.09,"skipped":null,"reason":null}
+   T-sameregion-strict n=100 rep=2: {"ms_to_all_ready":7493,"all_ready":true,"cooldown_s":1,"load1_at_start":0.59,"skipped":null,"reason":null}
+   T-sameregion-strict n=200 rep=2: {"ms_to_all_ready":16005,"all_ready":true,"cooldown_s":2,"load1_at_start":0.80,"skipped":null,"reason":null}
+[17:13:34Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20260927T170737Z-try1","switch_seconds":356,"switch_tries":1}
+   B0 n=50 rep=2: {"ms_to_all_ready":3700,"all_ready":true,"cooldown_s":1,"load1_at_start":0.37,"skipped":null,"reason":null}
+   B0 n=100 rep=2: {"ms_to_all_ready":7346,"all_ready":true,"cooldown_s":1,"load1_at_start":0.47,"skipped":null,"reason":null}
+   B0 n=200 rep=2: {"ms_to_all_ready":15398,"all_ready":true,"cooldown_s":2,"load1_at_start":0.75,"skipped":null,"reason":null}
+================ scale rep 3/3 (17:14:20) ================
+clock-check: coord  chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +19 ms (exec round trip 96 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.000 ms (last offset 0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 83 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +21 ms (exec round trip 85 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.000 ms (last offset -0.003 ms) [primary]; round-trip skew    +21 ms (exec round trip 97 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +41 ms (exec round trip 200 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew   +101 ms (exec round trip 387 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +87 ms (exec round trip 371 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew   +167 ms (exec round trip 600 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset     0.000 ms (last offset -0.002 ms) [primary]; round-trip skew    +19 ms (exec round trip 101 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.004 ms (last offset 0.004 ms) [primary]; round-trip skew    +20 ms (exec round trip 98 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +19 ms (exec round trip 92 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +25 ms (exec round trip 102 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.000 ms (last offset -0.015 ms) [primary]; round-trip skew    +26 ms (exec round trip 105 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 88 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 101 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[17:20:32Z] system T-5region-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic","stamp":"T-5region-optimistic-20260927T171437Z-try1","switch_seconds":352,"switch_tries":1}
+   T-5region-optimistic n=50 rep=3: {"ms_to_all_ready":3925,"all_ready":true,"cooldown_s":1,"load1_at_start":0.29,"skipped":null,"reason":null}
+   T-5region-optimistic n=100 rep=3: {"ms_to_all_ready":7524,"all_ready":true,"cooldown_s":2,"load1_at_start":0.55,"skipped":null,"reason":null}
+   T-5region-optimistic n=200 rep=3: {"ms_to_all_ready":16617,"all_ready":true,"cooldown_s":2,"load1_at_start":0.64,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[17:27:05Z] system T-5region-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_kid":"EV_rkpqmHFsdq3YASJwPZw","expected_from":"signer FetchKeys","pinned_kid":"EV_rkpqmHFsdq3YASJwPZw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-strict","stamp":"T-5region-strict-20260927T172118Z-try1","switch_seconds":344,"switch_tries":1}
+   T-5region-strict n=50 rep=3: {"ms_to_all_ready":3958,"all_ready":true,"cooldown_s":1,"load1_at_start":0.48,"skipped":null,"reason":null}
+   T-5region-strict n=100 rep=3: {"ms_to_all_ready":7714,"all_ready":true,"cooldown_s":2,"load1_at_start":0.70,"skipped":null,"reason":null}
+   T-5region-strict n=200 rep=3: {"ms_to_all_ready":16824,"all_ready":true,"cooldown_s":4,"load1_at_start":0.63,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[17:33:54Z] system T-sameregion-optimistic ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic","stamp":"T-sameregion-optimistic-20260927T172755Z-try1","switch_seconds":357,"switch_tries":1}
+   T-sameregion-optimistic n=50 rep=3: {"ms_to_all_ready":3750,"all_ready":true,"cooldown_s":1,"load1_at_start":0.11,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=100 rep=3: {"ms_to_all_ready":7438,"all_ready":true,"cooldown_s":1,"load1_at_start":0.18,"skipped":null,"reason":null}
+   T-sameregion-optimistic n=200 rep=3: {"ms_to_all_ready":15508,"all_ready":true,"cooldown_s":2,"load1_at_start":0.29,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[17:40:34Z] system T-sameregion-strict ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_kid":"wvQG_NBRUzel2Tysz2sCvA","expected_from":"signer FetchKeys","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-strict","stamp":"T-sameregion-strict-20260927T173441Z-try1","switch_seconds":351,"switch_tries":1}
+   T-sameregion-strict n=50 rep=3: {"ms_to_all_ready":3633,"all_ready":true,"cooldown_s":1,"load1_at_start":0.71,"skipped":null,"reason":null}
+   T-sameregion-strict n=100 rep=3: {"ms_to_all_ready":7625,"all_ready":true,"cooldown_s":1,"load1_at_start":0.76,"skipped":null,"reason":null}
+   T-sameregion-strict n=200 rep=3: {"ms_to_all_ready":15566,"all_ready":true,"cooldown_s":7,"load1_at_start":0.93,"skipped":null,"reason":null}
+[17:47:37Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_kid":"a3iC7qgl6Qf72xlKhXw_aiWgkxXiJtlCsNnvX12AgFA","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20260927T174126Z-try1","switch_seconds":369,"switch_tries":1}
+   B0 n=50 rep=3: {"ms_to_all_ready":3750,"all_ready":true,"cooldown_s":1,"load1_at_start":0.12,"skipped":null,"reason":null}
+   B0 n=100 rep=3: {"ms_to_all_ready":7383,"all_ready":true,"cooldown_s":1,"load1_at_start":0.10,"skipped":null,"reason":null}
+   B0 n=200 rep=3: {"ms_to_all_ready":15970,"all_ready":true,"cooldown_s":3,"load1_at_start":0.77,"skipped":null,"reason":null}
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[17:54:13Z] system B1 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_kid":"3HfosoOuMBbJWoOfxtE_lg","expected_from":"signer FetchKeys","pinned_kid":"3HfosoOuMBbJWoOfxtE_lg","alg":"RS256","tokenreview_authenticated":"true","system":"B1","stamp":"B1-20260927T174822Z-try1","switch_seconds":349,"switch_tries":1}
+   B1 n=50 rep=3: {"ms_to_all_ready":3740,"all_ready":true,"cooldown_s":1,"load1_at_start":0.09,"skipped":null,"reason":null}
+   B1 n=100 rep=3: {"ms_to_all_ready":7422,"all_ready":true,"cooldown_s":1,"load1_at_start":0.45,"skipped":null,"reason":null}
+   B1 n=200 rep=3: {"ms_to_all_ready":15609,"all_ready":true,"cooldown_s":2,"load1_at_start":0.62,"skipped":null,"reason":null}
+summary: benchmark/results/20260927T131349Z-73be90f-7C/summary.md

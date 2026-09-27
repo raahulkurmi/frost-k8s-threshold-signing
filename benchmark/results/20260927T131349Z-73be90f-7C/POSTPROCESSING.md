@@ -15,3 +15,7 @@ The raw per-configuration logs `run*/*.nginx.jsonl` and `run*/*.coord.jsonl` (10
 every line of the run's `summary.md` (lines 1–160, all tables and numbers) exactly; only the
 source-file list at the end differed in its path prefix, because the regeneration was run
 from another directory. The run's own `summary.md` is kept.
+
+Pod scale-up (`run1/scale/`): the raw `*.audit.jsonl` (kube-apiserver TokenRequest audit
+events) and `*.coord.jsonl` (coordinator Sign lines) were gzipped the same way; the summary
+regenerated from the gzipped files is identical in every table.

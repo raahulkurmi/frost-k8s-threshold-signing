@@ -1,0 +1,20 @@
+{
+  "system": "T-sameregion-optimistic",
+  "replicas": 200,
+  "rep": 1,
+  "ms_to_all_ready": 15132,
+  "all_ready": true,
+  "ready_replicas": 200,
+  "cpu_busy_pct": 36.5,
+  "cpu_steal_pct": 0.03,
+  "load1": 1.28,
+  "load5": 0.66,
+  "cooldown_s": 2,
+  "load1_at_start": 0.86,
+  "cooldown_reached": true,
+  "t_start": "2026-09-27T16:26:44.219341508Z",
+  "t_end": "2026-09-27T16:26:59.357072986Z",
+  "schedulable_nodes": 2,
+  "cpu_host": "control plane",
+  "coordinator_node_cooldown_s_before": 22
+}
