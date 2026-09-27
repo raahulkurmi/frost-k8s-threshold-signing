@@ -1155,3 +1155,82 @@ pods are gone, and ignores terminating pods. Rep 1 was stopped at 15:52Z; its pa
 (35 files, unfair: only B0 has a 200-pod rep) is set aside in
 `benchmark/results/20260927T131349Z-73be90f-7C-scale-ABORTED-fitcheck/` (not committed,
 not used). The scale phase was re-run from scratch.
+
+### N72. Phase 7C lever check: hedging does not reduce signer work under queueing; signers are not CPU-saturated
+Run `benchmark/results/20260927T185001Z-6b2f6bb-7C-lever` (label **lever check**):
+T-same-region optimistic, c=50, uncapped t3.micro signers (N48 defaults:
+`max_concurrent` = NumCPU = 2, `max_queue` = 64), 3 runs × {fan-out all, fan-out hedged},
+N=1000 after 100 warm-up, 0 INVALID, 0 errors. (The summary's generated note says
+"fan-out all" for every configuration; the configuration labels carry the real fan-out.)
+
+| | goodput /s | client p50 c=50 | signer CPU (% of one vCPU, mean of 5) | signer host busy |
+|---|---:|---:|---:|---:|
+| fan-out all | 69.4 | 724.5 ms | 130.0 % | 65.5 % |
+| fan-out hedged | 72.3 | 700.1 ms | 148.4 % | 74.9 % |
+
+- **Hedged did not test the lever.** It contacts t+1 = 4 signers first and the 5th after
+  50 ms, but under c=50 queueing no share returns within 50 ms, so the hedge fired for
+  1096–1097 of 1100 tokens per run (coordinator `signers_contacted` = 5). Both modes
+  therefore computed ≈ 5 shares per token; hedged gave +4 % goodput at more signer CPU.
+- **Signers were not CPU-saturated** (130–148 % of the 200 % a t3.micro has; hosts
+  65–75 % busy). Signer CPU per share ≈ 130 % / 69.4 per s ≈ **18.7 ms**.
+- **Revised attribution (inference, not measured directly):** the ≈ 70 tokens/s plateau
+  matches the signers' **admission slots**: 2 slots per signer / 70 shares per s ≈
+  28.6 ms per share per slot, of which ≈ 18.7 ms is signer CPU. So the limit is the
+  per-signer concurrency bound (N48) × per-share service time, not raw CPU. What the
+  remaining ≈ 10 ms per slot is was not measured. N70's "signer compute" is refined to
+  this; it remains signer-side and placement-independent, consistent with N69/N70.
+
+### N73. Phase 7C stress test: goodput collapse with wasted shares OBSERVED (pre-registered rule)
+Run `benchmark/results/20260927T191742Z-bc0ff05-7C-stress` (label **stress test
+(CPU-capped signers CPUQuota=25%, SIGNER_MAX_CONCURRENT=1)**, not a realistic
+workload): T-same-region optimistic, fan-out all, c = 10/25/50/100/150/200 (rotated per
+run), 3 runs, N=1000 after 100 warm-up, 0 INVALID, 3 verified switches. Caps applied
+before (systemd `CPUQuotaPerSecUSec` 250 ms, signer log `max_concurrent` 1) and removed
+after (quota infinity, `max_concurrent` 2), both read back from every signer.
+
+| c | goodput /s | goodput / peak | errors % | computed shares per request | wasted on failed % | signer CPU % |
+|---:|---:|---:|---:|---:|---:|---:|
+| 10 | 13.8 | 1.00 | 0.0 | 4.94 | 0.0 | 23.2 |
+| 25 | 13.7 | 0.99 | 1.3 | 4.87 | 0.6 | 23.1 |
+| 50 | 10.1 | 0.73 | 59.4 | 2.67 | 32.5 | 21.5 |
+| 100 | 10.5 | 0.76 | 81.0 | 1.20 | 32.2 | 19.4 |
+| 150 | 6.8 | 0.50 | 94.6 | 0.62 | 43.0 | 16.1 |
+| 200 | 7.5 | 0.54 | 94.4 | 0.49 | 44.4 | 13.8 |
+
+- **At c ≤ 25 the cap binds exactly as predicted:** 23.2 % of the 25 % quota; ≈ 17 ms of
+  signer CPU per share, so 250 ms/s ÷ ≈ 17–18.7 ms ≈ 13–14 shares/s per signer = the
+  measured 13.8 tokens/s (prediction from N72 written down before the first stress
+  configuration finished: ≈ 13.4/s).
+- **Decision (rule fixed in N70 before the run): collapse OBSERVED** at c = 50, 100, 150,
+  200 (goodput < 0.8 × peak and ≥ 20 % of computed shares for failed requests).
+  DAGOR-style priority-consistent admission is **indicated; it is not designed or
+  implemented**.
+- **Mechanism, from the audit and coordinator logs:** each signer sheds independently
+  (at c=50: ≈ 2000–2140 "no slot before the latest start time" per run over 5 signers; at
+  c=200: ≈ 4100–4200 "queue full"). Signers shed *different* requests, so many requests
+  get 1–2 shares (computed, then wasted) and fail the t = 3 threshold. Coordinator
+  failures at c=200 are typically all 5 signers refusing with "queue full (64 waiting)".
+  The coordinator stayed in optimistic (`strategy_effective`; no breaker fallback).
+- **Also observed, not explained:** signer CPU falls below the quota as c rises (21.5 % at
+  c=50 → 13.8 % at c=200), so the capped signers are partly idle while shedding. Not
+  investigated further. Policy rate-limit denials (200 req/s per signer) occurred only in
+  run 1 at c=200 (236 over 5 signers), counted as neither computed nor shed.
+- **Surplus:** fan-out all computes ≈ 5 shares per token and combines 3, so ≈ 39 % of
+  computed shares are surplus even without overload (c=10).
+- **Scope:** this is a deliberately starved configuration (25 % of one vCPU and one slot
+  per signer). At the uncapped 7C configuration, no signer returned 503 in any token,
+  scale-up or lever run (N69, N72). The claim is only that uncoordinated per-signer
+  shedding **can** waste a third or more of the signers' work once they are overloaded.
+
+### N74. Final numbers come from Phase 7C
+No separate 7B re-run was made; every final B0/B1/T number comes from Phase 7C
+(`…20260927T131349Z-73be90f-7C`, tokens + scale-up; lever check N72; stress test N73),
+measured in one session on one cluster (the ap-south-1 quota was approved, N66), so the
+anchor-drift table (N67) was not needed. 7A and 7B keep their labels and restrictions
+(N62, N63).
+- **Teardown** 2026-09-27T19:49–19:52Z: all 15 instances terminated, EIP released, 10
+  security groups and 5 key pairs deleted, local SSH key deleted; zero tagged resources in
+  all 5 regions, and an independent check found 0 non-terminated instances, 0 volumes and 0
+  Elastic IPs of any tag (`reports/aws/TEARDOWN-7C-20260927T194900Z.md`). The 7C cluster ran
+  about 10.5 h (09:15–19:49Z).

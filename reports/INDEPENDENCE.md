@@ -1,4 +1,4 @@
-# Signer independence evidence (Phase 7B)
+# Signer independence evidence (Phase 7B; Phase 7C appended)
 
 > **Level 2: 5 regions, one provider, one account, one operator, one build, one
 > dealer.** Each signer runs on its own EC2 instance in a different AWS region. This
@@ -151,3 +151,43 @@ Results are read from `reports/multihost/e2e-20260926T191044Z-b2f63ca/multihost-
 - **Region diversity is not organisational independence.** Separate regions protect
   against a regional outage or a single-host compromise; they do not protect against the
   shared account, operator, software or dealer above.
+
+## Phase 7C (benchmark cluster, 2026-09-27)
+
+> **T-5-region: 5 regions, one provider, one account, one operator, one build, one
+> dealer. T-same-region: 1 region (3 AZs), one provider, one account, one operator, one
+> build, one dealer.** These are benchmark deployments; this section adds no independence
+> beyond Level 2 above. Written by hand from the files listed (not by
+> `gen-independence.sh`).
+
+Sources: `reports/aws/7c/deploy-manifest-t5.json`, `reports/aws/7c/deploy-manifest-tsame.json`
+(both `deploy/multihost/deploy.sh` at git commit `02ae373`),
+`reports/aws/7c/bootstrap-checks.jsonl`, the security-group log
+`deploy/aws/state/sg-rules.txt` (operator-side, gitignored; rules quoted below), NOTES N67, N68.
+
+| Signer | T-5-region placement | T-same-region placement | share index |
+|---:|---|---|---:|
+| 1 | aws:ap-south-1b:t3.micro | aws:ap-south-1a:t3.micro | 1 |
+| 2 | aws:ap-southeast-1a:t3.micro | aws:ap-south-1a:t3.micro | 2 |
+| 3 | aws:ap-northeast-1a:t3.micro | aws:ap-south-1b:t3.micro | 3 |
+| 4 | aws:eu-central-1a:t3.micro | aws:ap-south-1b:t3.micro | 4 |
+| 5 | aws:us-east-1a:t3.micro | aws:ap-south-1c:t3.micro | 5 |
+
+- **Two dealer keys.** T-5-region (kid `EV_rkpqmHFsdq3YASJwPZw`) and T-same-region (kid
+  `wvQG_NBRUzel2Tysz2sCvA`) come from separate key ceremonies (`deploy.sh` runs); each of the
+  10 signer hosts holds exactly one share of its system's key, as the manifests record. The
+  coordinator host (aws:ap-south-1a:c7i-flex.large, EIP) holds none (only public metadata).
+- **One build per system.** All 5 T-5-region hosts run signer binary sha256 `0dd3fa23…`
+  and all 5 T-same-region hosts `1f744909…` (identical `cmd/signer` source built at
+  different commits; N68).
+- **Network (security groups):** each signer's port 8441 accepts only the coordinator
+  (T-5-region: the coordinator EIP `/32`; T-same-region: the coordinator's private IP
+  `/32`); SSH only from the operator's `/32`. The signer hosts' own nftables SSH rule is
+  `any` (`signer_host_ssh_allow`, N57: enforced by the security group only, because the
+  operator IP can change). The coordinators' port 9090–9092 accepts only the control
+  plane; kube-apiserver accepts the load generator.
+- **Not re-run in 7C:** the L1–L5 multihost tests above were **not** re-run against the 7C
+  signer hosts. The 7C evidence is the deploy manifests (placement, share index, OS user,
+  binary hash per host) and the per-switch checks (token kid pinned to the system's key,
+  RS256, TokenReview authenticated). Everything in "What this does NOT give" applies
+  unchanged, and T-same-region also shares one region.
