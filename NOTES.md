@@ -1234,3 +1234,33 @@ anchor-drift table (N67) was not needed. 7A and 7B keep their labels and restric
   all 5 regions, and an independent check found 0 non-terminated instances, 0 volumes and 0
   Elastic IPs of any tag (`reports/aws/TEARDOWN-7C-20260927T194900Z.md`). The 7C cluster ran
   about 10.5 h (09:15–19:49Z).
+
+### N75. Priority-consistent admission: design recorded (not implemented); open question on signer CPU
+- **Design:** `docs/PRIORITY_ADMISSION.md`, for review, nothing implemented. It answers
+  N73 (collapse with wasted shares observed in the stress test), following DAGOR (Zhou et al.,
+  SoCC 2018).
+  - (A) Signer side: priority p = HMAC(K_prio, hourly epoch ‖ request_id). K_prio is
+    dealer-distributed to the signers only, never to the coordinator. Each signer keeps an
+    admitted fraction f driven by a deadline-relative overload signal (N48 sheds, or mean
+    queue wait > 0.5 × deadline budget), with α = 5 % / β = 1 %. The admitted sets are
+    nested, so a token needs only p ≥ the 3rd-lowest level.
+  - (B) Coordinator: abort once a quorum is impossible. Code check: today the collect loop
+    waits for every contacted signer even after n − t + 1 refusals.
+  - Security bound: without K_prio a compromised coordinator's requests have the same
+    admission probability as honest ones, so it keeps only its volume advantage, bounded
+    by the per-signer rate limit. That limit is shared by all clients today; the 3 replicas
+    share one client cert. Proposed hardening: per-replica certs with a per-client fair
+    share, a deadline cap, and p bound to the signing input with a request-ID replay cache.
+  - Pre-registered evaluation rules (stress test, no-regression) are in the document.
+  - The "more admission slots" test is labelled **inference test (admission slots)**:
+    SIGNER_MAX_CONCURRENT 2/4/8 at c = 50, uncapped. Its rule is fixed in advance: the slot
+    inference (N72) is supported iff goodput at 4 slots ≥ 1.2 × at 2 slots and signer CPU
+    rises.
+- **Open question (from N73):** in the stress test, signer CPU fell below the 25 % quota
+  as c rose (23.2 % → 13.8 %). While a request waits, a free slot is always taken, so the
+  capped signers were partly idle while shedding. **Not explained.** Hypotheses to
+  instrument in the next stress run:
+  - (a) CFS throttling inflating the wall-clock RSA estimate, which makes N48 over-shed:
+    log `RSAEstimate` and `cpu.stat` throttling;
+  - (b) bursty arrivals emptying the queue: sample queue length and slot occupancy at 10 Hz;
+  - (c) window artefact from warm-up and drain: compute CPU over the measured window only.
