@@ -24,6 +24,7 @@ import (
 
 	"frost-k8s-threshold-signing/internal/keymeta"
 	"frost-k8s-threshold-signing/internal/keyshare"
+	"frost-k8s-threshold-signing/internal/prioritykey"
 )
 
 // MetaFileName and ShareFileName are the output file names.
@@ -144,6 +145,28 @@ func WriteShareFiles(dir string, k *Key) ([]Output, error) {
 	return outs, nil
 }
 
+// WritePriorityKey writes priority.key (0600) into dir: the signers' shared
+// admission-priority key K_prio (N76). Every signer gets a copy; the
+// coordinator never does. It never overwrites.
+func WritePriorityKey(dir string, k *Key) (Output, error) {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return Output{}, err
+	}
+	f, err := prioritykey.Generate(k.Meta.KID)
+	if err != nil {
+		return Output{}, err
+	}
+	b, err := marshal(f)
+	if err != nil {
+		return Output{}, err
+	}
+	p := filepath.Join(dir, prioritykey.FileName)
+	if err := writeExclusive(p, b, 0o600); err != nil {
+		return Output{}, fmt.Errorf("write %s: %w", p, err)
+	}
+	return Output{Name: p, SHA256: fingerprint(b)}, nil
+}
+
 // WriteVault writes each share to a Vault KV v2 mount at
 // <mount>/frost-k8s/signer-<i>, e.g. secret/frost-k8s/signer-3.
 func WriteVault(ctx context.Context, client *http.Client, addr, token, mount string, k *Key) ([]Output, error) {
@@ -180,4 +203,41 @@ func WriteVault(ctx context.Context, client *http.Client, addr, token, mount str
 		outs = append(outs, Output{Name: "vault:" + mount + "/" + kv, SHA256: fingerprint(b)})
 	}
 	return outs, nil
+}
+
+// WritePriorityKeyVault writes the priority key to <mount>/frost-k8s/priority-key
+// (--vault mode: nothing but public metadata goes to disk).
+func WritePriorityKeyVault(ctx context.Context, client *http.Client, addr, token, mount string, k *Key) (Output, error) {
+	if addr == "" || token == "" || mount == "" {
+		return Output{}, errors.New("vault: VAULT_ADDR, VAULT_TOKEN and mount are all required")
+	}
+	if client == nil {
+		client = &http.Client{Timeout: 10 * time.Second}
+	}
+	f, err := prioritykey.Generate(k.Meta.KID)
+	if err != nil {
+		return Output{}, err
+	}
+	payload, err := json.Marshal(map[string]any{"data": f})
+	if err != nil {
+		return Output{}, err
+	}
+	url := strings.TrimRight(addr, "/") + "/v1/" + mount + "/data/" + prioritykey.VaultPath
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	if err != nil {
+		return Output{}, err
+	}
+	req.Header.Set("X-Vault-Token", token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return Output{}, fmt.Errorf("vault write %s: %w", prioritykey.VaultPath, err)
+	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
+	resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return Output{}, fmt.Errorf("vault write %s/%s: HTTP %d", mount, prioritykey.VaultPath, resp.StatusCode)
+	}
+	b, _ := json.Marshal(f)
+	return Output{Name: "vault:" + mount + "/" + prioritykey.VaultPath, SHA256: fingerprint(b)}, nil
 }

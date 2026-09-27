@@ -1,21 +1,25 @@
 # frost-k8s threshold RSA deployment (Linux host; validated by make e2e).
 #
 # Inputs (all under ../secrets/, git- and docker-ignored):
-#   keys/public-meta.json, keys/share-<i>.json    from cmd/dealer
+#   keys/public-meta.json, keys/share-<i>.json,   from cmd/dealer
+#   keys/priority.key (signers only, N76)
 #   tls/ca.crt, tls/<name>/tls.{crt,key}           from scripts/gen-certs.sh
-# Each signer mounts ONLY its own share and its own cert (I4). Coordinators
-# mount only public metadata, the policy, the CA cert and their two certs
-# (I3). The CA private key (secrets/ca/) is never mounted.
+# Each signer mounts ONLY its own share and its own cert (I4), plus the
+# signers' shared priority key (N76). Each coordinator replica mounts only
+# public metadata, the policy, the CA cert, its OWN client cert
+# (coordinator-<k>) and the gRPC server cert (I3). The CA private key
+# (secrets/ca/) is never mounted.
 # Containers run as FROST_UID (required, e.g. FROST_UID=$(id -u)) so they can
 # read the 0600 share/key files the dealer and gen-certs.sh wrote.
 #
 # Who can reach Sign (Phase 6.5, docs/THREAT_MODEL.md):
 #   kube-apiserver --unix socket ../run/signer.sock--> nginx
 #   nginx --lb-net, mTLS (client SAN "lb")--> grpc-proxy-1..3 (server SAN "coordinator-grpc")
-#   grpc-proxy --signer-net, mTLS (client SAN "coordinator")--> signer-1..5
+#   grpc-proxy-<k> --signer-net, mTLS (client SAN "coordinator-<k>")--> signer-1..5
 # lb-net and signer-net are `internal` bridges with inhibit_ipv4: no egress,
 # and the Docker host itself has no address on them, so it cannot connect.
 # NO port of any service is published to the host.
+# Priority admission (N76): SIGNER_ADMISSION=priority PRIORITY_KEY_FILE=/run/frost/priority.key.
 
 x-net-opts: &net-opts
   driver: bridge
@@ -40,7 +44,9 @@ x-coordinator: &coordinator
   user: "${FROST_UID:?set FROST_UID, e.g. FROST_UID=$(id -u)}"
   read_only: true
   restart: unless-stopped
-  environment:
+  depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
+
+x-coordinator-env: &coordinator-env
     META_FILE: /etc/frost/public-meta.json
     POLICY_FILE: /etc/frost/policy.json
     SIGNER_ENDPOINTS: "1=https://signer-1:8443,2=https://signer-2:8443,3=https://signer-3:8443,4=https://signer-4:8443,5=https://signer-5:8443"
@@ -55,19 +61,15 @@ x-coordinator: &coordinator
     VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
     FANOUT: ${FANOUT:-all}
     HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
-  volumes:
-    - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
-    - ./policy.json:/etc/frost/policy.json:ro
-    - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
-    - ../secrets/tls/coordinator:/etc/frost/tls:ro
-    - ../secrets/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
-  depends_on: [signer-1, signer-2, signer-3, signer-4, signer-5]
+    QUORUM_ABORT: ${QUORUM_ABORT:-on}
 
 services:
   signer-1:
     <<: *signer
     environment:
       SIGNER_ID: "1"
+      SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
+      PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -78,6 +80,7 @@ services:
       LISTEN_ADDR: ":8443"
     volumes:
       - ../secrets/keys/share-1.json:/run/frost/share.json:ro
+      - ../secrets/keys/priority.key:/run/frost/priority.key:ro
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
@@ -91,6 +94,8 @@ services:
     <<: *signer
     environment:
       SIGNER_ID: "2"
+      SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
+      PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -101,6 +106,7 @@ services:
       LISTEN_ADDR: ":8443"
     volumes:
       - ../secrets/keys/share-2.json:/run/frost/share.json:ro
+      - ../secrets/keys/priority.key:/run/frost/priority.key:ro
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
@@ -114,6 +120,8 @@ services:
     <<: *signer
     environment:
       SIGNER_ID: "3"
+      SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
+      PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -124,6 +132,7 @@ services:
       LISTEN_ADDR: ":8443"
     volumes:
       - ../secrets/keys/share-3.json:/run/frost/share.json:ro
+      - ../secrets/keys/priority.key:/run/frost/priority.key:ro
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
@@ -137,6 +146,8 @@ services:
     <<: *signer
     environment:
       SIGNER_ID: "4"
+      SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
+      PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -147,6 +158,7 @@ services:
       LISTEN_ADDR: ":8443"
     volumes:
       - ../secrets/keys/share-4.json:/run/frost/share.json:ro
+      - ../secrets/keys/priority.key:/run/frost/priority.key:ro
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
@@ -160,6 +172,8 @@ services:
     <<: *signer
     environment:
       SIGNER_ID: "5"
+      SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
+      PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -170,6 +184,7 @@ services:
       LISTEN_ADDR: ":8443"
     volumes:
       - ../secrets/keys/share-5.json:/run/frost/share.json:ro
+      - ../secrets/keys/priority.key:/run/frost/priority.key:ro
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
       - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
@@ -181,6 +196,15 @@ services:
 
   grpc-proxy-1:
     <<: *coordinator
+    environment:
+      <<: *coordinator-env
+      COORDINATOR_ID: "1"
+    volumes:
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/coordinator-1:/etc/frost/tls:ro
+      - ../secrets/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
     networks:
       lb-net:
         ipv4_address: 172.30.1.11
@@ -189,6 +213,15 @@ services:
 
   grpc-proxy-2:
     <<: *coordinator
+    environment:
+      <<: *coordinator-env
+      COORDINATOR_ID: "2"
+    volumes:
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/coordinator-2:/etc/frost/tls:ro
+      - ../secrets/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
     networks:
       lb-net:
         ipv4_address: 172.30.1.12
@@ -197,6 +230,15 @@ services:
 
   grpc-proxy-3:
     <<: *coordinator
+    environment:
+      <<: *coordinator-env
+      COORDINATOR_ID: "3"
+    volumes:
+      - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ./policy.json:/etc/frost/policy.json:ro
+      - ../secrets/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../secrets/tls/coordinator-3:/etc/frost/tls:ro
+      - ../secrets/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
     networks:
       lb-net:
         ipv4_address: 172.30.1.13

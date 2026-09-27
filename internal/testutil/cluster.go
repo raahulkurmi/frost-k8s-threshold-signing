@@ -85,8 +85,15 @@ type discard struct{}
 
 func (discard) Write(p []byte) (int, error) { return len(p), nil }
 
-// Endpoints returns coordinator endpoints for the given signer IDs (all if none).
+// Endpoints returns coordinator replica 1's endpoints for the given signer IDs (all if none).
 func (c *Cluster) Endpoints(t testing.TB, ids ...int) []coordinator.Endpoint {
+	t.Helper()
+	return c.EndpointsAs(t, 1, c.coord, ids...)
+}
+
+// EndpointsAs returns endpoints for coordinator replica coordID using cert
+// (issued by c.PKI.CoordinatorN), for the given signer IDs (all if none).
+func (c *Cluster) EndpointsAs(t testing.TB, coordID int, cert CertPaths, ids ...int) []coordinator.Endpoint {
 	t.Helper()
 	if len(ids) == 0 {
 		for i := 1; i <= Parties; i++ {
@@ -95,7 +102,7 @@ func (c *Cluster) Endpoints(t testing.TB, ids ...int) []coordinator.Endpoint {
 	}
 	var eps []coordinator.Endpoint
 	for _, id := range ids {
-		tc, err := tlsconf.CoordinatorClient(c.coord.Cert, c.coord.Key, c.PKI.CA, id)
+		tc, err := tlsconf.CoordinatorClient(cert.Cert, cert.Key, c.PKI.CA, id, coordID)
 		if err != nil {
 			t.Fatal(err)
 		}

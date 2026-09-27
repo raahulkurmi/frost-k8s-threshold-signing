@@ -2,8 +2,8 @@
 // Shoup threshold RSA key and writes public metadata plus one share per signer.
 // It never writes the full private key and never prints a share.
 //
-//	dealer --out out/                       # public-meta.json + share-1..n.json
-//	dealer --out out/ --vault               # shares to Vault, public-meta.json to out/
+//	dealer --out out/                       # public-meta.json + share-1..n.json + priority.key
+//	dealer --out out/ --vault               # shares + priority key to Vault, public-meta.json to out/
 //
 // See docs/KEY_CEREMONY.md.
 package main
@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"frost-k8s-threshold-signing/internal/dealer"
+	"frost-k8s-threshold-signing/internal/prioritykey"
 )
 
 func main() {
@@ -59,6 +60,7 @@ func ceremony(out string, bits, t, n int, useVault bool, mount string, stdout io
 	// Refuse before spending minutes on keygen if any output already exists.
 	targets := []string{dealer.MetaFileName}
 	if !useVault {
+		targets = append(targets, prioritykey.FileName)
 		for i := 1; i <= n; i++ {
 			targets = append(targets, dealer.ShareFileName(i))
 		}
@@ -84,12 +86,24 @@ func ceremony(out string, bits, t, n int, useVault bool, mount string, stdout io
 			return err
 		}
 		outs = append(outs, vo...)
+		po, err := dealer.WritePriorityKeyVault(context.Background(), nil, vaultAddr, vaultToken, mount, k)
+		if err != nil {
+			return err
+		}
+		outs = append(outs, po)
 	} else {
 		so, err := dealer.WriteShareFiles(out, k)
 		if err != nil {
 			return err
 		}
 		outs = append(outs, so...)
+	}
+	if !useVault {
+		po, err := dealer.WritePriorityKey(out, k)
+		if err != nil {
+			return err
+		}
+		outs = append(outs, po)
 	}
 	mo, err := dealer.WriteMeta(out, k)
 	if err != nil {
@@ -105,6 +119,9 @@ func ceremony(out string, bits, t, n int, useVault bool, mount string, stdout io
 	}
 	if !useVault {
 		fmt.Fprintf(stdout, "Distribute each share-<i>.json to signer <i> only, then securely delete %s (docs/KEY_CEREMONY.md).\n", out)
+	}
+	if !useVault {
+		fmt.Fprintf(stdout, "Give %s to every signer (admission priority, N76), never to the coordinator.\n", prioritykey.FileName)
 	}
 	return nil
 }

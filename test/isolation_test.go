@@ -119,13 +119,14 @@ var forbiddenSelectors = map[string]bool{
 
 var forbiddenPkgs = []string{
 	"frost-k8s-threshold-signing/internal/keyshare",
+	"frost-k8s-threshold-signing/internal/prioritykey", // K_prio: signers only (N76)
 	"frost-k8s-threshold-signing/internal/dealer",
 	"frost-k8s-threshold-signing/internal/signer",
 	"frost-k8s-threshold-signing/internal/testutil",
 	"github.com/bytemare/",
 }
 
-var sharePath = regexp.MustCompile(`share-[0-9*{%]|share\.json|SHARE_FILE`)
+var sharePath = regexp.MustCompile(`share-[0-9*{%]|share\.json|SHARE_FILE|priority\.key|PRIORITY_KEY`)
 
 // T12 (I3): the coordinator binary's dependency graph contains no secret
 // share package, and its module-local sources never reference tcrsa's

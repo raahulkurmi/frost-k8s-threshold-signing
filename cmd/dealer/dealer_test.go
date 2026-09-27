@@ -19,6 +19,7 @@ import (
 	"frost-k8s-threshold-signing/internal/dealer"
 	"frost-k8s-threshold-signing/internal/keymeta"
 	"frost-k8s-threshold-signing/internal/keyshare"
+	"frost-k8s-threshold-signing/internal/prioritykey"
 	"frost-k8s-threshold-signing/internal/testutil"
 )
 
@@ -66,6 +67,35 @@ func loadMeta(t *testing.T, dir string) *keymeta.Meta {
 		t.Fatal(err)
 	}
 	return m
+}
+
+// N76: the ceremony writes priority.key (0600) bound to the key's kid; it
+// holds no share and exactly the schema fields.
+func TestPriorityKeyFile(t *testing.T) {
+	dir := shared(t)
+	meta := loadMeta(t, dir)
+	p := filepath.Join(dir, prioritykey.FileName)
+	st, err := os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Mode().Perm() != 0o600 {
+		t.Errorf("%s mode %v, want 0600", p, st.Mode().Perm())
+	}
+	b, _ := os.ReadFile(p)
+	var raw map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) != 3 || raw["version"] == nil || raw["kid"] != meta.KID || raw["priority_key"] == nil {
+		t.Fatalf("priority.key fields = %v, want exactly version, kid (= %s), priority_key", keys(raw), meta.KID)
+	}
+	if _, err := prioritykey.Load(p, meta.KID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := prioritykey.Load(p, "another-kid"); err == nil {
+		t.Fatal("priority.key accepted for another kid")
+	}
 }
 
 func TestShareFilesEachHoldExactlyOneShare(t *testing.T) {
@@ -353,7 +383,10 @@ func TestVaultModeWritesSharesOnlyToVault(t *testing.T) {
 			t.Fatal("LoadFromVault accepted a wrong token")
 		}
 	}
-	t.Logf("--vault: shares at secret/frost-k8s/signer-1..5, only %s on disk", dealer.MetaFileName)
+	if _, err := prioritykey.LoadFromVault(t.Context(), srv.URL, fv.token, "secret", meta.KID); err != nil {
+		t.Fatalf("priority key LoadFromVault: %v", err)
+	}
+	t.Logf("--vault: shares at secret/frost-k8s/signer-1..5, priority key at secret/%s, only %s on disk", prioritykey.VaultPath, dealer.MetaFileName)
 }
 
 func itoa(i int) string { return string(rune('0' + i)) }

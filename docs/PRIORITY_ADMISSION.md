@@ -1,14 +1,19 @@
-# Priority-consistent admission for the signers (design, not implemented)
+# Priority-consistent admission for the signers
 
-Status: **DESIGN for review. Nothing here is implemented.** Motivation: the Phase 7C
+Status: **design approved; implemented (NOTES N76), off by default
+(`SIGNER_ADMISSION=n48`); not yet evaluated on AWS (§5).** Implemented: A (priority
+admission), B (quorum-impossible abort, on by default), and the hardening of §4: one client
+certificate per coordinator replica with a per-client fair share, and the 4 s deadline cap.
+Recorded follow-up, **not implemented**: binding p to the signing input, plus a request-ID
+replay cache (§4.3). Priority classes (§2A) are not implemented. Motivation: the Phase 7C
 stress test (NOTES N73, label **stress test**) met the pre-registered rule. At c ≥ 50 goodput
 was 0.50–0.76 × peak, and 32–44 % of computed shares went to requests that failed, because
 each signer sheds on its own.
 
 Reference: H. Zhou, M. Chen, Q. Lin, Y. Wang, X. She, S. Liu, R. Gu, B. C. Ooi, J. Yang,
-"Overload Control for Scaling WeChat Microservices" (DAGOR), ACM SoCC 2018. The DAGOR
-facts used below are from that paper; check each against the PDF before quoting it in a
-paper:
+"Overload Control for Scaling WeChat Microservices" (DAGOR), ACM SoCC 2018. **Every DAGOR
+detail in this document (the list below, the α = 5 % / β = 1 % steps and the queuing-time
+threshold) is from memory, not verified: check it against the PDF before quoting it.**
 - overload is detected by the average queuing time of requests, not CPU;
 - a request's priority is a business priority plus a user priority; the user priority is a
   hash of the user ID, and the hash function changes periodically;
@@ -46,8 +51,8 @@ Three parts. A and B are the proposal; C is an optional extension.
 
 **Priority, the same at every signer without coordination.**
 
-    p(req) = first 16 bits of HMAC-SHA256(K_prio, epoch ‖ request_id)
-    epoch  = floor(unix_time / 3600)
+    p(req) = first 16 bits of HMAC-SHA256(K_prio, "frost-k8s/priority/v1" ‖ 0x00 ‖ uint64be(epoch) ‖ request_id)
+    epoch  = floor(iat / 3600)        iat = the request's own validated iat claim
 
 - `request_id` is the coordinator's 12-byte random ID (`newRequestID`, crypto/rand). It is
   already sent to every signer in the same request and validated (`wire.ValidRequestID`).
@@ -59,9 +64,37 @@ Three parts. A and B are the proposal; C is an optional extension.
     more (§4).
   - Because the coordinator cannot compute p, it cannot choose request IDs with a high
     priority offline.
-- **The epoch** changes the order every hour. As in DAGOR's periodic hash change, no
-  request ID keeps its priority. For a single request this hardly matters, since kubelet
-  retries use new request IDs.
+- **The epoch** changes the order every hour. As in DAGOR's periodic hash change (from
+  memory, verify against the PDF), no request ID keeps its priority.
+- **How signers derive the epoch (addition 1).** It comes from the token's `iat` claim,
+  **not** from the signer's clock. Every signer receives the same signing input, and the
+  policy has already validated `iat` (within ±60 s of the signer clock, N44) before the
+  priority stage runs. So all signers compute the same epoch for a request, whatever their
+  clocks say.
+  - **At an hour boundary**, signers whose clocks straddle it (N50 measured ms-level
+    offsets) would disagree with a local-clock epoch, for requests arriving in that
+    window. With the `iat` epoch they cannot disagree.
+  - A token issued at 10:59:59 is in the 10:00 epoch at every signer, even at a signer
+    whose clock already reads 11:00:00.010.
+  - Test: `TestEpochBoundarySignersAgree`. Two signers with clocks 20 ms apart across
+    11:00:00 make identical decisions for 60 + 60 requests with `iat` just before and at
+    the boundary.
+  - *Cost:* the coordinator chooses `iat` within the ±60 s policy window. Near a boundary
+    it can therefore pick between two epochs, i.e. two priority draws. Without K_prio it
+    cannot tell which draw is higher (§4.2), so this gives no advantage beyond the
+    request-ID re-draw it already has.
+- **No starvation (addition 2).** A refused request is not refused forever.
+  - A refused TokenRequest fails back to kube-apiserver, and the kubelet retries it (7C
+    scale-up: every pod became Ready, N69).
+  - Each retry is a new `Sign` call, so the coordinator draws a new random request_id
+    (`newRequestID` per call). The priority is therefore re-drawn, independently of the
+    previous attempt.
+  - At admitted fraction f, a request is refused k times in a row with probability
+    (1 − f)^k, and admitted after 1/f attempts on average.
+  - Tests: `TestRetryGetsNewRequestID` (5 Sign calls with identical claims reach a signer
+    with 5 distinct request IDs) and `TestRefusedRequestsAreNotStarved` (400 requests at
+    f = 0.3, each retried with a new ID: all admitted; 31 % on the first attempt, mean
+    3.33 attempts, worst 17).
 - **Why not the deadline:** every signer sees the same deadline, so EDF (earliest deadline
   first) would also be consistent. But under overload EDF prefers requests that are about
   to miss their deadline, which DAGOR avoids. The deadline stays a feasibility filter
@@ -115,8 +148,9 @@ smallest level.
   as today, and existing tests keep their meaning. Its cost is one HMAC, far below an RSA
   share.
 - A priority rejection is audited as decision `shed` with reason
-  `priority below admission level`. It returns HTTP 503 kind `overloaded` with the
-  headers `X-Frost-Admission-Level: <L>` and `X-Frost-Priority-Rejected: 1`.
+  `priority below admission level` (fair-share refusals: `over its fair share`). It
+  returns HTTP 503 kind `overloaded` with the header `X-Frost-Admission-Level: <L>`
+  (`TestPriorityRefusalHTTPAndAudit`).
 - N48 is **unchanged** and still runs after the priority check. It remains the guarantee
   that no share starts when it cannot finish before the deadline. Its sheds are now the
   overload signal and should become rare once f has adapted.
@@ -177,32 +211,39 @@ chooses request IDs, payloads within policy, deadlines (the signer accepts 1–6
    probability f. Its share of admitted work equals its share of offered load, the same
    **volume** advantage it has today. Today's FIFO plus independent shedding gives the same
    volume advantage but wastes a third of capacity on top.
-3. **Online probing does not amplify.** It can learn whether a request ID was admitted from
+3. **Online probing does not amplify.** *(Follow-up recorded, not implemented.)* It can learn whether a request ID was admitted from
    the 503 or 200, but every probe uses a rate-limit token, is audited, and consumes the
    probed request_id. Finding a request ID above level L costs 1/f tries on average. So its
    admitted rate stays ≤ f × its sending rate, bounded by the per-signer rate limit.
    Replaying one known-good request_id with other payloads is possible, because p does not
    cover the payload.
-   - *Proposed hardening:* compute p over request_id ‖ SHA-256(signing input), and keep a
-     per-signer replay cache of request IDs for one deadline (≤ 60 s × 200/s ≤ 12 000
-     entries). A reused request_id is then denied (400).
+   - *Follow-up (not in this implementation):* compute p over request_id ‖ SHA-256(signing
+     input), and keep a per-signer replay cache of request IDs for one deadline (with the
+     4 s cap: ≤ 4 s × 200/s = 800 entries). A reused request_id is then denied (400).
 4. **Deadlines:** a long deadline (up to 60 s) keeps adversarial requests queued longer and
    occupies queue positions (max 64). This exists today.
-   - *Proposed:* cap the accepted deadline at 2 × the coordinator's configured deadline
-     (4 s). The cap is a signer config value.
+   - **Implemented:** the signer clamps the deadline header to `SIGNER_MAX_DEADLINE`
+     (default 4 s = 2 × the coordinator's default deadline; `TestDeadlineHeaderIsCapped`).
 5. **What bounds it overall.**
    - (i) The per-signer rate limit, shared today by all clients.
-   - (ii) Proposed: **per-replica client certificates.** Today all 3 replicas present one
-     client certificate (SAN `coordinator`, `scripts/gen-certs.sh`), so a signer cannot tell
-     them apart.
-   - (iii) With per-replica identities, a **per-client fair share** of the admitted fraction:
-     each client's admitted rate is capped at 1/k of the signer's recent admitted rate
-     under overload. This bounds one compromised replica to ≈ 1/3 of the capacity.
+   - (ii) **Implemented: per-replica client certificates.**
+     - `scripts/gen-certs.sh` issues `coordinator-1..K`, and each replica mounts only its own
+       (all compose files, `deploy.sh`). `COORDINATOR_ID` selects the identity.
+     - Signers accept exactly one DNS SAN of the canonical form `coordinator-<1..64>`. The
+       old shared `coordinator` is refused, as are `coordinator-0`, `-01` and `-65`
+       (`TestTLSRejectsClientWithoutCoordinatorSAN`).
+   - (iii) **Implemented: per-client fair share.**
+     - Rule: while f < 1 and more than one client was active in the previous window, a
+       client is refused once it has had ⌈1.25 × (previous window's admissions / clients)⌉
+       admissions in the current window. The 1.25 slack keeps honest, equally loaded
+       replicas from hitting the cap (`TestFairShareCapsAFloodingClient`).
+     - Bound: one compromised replica out of k gets ≤ 1.25/k of a window's admissions,
+       ≈ 42 % for k = 3, instead of its volume share.
    - Without (ii)–(iii), the bound is volume share under the global rate limit, as today.
 6. **Leak of K_prio.** The attacker could then grind request IDs offline, and its requests
    would always be admitted. Honest requests would be admitted at a rate reduced by its
    volume share, up to starvation if its volume fills the capacity.
-   - The bound is again the rate limit and, with (iii), the fair share.
+   - The bound is again the rate limit and the fair share (iii).
    - Response: rotate K_prio with a new ceremony artefact; it needs no re-dealing of shares.
    - Safety is unaffected: priorities never change *what* is signed, only *when*.
 7. **No new signing path.** A priority check can only refuse. It never admits a request that

@@ -84,12 +84,30 @@ func signerCPUSection(runs, cfgs []string, byCfg map[string][]cell, med func(str
 }
 
 type stressRun struct {
-	requests, failed, computed, wastedFailed, surplus, cancelled int
-	shed                                                         map[int]int
+	requests, failed, computed, wastedFailed, surplus, cancelled, denied int
+	shed                                                                 map[int]int
+	shedKind                                                             map[string]int // priority, fair_share, queue_full, no_slot, too_late, other (N76)
+}
+
+// shedKind classifies a signer audit "shed" reason.
+func shedKind(reason string) string {
+	switch {
+	case strings.Contains(reason, "priority below admission level"):
+		return "priority"
+	case strings.Contains(reason, "fair share"):
+		return "fair_share"
+	case strings.Contains(reason, "queue full"):
+		return "queue_full"
+	case strings.Contains(reason, "no slot before the latest start time"), strings.Contains(reason, "cannot finish in time"):
+		return "no_slot"
+	case strings.Contains(reason, "slot freed too late"):
+		return "too_late"
+	}
+	return "other"
 }
 
 func stressOne(base string) (stressRun, bool) {
-	r := stressRun{shed: map[int]int{}}
+	r := stressRun{shed: map[int]int{}, shedKind: map[string]int{}}
 	// coordinator view: request -> failed? and combined count
 	failed := map[string]bool{}
 	combined := map[string]int{}
@@ -124,6 +142,7 @@ func stressOne(base string) (stressRun, bool) {
 				Signer   int    `json:"signer_id"`
 				Request  string `json:"request_id"`
 				Decision string `json:"decision"`
+				Reason   string `json:"reason"`
 			}
 			if json.Unmarshal([]byte(l), &e) != nil {
 				continue
@@ -134,6 +153,9 @@ func stressOne(base string) (stressRun, bool) {
 				allowed[e.Request]++
 			case "shed":
 				r.shed[e.Signer]++
+				r.shedKind[shedKind(e.Reason)]++
+			case "deny":
+				r.denied++
 			case "cancelled":
 				r.cancelled++
 			}
@@ -163,6 +185,9 @@ func stressSection(runs, cfgs []string, med func(string, func(c cell) float64) f
 	}
 	var rows []row
 	for _, l := range cfgs {
+		if strings.Contains(l, "@") { // N76 evaluation variants: evalStressSection
+			continue
+		}
 		var perTok, wasted, surplus, shedTot []float64
 		shedPer := map[int][]float64{}
 		n := 0

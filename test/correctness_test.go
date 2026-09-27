@@ -127,7 +127,10 @@ func TestBelowThresholdFails(t *testing.T) {
 		c.Servers[id].Close()
 	}
 	var logs testutil.LogBuffer
-	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, logs.Logger()))
+	// Without the quorum-impossible abort (N76) the coordinator waits for all
+	// 5 answers, so the log records exactly the 2 reachable signers' shares.
+	// TestBelowThresholdFailsWithAbort covers the default.
+	client := serveGRPC(t, c, c.NewCoordinatorWith(t, coordinator.Config{Strategy: coordinator.Strict, Deadline: 2 * time.Second, Logger: logs.Logger(), NoQuorumAbort: true}))
 	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
 	if err == nil || resp != nil {
 		t.Fatalf("resp=%v err=%v", resp, err)
@@ -147,6 +150,35 @@ func TestBelowThresholdFails(t *testing.T) {
 		}
 	}
 	t.Logf("caller: %v; coordinator log: valid_shares=2, signers 3,4,5 named", err)
+}
+
+// T3 (I5) with the quorum-impossible abort (N76, the default): the request
+// fails as soon as 3 signers are known unreachable, the caller sees the same
+// generic error, and the log names each failed signer and marks the abort.
+func TestBelowThresholdFailsWithAbort(t *testing.T) {
+	c := testutil.StartCluster(t, testutil.ClusterOpts{})
+	for _, id := range []int{3, 4, 5} {
+		c.Servers[id].Close()
+	}
+	var logs testutil.LogBuffer
+	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, logs.Logger()))
+	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
+	if err == nil || resp != nil {
+		t.Fatalf("resp=%v err=%v", resp, err)
+	}
+	if st, _ := status.FromError(err); st.Code() != codes.Unavailable || st.Message() != grpcserver.ErrMsgThreshold {
+		t.Fatalf("caller error %v, want Unavailable %q", err, grpcserver.ErrMsgThreshold)
+	}
+	l := logs.String()
+	if !strings.Contains(l, `"msg":"sign failed"`) || !strings.Contains(l, `"quorum_impossible":true`) {
+		t.Fatalf("coordinator log lacks the abort:\n%s", l)
+	}
+	for _, id := range []string{`"signer_id":3`, `"signer_id":4`, `"signer_id":5`} {
+		if !strings.Contains(l, id) {
+			t.Fatalf("coordinator log does not name failed %s:\n%s", id, l)
+		}
+	}
+	t.Logf("caller: %v; coordinator log: quorum_impossible, signers 3,4,5 named", err)
 }
 
 // T4 (I5): an attacker holding 2 real shares cannot forge, whatever they do

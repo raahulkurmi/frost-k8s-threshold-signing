@@ -29,6 +29,7 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 	fx := testutil.Key(t)
 	pki := testutil.NewPKI(t)
 	coord := pki.Coordinator(t)
+	coord2 := pki.CoordinatorN(t, 2)
 	grpcCert := pki.CoordinatorGRPC(t)
 	s1 := pki.Signer(t, 1)
 	work := t.TempDir()
@@ -37,6 +38,7 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 			"META_FILE":        fx.MetaPath,
 			"POLICY_FILE":      testutil.PolicyFile(t, t.TempDir(), testutil.PolicyConfig()),
 			"SIGNER_ENDPOINTS": "1=https://127.0.0.1:1,2=https://127.0.0.1:2,3=https://127.0.0.1:3",
+			"COORDINATOR_ID":   "1",
 			"TLS_CERT":         coord.Cert,
 			"TLS_KEY":          coord.Key,
 			"TLS_CA":           pki.CA,
@@ -71,7 +73,11 @@ func TestCoordinatorFailsClosed(t *testing.T) {
 		"missing TLS_CERT":            {func(e map[string]string) { delete(e, "TLS_CERT") }, "TLS_CERT is not set"},
 		"cert file absent":            {func(e map[string]string) { e["TLS_CERT"] = filepath.Join(work, "x.crt") }, "no such file"},
 		"missing TLS_CA":              {func(e map[string]string) { delete(e, "TLS_CA") }, "TLS_CA is not set"},
-		"signer cert as client cert":  {func(e map[string]string) { e["TLS_CERT"], e["TLS_KEY"] = s1.Cert, s1.Key }, "not exactly DNS:coordinator"},
+		"signer cert as client cert":  {func(e map[string]string) { e["TLS_CERT"], e["TLS_KEY"] = s1.Cert, s1.Key }, "not exactly DNS:coordinator-1"},
+		"another replica's cert":      {func(e map[string]string) { e["TLS_CERT"], e["TLS_KEY"] = coord2.Cert, coord2.Key }, "not exactly DNS:coordinator-1"},
+		"missing COORDINATOR_ID":      {func(e map[string]string) { delete(e, "COORDINATOR_ID") }, "COORDINATOR_ID is not set"},
+		"COORDINATOR_ID 0":            {func(e map[string]string) { e["COORDINATOR_ID"] = "0" }, "must be an integer in [1,64]"},
+		"bad QUORUM_ABORT":            {func(e map[string]string) { e["QUORUM_ABORT"] = "maybe" }, "QUORUM_ABORT"},
 		"no endpoints":                {func(e map[string]string) { delete(e, "SIGNER_ENDPOINTS") }, "SIGNER_ENDPOINTS is not set"},
 		"plain http endpoint":         {func(e map[string]string) { e["SIGNER_ENDPOINTS"] = "1=http://a,2=https://b,3=https://c" }, "must be https://"},
 		"fewer than t endpoints":      {func(e map[string]string) { e["SIGNER_ENDPOINTS"] = "1=https://a,2=https://b" }, "threshold is 3"},

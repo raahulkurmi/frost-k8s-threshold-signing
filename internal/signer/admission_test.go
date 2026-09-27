@@ -87,6 +87,38 @@ func TestCancelledRequestComputesNoShare(t *testing.T) {
 	}
 }
 
+// N76: a request queued for a slot whose caller cancels it (the coordinator's
+// quorum-impossible abort) leaves the queue at once and computes no share.
+func TestQueuedRequestCancelledByCallerComputesNoShare(t *testing.T) {
+	srv, in, ap := newAdmission(t, 1, 4)
+	release, done := holdSlot(t, srv, in)
+	ctx, cancel := context.WithCancel(context.Background())
+	res := make(chan *Rejection, 1)
+	go func() {
+		_, rej := srv.SignShare(ctx, wire.SignShareRequest{SigningInput: in, RequestID: "aborted"}, "coordinator-1")
+		res <- rej
+	}()
+	for srv.Waiting() == 0 {
+		time.Sleep(time.Millisecond)
+	}
+	cancel()
+	rej := <-res
+	if rej == nil || rej.Kind != "cancelled" {
+		t.Fatalf("rej = %v, want cancelled", rej)
+	}
+	release()
+	if r := <-done; r != nil {
+		t.Fatal(r)
+	}
+	if n := srv.RSAOps(); n != 1 {
+		t.Fatalf("RSA ops %d, want 1 (the holder only)", n)
+	}
+	b, _ := os.ReadFile(ap)
+	if !strings.Contains(string(b), `"request_id":"aborted","decision":"cancelled"`) && !strings.Contains(string(b), `"decision":"cancelled"`) {
+		t.Fatalf("audit log lacks the cancelled decision for the aborted request")
+	}
+}
+
 // N46a (kept): a share computed after the caller has gone is not released.
 func TestCancelledDuringSigningDiscardsShare(t *testing.T) {
 	srv, in, _ := newAdmission(t, 1, 0)
@@ -251,5 +283,28 @@ func TestAdmissionDefaults(t *testing.T) {
 	}
 	if _, err := New(Config{MaxConcurrent: -1}); err == nil {
 		t.Fatal("negative MaxConcurrent accepted")
+	}
+}
+
+// N76 instrumentation: the queue sampler logs waiting and busy slots.
+func TestSampleQueueLogs(t *testing.T) {
+	fx := testutil.Key(t)
+	pol, _ := policy.New(testutil.PolicyConfig())
+	al, err := audit.Open(filepath.Join(t.TempDir(), "audit.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { al.Close() })
+	var lb testutil.LogBuffer
+	srv, err := New(Config{ID: 2, Meta: fx.Meta, Share: fx.Shares[1], Policy: pol, Audit: al, MaxConcurrent: 1, Logger: lb.Logger()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Millisecond)
+	defer cancel()
+	srv.SampleQueue(ctx, 20*time.Millisecond)
+	out := lb.String()
+	if n := strings.Count(out, `"msg":"queue sample"`); n < 3 || !strings.Contains(out, `"waiting":0`) || !strings.Contains(out, `"busy_slots":0`) {
+		t.Fatalf("%d queue samples; log: %s", n, out)
 	}
 }

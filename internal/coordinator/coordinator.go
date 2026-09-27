@@ -99,6 +99,11 @@ type Config struct {
 	HedgeDelay time.Duration
 	// Breaker bounds the extra work of misbehaving signers (optimistic only).
 	Breaker BreakerConfig
+	// NoQuorumAbort disables the quorum-impossible abort (NOTES N76): by
+	// default a request fails as soon as fewer than t signers can still
+	// answer, cancelling the outstanding signer requests so queued signers
+	// drop them before computing. Only the benchmark's "before" variant sets it.
+	NoQuorumAbort bool
 }
 
 // Coordinator is safe for concurrent use.
@@ -114,8 +119,9 @@ type Coordinator struct {
 	rr        atomic.Uint64 // rotates the hedged initial subset
 	brk       *breaker
 	now       func() time.Time // time source for the breaker (tests)
+	noAbort   bool
 
-	shareVerifications, failedCombines, suspectMarks, fallbackActivations atomic.Int64
+	shareVerifications, failedCombines, suspectMarks, fallbackActivations, quorumAborts atomic.Int64
 }
 
 // Stats are cumulative counters, for tests and operators.
@@ -124,6 +130,7 @@ type Stats struct {
 	FailedCombines      int64 // optimistic combines whose final signature did not verify
 	SuspectMarks        int64 // times a signer was newly marked suspect
 	FallbackActivations int64 // times the breaker switched to strict
+	QuorumAborts        int64 // requests failed early because t shares had become impossible (N76)
 	Suspects            []int // current suspects
 	StrictFallbackUntil time.Time
 }
@@ -133,7 +140,7 @@ func (c *Coordinator) Stats() Stats {
 	ids, until := c.brk.snapshot(c.now())
 	return Stats{ShareVerifications: c.shareVerifications.Load(), FailedCombines: c.failedCombines.Load(),
 		SuspectMarks: c.suspectMarks.Load(), FallbackActivations: c.fallbackActivations.Load(),
-		Suspects: ids, StrictFallbackUntil: until}
+		QuorumAborts: c.quorumAborts.Load(), Suspects: ids, StrictFallbackUntil: until}
 }
 
 // Arrival is timing information about one Sign request, recorded before the
@@ -226,7 +233,7 @@ func New(cfg Config) (*Coordinator, error) {
 		return nil, err
 	}
 	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr,
-		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now}, nil
+		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now, noAbort: cfg.NoQuorumAbort}, nil
 }
 
 // BreakerConfig returns the effective breaker configuration (defaults applied).
@@ -455,9 +462,29 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 		return s, ids, err
 	}
 
+	// N76: once fewer than t configured signers can still answer (distinct
+	// signers failed > n - t), no token is possible: stop waiting. Returning
+	// cancels the outstanding signer requests (defer cancel), and a signer that
+	// has not started RSA drops a cancelled request without computing (N46/N48).
+	impossible := func() bool {
+		if c.noAbort {
+			return false
+		}
+		bad := map[int]bool{}
+		for _, f := range failures {
+			bad[f.SignerID] = true
+		}
+		return len(c.endpoints)-len(bad) < t
+	}
+	quorumImpossible := false
 	received := 0
 collect:
 	for received < launched || launched < len(order) {
+		if impossible() {
+			quorumImpossible = true
+			c.quorumAborts.Add(1)
+			break collect
+		}
 		if received == launched { // everything contacted has answered without quorum
 			hedgeAll("all contacted signers answered")
 		}
@@ -546,7 +573,8 @@ collect:
 	if sig == nil {
 		terr := &ThresholdError{Valid: len(valid), Needed: t, Failures: failures}
 		c.log.Error("sign failed", append([]any{"request_id", reqID, "strategy", c.strategy, "strategy_effective", strategy, "fanout", c.fanout, "signers_contacted", len(contacted),
-			"valid_shares", len(valid), "failures", failures, "share_verifications", nVerify.Load(), "latency_ms", ms(time.Since(start))}, timing...)...)
+			"valid_shares", len(valid), "failures", failures, "share_verifications", nVerify.Load(), "quorum_impossible", quorumImpossible,
+			"latency_ms", ms(time.Since(start))}, timing...)...)
 		return nil, terr
 	}
 	// Fail closed: the returned signature has passed rsa.VerifyPKCS1v15 in tryJoin.

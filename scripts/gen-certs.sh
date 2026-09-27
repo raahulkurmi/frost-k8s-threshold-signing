@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
-# gen-certs.sh: generate a fresh dev CA and distinct mTLS certs for the
-# coordinator and each signer. Output goes to secrets/ (git- and docker-ignored).
+# gen-certs.sh: generate a fresh dev CA and distinct mTLS certs for each
+# coordinator replica and each signer. Output goes to secrets/ (git- and docker-ignored).
 #
 #   secrets/ca/ca.key              CA private key. Never mounted, never copied into an image.
 #   secrets/ca/ca.crt              CA certificate
 #   secrets/tls/ca.crt             public copy of the CA cert for mounting
-#   secrets/tls/coordinator/       tls.crt + tls.key, SAN DNS:coordinator, EKU clientAuth (coordinator -> signers)
+#   secrets/tls/coordinator-<k>/   tls.crt + tls.key, SAN DNS:coordinator-<k>, EKU clientAuth (replica k -> signers;
+#                                  one per replica so signers can tell replicas apart, NOTES N76)
 #   secrets/tls/coordinator-grpc/  tls.crt + tls.key, SAN DNS:coordinator-grpc, EKU serverAuth (coordinator gRPC listener)
 #   secrets/tls/lb/                tls.crt + tls.key, SAN DNS:lb, EKU clientAuth (nginx -> coordinators)
 #   secrets/tls/signer-<i>/        tls.crt + tls.key, SAN DNS:signer-<i>, EKU serverAuth
 #
-# Usage: scripts/gen-certs.sh [--force] [--signers N] [--out DIR]
+# Usage: scripts/gen-certs.sh [--force] [--signers N] [--coordinators K] [--out DIR]
 set -euo pipefail
 
 OUT="secrets"
 SIGNERS=5
+COORDINATORS=3
 FORCE=0
 DAYS=365
 
@@ -22,6 +24,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --force) FORCE=1; shift ;;
     --signers) SIGNERS="$2"; shift 2 ;;
+    --coordinators) COORDINATORS="$2"; shift 2 ;;
     --out) OUT="$2"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -82,7 +85,10 @@ EOF
   chmod 644 "$dir/tls.crt"
 }
 
-issue coordinator clientAuth
+[[ "$COORDINATORS" =~ ^[1-9][0-9]?$ && "$COORDINATORS" -le 64 ]] || { echo "ERROR: --coordinators must be 1..64" >&2; exit 2; }
+for k in $(seq 1 "$COORDINATORS"); do
+  issue "coordinator-$k" clientAuth
+done
 issue coordinator-grpc serverAuth
 issue lb clientAuth
 for i in $(seq 1 "$SIGNERS"); do

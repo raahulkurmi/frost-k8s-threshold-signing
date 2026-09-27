@@ -46,6 +46,16 @@ type Config struct {
 	// DefaultWait is how long a request WITHOUT a deadline header may wait
 	// for a slot (N48). 0 means 1s.
 	DefaultWait time.Duration
+	// MaxDeadline caps the caller's deadline header (N76 hardening: a
+	// compromised coordinator cannot park requests in the queue for up to
+	// 60 s). 0 means 4s (2 x the coordinator's default deadline).
+	MaxDeadline time.Duration
+	// PriorityKey enables priority-consistent admission (N76) when non-nil:
+	// K_prio, identical at every signer (internal/prioritykey). nil keeps
+	// N48 admission only.
+	PriorityKey []byte
+	// Admission tunes priority admission (defaults when zero).
+	Admission AdmissionConfig
 }
 
 // Server handles POST /v1/sign-share and GET /healthz.
@@ -56,6 +66,7 @@ type Server struct {
 	rsaOps  atomic.Int64
 	waiting atomic.Int64
 	rsaEWMA atomic.Int64 // nanoseconds; EWMA of RSA share computation time
+	prio    *admission   // nil: N48 only
 }
 
 // initialRSAEstimate is the RSA-time estimate before any share has been
@@ -103,6 +114,15 @@ func New(cfg Config) (*Server, error) {
 	if cfg.DefaultWait == 0 {
 		cfg.DefaultWait = time.Second
 	}
+	if cfg.MaxDeadline < 0 {
+		return nil, errors.New("signer: MaxDeadline must be >= 0")
+	}
+	if cfg.MaxDeadline == 0 {
+		cfg.MaxDeadline = 4 * time.Second
+	}
+	if cfg.PriorityKey != nil && len(cfg.PriorityKey) < 32 {
+		return nil, errors.New("signer: PriorityKey must be at least 32 bytes")
+	}
 	r := cfg.Policy.Config().RateLimit
 	srv := &Server{
 		cfg:     cfg,
@@ -110,6 +130,9 @@ func New(cfg Config) (*Server, error) {
 		slots:   make(chan struct{}, cfg.MaxConcurrent),
 	}
 	srv.rsaEWMA.Store(int64(initialRSAEstimate))
+	if cfg.PriorityKey != nil {
+		srv.prio = newAdmission(cfg.ID, cfg.PriorityKey, cfg.Admission, cfg.Logger)
+	}
 	return srv, nil
 }
 
@@ -131,9 +154,24 @@ func (s *Server) observeRSA(d time.Duration) {
 // could still finish in time (remaining deadline − RSA estimate > 0) and the
 // queue is below MaxQueue. It returns a release func, or a Rejection.
 func (s *Server) admit(ctx context.Context) (func(), *Rejection) {
+	release, rej := s.admitN48(ctx)
+	if s.prio != nil && rej != nil && rej.Kind == "overloaded" {
+		s.prio.observeShed() // N76: an N48 shed marks the window overloaded
+	}
+	return release, rej
+}
+
+func (s *Server) admitN48(ctx context.Context) (func(), *Rejection) {
 	release := func() { <-s.slots }
+	waitStart := time.Now()
+	observe := func() {
+		if s.prio != nil {
+			s.prio.observeWait(time.Since(waitStart))
+		}
+	}
 	select {
 	case s.slots <- struct{}{}:
+		observe()
 		return release, nil
 	default:
 	}
@@ -161,6 +199,7 @@ func (s *Server) admit(ctx context.Context) (func(), *Rejection) {
 			<-s.slots
 			return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d: slot freed too late for the deadline", s.cfg.ID)
 		}
+		observe()
 		return release, nil
 	case <-t.C:
 		return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d: no slot before the latest start time", s.cfg.ID)
@@ -172,11 +211,30 @@ func (s *Server) admit(ctx context.Context) (func(), *Rejection) {
 // MaxQueue returns the queue bound in effect.
 func (s *Server) MaxQueue() int { return s.cfg.MaxQueue }
 
+// SampleQueue logs the queue and slot occupancy every interval until ctx ends
+// (NOTES N75/N76 open question: were capped signers idle while shedding?).
+func (s *Server) SampleQueue(ctx context.Context, every time.Duration) {
+	t := time.NewTicker(every)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			s.cfg.Logger.Info("queue sample", "signer_id", s.cfg.ID, "waiting", s.waiting.Load(), "busy_slots", len(s.slots),
+				"max_concurrent", s.cfg.MaxConcurrent, "rsa_estimate_ms", float64(s.RSAEstimate().Microseconds())/1000)
+		}
+	}
+}
+
 // Waiting returns the number of requests queued for a slot.
 func (s *Server) Waiting() int64 { return s.waiting.Load() }
 
 // RSAOps returns how many RSA share computations this signer has performed.
 func (s *Server) RSAOps() int64 { return s.rsaOps.Load() }
+
+// MaxDeadline returns the cap on the caller's deadline header (N76).
+func (s *Server) MaxDeadline() time.Duration { return s.cfg.MaxDeadline }
 
 // MaxConcurrent returns the admission-control bound in effect.
 func (s *Server) MaxConcurrent() int { return s.cfg.MaxConcurrent }
@@ -197,6 +255,7 @@ type Rejection struct {
 	Status int
 	Kind   string // wire.ErrorResponse.Error
 	Reason string
+	Header map[string]string // extra response headers (priority refusals, N76)
 }
 
 func (r *Rejection) Error() string { return r.Kind + ": " + r.Reason }
@@ -230,8 +289,10 @@ func (s *Server) handleSignShare(w http.ResponseWriter, r *http.Request) {
 			if perr != nil || ms <= 0 || ms > 60000 {
 				rej = reject(http.StatusBadRequest, "bad_request", "%s must be 1..60000 ms", wire.DeadlineHeader)
 			} else {
+				// N76: never wait longer than MaxDeadline, whatever the caller asks.
+				d := min(time.Duration(ms)*time.Millisecond, s.cfg.MaxDeadline)
 				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, time.Duration(ms)*time.Millisecond)
+				ctx, cancel = context.WithTimeout(ctx, d)
 				defer cancel()
 			}
 		}
@@ -241,6 +302,9 @@ func (s *Server) handleSignShare(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if rej != nil {
+		for k, v := range rej.Header {
+			w.Header().Set(k, v)
+		}
 		w.WriteHeader(rej.Status)
 		_ = json.NewEncoder(w).Encode(wire.ErrorResponse{Error: rej.Kind, Reason: rej.Reason, RequestID: req.RequestID})
 		return
@@ -306,6 +370,26 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
 		_ = s.cfg.Audit.Write(entry)
 		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")
 	}
+	// N76: priority-consistent admission, before the N48 queue.
+	if s.prio != nil {
+		budget := s.cfg.DefaultWait + s.RSAEstimate()
+		if dl, ok := ctx.Deadline(); ok {
+			budget = time.Until(dl)
+		}
+		p := Priority(s.cfg.PriorityKey, decision.IssuedAt, req.RequestID)
+		if d := s.prio.decide(time.Now(), p, client, budget); !d.ok {
+			var prej *Rejection
+			if d.kind == "fair_share" {
+				prej = reject(http.StatusServiceUnavailable, "overloaded", "signer %d: client %s over its fair share (%d admissions per window, admitted fraction %.3f)", s.cfg.ID, client, d.cap, d.fraction)
+			} else {
+				prej = reject(http.StatusServiceUnavailable, "overloaded", "signer %d: priority below admission level %d (admitted fraction %.3f)", s.cfg.ID, d.level, d.fraction)
+			}
+			prej.Header = map[string]string{wire.AdmissionLevelHeader: strconv.Itoa(d.level)}
+			entry.Decision, entry.Reason = "shed", prej.Error()
+			_ = s.cfg.Audit.Write(entry)
+			return nil, prej
+		}
+	}
 	// N48: deadline-aware bounded admission.
 	release, arej := s.admit(ctx)
 	if arej != nil {
@@ -333,9 +417,11 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
 		testHookBeforeRSA()
 	}
 	s.rsaOps.Add(1)
+	est := s.RSAEstimate()
 	rsaStart := time.Now()
 	ss, err := s.cfg.Share.Sign(doc, crypto.SHA256, s.cfg.Meta.Tcrsa)
-	s.observeRSA(time.Since(rsaStart))
+	rsaTime := time.Since(rsaStart)
+	s.observeRSA(rsaTime)
 	if err != nil {
 		return nil, reject(http.StatusInternalServerError, "internal", "sign: %v", err)
 	}
@@ -346,6 +432,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
 	}
 	ss = tamper(s.cfg.ID, ss)
 	s.cfg.Logger.Info("sign-share", "request_id", req.RequestID, "sub", decision.Subject,
-		"client", client, "latency_ms", float64(time.Since(start).Microseconds())/1000)
+		"client", client, "latency_ms", float64(time.Since(start).Microseconds())/1000,
+		"rsa_ms", float64(rsaTime.Microseconds())/1000, "rsa_estimate_ms", float64(est.Microseconds())/1000)
 	return &wire.SignShareResponse{SignerID: s.cfg.ID, Share: wire.FromTcrsa(ss), RequestID: req.RequestID}, nil
 }

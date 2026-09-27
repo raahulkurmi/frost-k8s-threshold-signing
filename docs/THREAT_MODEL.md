@@ -272,3 +272,14 @@ cluster needs: **not measured**. The only observed rates are the preliminary Lev
 benchmarks (≤ 22 successful req/s at the coordinator), which are far below the limit. A
 flood from a compromised coordinator therefore reaches the admission limit (CPU) before
 the rate limit, and it denies service to legitimate requests too (availability only).
+
+**N76 additions (implemented; evaluation pending).** Each coordinator replica has its
+own client certificate (`coordinator-<k>`, signers accept only that canonical form:
+`TestTLSRejectsClientWithoutCoordinatorSAN`), and the signers cap a caller's deadline at
+4 s (`TestDeadlineHeaderIsCapped`). With `SIGNER_ADMISSION=priority` a signer admits by
+a priority keyed with K_prio, which the coordinator does not hold, and under overload
+caps each replica at a fair share of the admissions (`TestFairShareCapsAFloodingClient`).
+A compromised replica then keeps only its volume share and cannot pick high-priority
+requests (docs/PRIORITY_ADMISSION.md §4). **Not bounded:** a compromised replica can
+still flood up to the per-signer rate limit, which all callers share; binding the
+priority to the signing input with a request-ID replay cache is a recorded follow-up.

@@ -1264,3 +1264,70 @@ anchor-drift table (N67) was not needed. 7A and 7B keep their labels and restric
     log `RSAEstimate` and `cpu.stat` throttling;
   - (b) bursty arrivals emptying the queue: sample queue length and slot occupancy at 10 Hz;
   - (c) window artefact from warm-up and drain: compute CPU over the measured window only.
+
+### N76. Priority-consistent admission implemented (B, A, hardening); evaluation pending
+Design: `docs/PRIORITY_ADMISSION.md`, approved with three additions: the epoch rule, no
+starvation, and the hardening in scope. Every DAGOR detail cited is **from memory, to be
+verified against the PDF** (Zhou et al., SoCC 2018). Nothing here has been measured on
+AWS yet.
+- **B, quorum-impossible abort** (coordinator, on by default; `QUORUM_ABORT=off` is the
+  benchmark's "before" variant).
+  - Once more than n − t distinct signers have failed, the request fails at once; the
+    outstanding signer requests are cancelled and queued signers drop them before RSA.
+  - `TestQuorumImpossibleAbortsEarly`: fails after 2 ms instead of 1.5 s, and both slow
+    signers see the cancellation.
+  - `TestQueuedRequestCancelledByCallerComputesNoShare`.
+  - `TestQuorumAbortReducesWastedSharesSimulation` (LOCAL SIMULATION: 40 % independent
+    refusals, 300 ms queue; not a measurement): 37 shares wasted without the abort, 0
+    with it.
+  - Four existing tests asserted `Valid == 2`, which holds only if the coordinator waits
+    for every signer: `TestThreeMaliciousFails`, `TestBelowThresholdSigners`,
+    `TestHedgedBelowThresholdFails`, `TestBelowThresholdFails`. They now run their
+    original assertions with `NoQuorumAbort: true`, unchanged, and each has an added
+    abort-mode case (`TestBelowThresholdFailsWithAbort` for T3).
+- **A, priority admission** (signer, `SIGNER_ADMISSION=priority`; default n48).
+  - p = HMAC-SHA256(K_prio, domain ‖ epoch ‖ request_id)[:2], with epoch = ⌊iat / 3600⌋.
+  - The epoch comes from the token's own validated `iat`, not the signer's clock, so
+    signers straddling an hour boundary agree (`TestEpochBoundarySignersAgree`: clocks
+    20 ms apart across 11:00:00, 120/120 identical decisions).
+  - Adaptive admitted fraction per 250 ms / 200-arrival window: −5 % when overloaded
+    (N48 shed, or mean wait > 0.5 × median deadline budget), +1 % otherwise; floor 0.05.
+    The check runs after policy and before the N48 queue.
+  - Tests: `TestNestedAdmissionSetsAcrossSigners` (subsets nested; ≥ 3 shares ⇔ the 3rd
+    most lenient signer admits), `TestAdmissionLevelAdapts` (650 ms waits against a 2 s
+    budget are not overload, as at uncapped 7C c=50), `TestPriorityRefusalHTTPAndAudit`
+    (503 overloaded, `X-Frost-Admission-Level`, audit `shed`, policy denial still first),
+    and `TestPriorityRefusalNeverTripsBreaker` (2 or 3 refusing signers: 0 suspects,
+    0 fallbacks).
+  - No starvation: each retry is a new Sign call with a new request_id, hence a fresh
+    priority (`TestRetryGetsNewRequestID`; `TestRefusedRequestsAreNotStarved`: f = 0.3,
+    400 of 400 admitted, mean 3.33 attempts, worst 17).
+  - K_prio: the dealer writes `priority.key` (0600, bound to the kid; in Vault mode
+    `frost-k8s/priority-key`); `internal/prioritykey`.
+  - Guards: T12 forbids the package and path in the coordinator's dependency graph; T11
+    and check-images flag the file and its field.
+  - Distribution: every signer gets the key (`deploy.sh`, `setup-signer-host.sh`,
+    compose), never the coordinator (`deploy.sh` guard).
+- **Hardening (in scope, per the approval).**
+  - Per-replica client certificates: `coordinator-1..3`, each replica mounts only its
+    own, `COORDINATOR_ID` required. Signers accept only the canonical `coordinator-<1..64>`;
+    the shared `coordinator` is refused.
+  - Per-client fair share under overload: ⌈1.25 × previous window's admissions / clients⌉
+    (`TestFairShareCapsAFloodingClient`).
+  - Deadline header capped at `SIGNER_MAX_DEADLINE` = 4 s (`TestDeadlineHeaderIsCapped`).
+  - **Follow-up, not implemented:** bind p to SHA-256(signing input) and add a request-ID
+    replay cache. Priority classes are also not implemented.
+- **Instrumentation for N75's open question** (signer CPU below the quota):
+  - sign-share lines carry `rsa_ms` and `rsa_estimate_ms`;
+  - optional `SIGNER_QUEUE_SAMPLE` logs waiting and busy slots;
+  - the 7C driver samples each signer's CPUUsageNSec and cgroup `throttled_usec` at 1 Hz
+    and keeps the signer journal per configuration;
+  - the summarizer reports CPU over the measured window only, throttled %, RSA time and
+    estimate, and queue idle %.
+- **Evaluation tooling** (`benchmark/k8s7c/run.sh eval-stress | eval-noregress | eval-slots`):
+  - Systems are `<T system>@<variant>` (n48, b, ab, slots<k>).
+  - Every switch verifies each coordinator's `coordinator_id` and `quorum_abort`, and each
+    signer's `admission` and `max_concurrent` (`deploy/aws/7c/signer-config.sh`).
+  - The summarizer applies the §5 rules as written (`TestEvalSection`).
+  - `signer-config.sh` and `signer-sampler.sh` were exercised against real systemd, with a
+    dummy unit in the tk8s VM (unit removed afterwards).

@@ -7,7 +7,8 @@
 #
 # Usage: setup-signer-host.sh STAGE COORD_IP ADMIN_IP HOST_IP ID:PORT [ID:PORT ...]
 #   STAGE     directory holding frost-signer (binary), common/{public-meta.json,policy.json,ca.crt}
-#             and signer-<id>/{share.json,tls.crt,tls.key} for exactly the listed ids
+#             and signer-<id>/{share.json,priority.key,tls.crt,tls.key} for exactly the listed ids
+#             (priority.key: the signers' shared admission-priority key, N76)
 #   COORD_IP  the only address allowed to reach the signer ports (coordinator host)
 #   ADMIN_IP  the only address allowed to SSH (operator machine), or "any": SSH
 #             source restriction left to the cloud security group (Level 2 on AWS,
@@ -52,7 +53,7 @@ install -o root -g root -m 0755 "$STAGE/frost-signer" /usr/local/bin/frost-signe
 for id in "${!ASSIGNED[@]}"; do
   port="${ASSIGNED[$id]}" u="frost-signer-$id" etc="/etc/frost-signer-$id" var="/var/lib/frost-signer-$id"
   src="$STAGE/signer-$id"
-  for f in share.json tls.crt tls.key; do [[ -s "$src/$f" ]] || { echo "missing $src/$f" >&2; exit 3; }; done
+  for f in share.json priority.key tls.crt tls.key; do [[ -s "$src/$f" ]] || { echo "missing $src/$f" >&2; exit 3; }; done
   id "$u" >/dev/null 2>&1 || useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin "$u"
   systemctl stop "$u.service" 2>/dev/null || true
   rm -rf "$etc" "$var"
@@ -61,6 +62,7 @@ for id in "${!ASSIGNED[@]}"; do
   # Secret material: readable by this signer's user only.
   install -o "$u" -g "$u" -m 0600 "$src/share.json" "$etc/share.json"
   install -o "$u" -g "$u" -m 0600 "$src/tls.key" "$etc/tls.key"
+  install -o "$u" -g "$u" -m 0600 "$src/priority.key" "$etc/priority.key"
   # Public material.
   install -o root -g "$u" -m 0640 "$src/tls.crt" "$etc/tls.crt"
   install -o root -g "$u" -m 0640 "$STAGE/common/public-meta.json" "$etc/public-meta.json"
@@ -76,6 +78,9 @@ TLS_CERT=$etc/tls.crt
 TLS_KEY=$etc/tls.key
 TLS_CA=$etc/ca.crt
 LISTEN_ADDR=$HOST_IP:$port
+# Priority admission (N76) is off by default; to enable, add:
+#   SIGNER_ADMISSION=priority
+#   PRIORITY_KEY_FILE=$etc/priority.key
 EOF
   chown root:"$u" "$etc/env"; chmod 0640 "$etc/env"
   cat > "/etc/systemd/system/$u.service" <<EOF

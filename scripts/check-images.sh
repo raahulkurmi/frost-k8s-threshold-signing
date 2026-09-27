@@ -51,7 +51,7 @@ check_image() {
         echo "  FAIL [$role] layer $(basename "$(dirname "$layer")")/$(basename "$layer"): secret-like path $p"
         FAIL=1
       fi
-      if [[ "$role" == signer && "$p" =~ (^|/)(signer-[0-9]+|coordinator)(/|\.crt$|$) ]]; then
+      if [[ "$role" == signer && "$p" =~ (^|/)(signer-[0-9]+|coordinator(-[0-9]+)?)(/|\.crt$|$) ]]; then
         echo "  FAIL [$role] layer contains identity material $p"
         FAIL=1
       fi
@@ -68,7 +68,7 @@ check_image() {
   names=$(cd "$dir/fs" && find . -xdev -type f | sed 's#^\./##' | grep -E "$NAME_BAD" | grep -Ev "$BASE_OK" || true)
   if [[ -n "$names" ]]; then echo "  FAIL [$role] files: $names"; FAIL=1; fi
   local content
-  content=$(grep -rlaE -- '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----|"si"[[:space:]]*:|"signer_index"[[:space:]]*:|frost-dev-password|frost-dev-token' "$dir/fs" \
+  content=$(grep -rlaE -- '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----|"si"[[:space:]]*:|"signer_index"[[:space:]]*:|"priority_key"[[:space:]]*:|frost-dev-password|frost-dev-token' "$dir/fs" \
     --exclude-dir=proc --exclude-dir=sys 2>/dev/null | sed "s#^$dir/fs/##" || true)
   # The binaries legitimately contain the JSON field NAMES as struct tags;
   # a share VALUE would appear only in a data file. Flag non-binary hits.

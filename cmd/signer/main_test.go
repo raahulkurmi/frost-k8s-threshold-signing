@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"frost-k8s-threshold-signing/internal/keyshare"
+	"frost-k8s-threshold-signing/internal/prioritykey"
 	"frost-k8s-threshold-signing/internal/testutil"
 )
 
@@ -74,6 +75,62 @@ func TestLoadValid(t *testing.T) {
 	}
 	if s.ID != 4 || int(s.Share.Id) != 4 || s.Meta.KID != fx.Meta.KID {
 		t.Fatalf("loaded %+v", s)
+	}
+}
+
+func writePriorityKey(t *testing.T, kid string) string {
+	t.Helper()
+	f, err := prioritykey.Generate(kid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(f)
+	p := filepath.Join(t.TempDir(), prioritykey.FileName)
+	if err := os.WriteFile(p, b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+// N76: SIGNER_ADMISSION=priority loads the shared key; default is n48; the
+// deadline cap defaults to 4s and is configurable.
+func TestLoadAdmissionModes(t *testing.T) {
+	fx := testutil.Key(t)
+	e := baseEnv(t, fx, 2)
+	s, err := load(context.Background(), e.get)
+	if err != nil || s.PrioKey != nil || s.MaxDL != 0 {
+		t.Fatalf("default: err=%v prio=%v maxdl=%v, want n48 and the built-in cap", err, s.PrioKey != nil, s.MaxDL)
+	}
+	e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"], e["SIGNER_MAX_DEADLINE"] = "priority", writePriorityKey(t, fx.Meta.KID), "3s"
+	s, err = load(context.Background(), e.get)
+	if err != nil || len(s.PrioKey) != prioritykey.Size || s.MaxDL.String() != "3s" {
+		t.Fatalf("priority: err=%v key=%d maxdl=%v", err, len(s.PrioKey), s.MaxDL)
+	}
+}
+
+func TestAdmissionConfigFailsClosed(t *testing.T) {
+	fx := testutil.Key(t)
+	cases := map[string]struct {
+		mut  func(envMap)
+		want string
+	}{
+		"priority without key": {func(e envMap) { e["SIGNER_ADMISSION"] = "priority" }, "needs PRIORITY_KEY_FILE"},
+		"priority key for other kid": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"] = "priority", writePriorityKey(t, "other")
+		}, "does not match"},
+		"priority key missing": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"] = "priority", "/nonexistent/priority.key"
+		}, "no such file"},
+		"key file in n48 mode": {func(e envMap) { e["PRIORITY_KEY_FILE"] = writePriorityKey(t, fx.Meta.KID) }, "SIGNER_ADMISSION is not priority"},
+		"unknown mode":         {func(e envMap) { e["SIGNER_ADMISSION"] = "dagor" }, "must be n48 or priority"},
+		"bad max deadline":     {func(e envMap) { e["SIGNER_MAX_DEADLINE"] = "-1s" }, "SIGNER_MAX_DEADLINE"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			e := baseEnv(t, fx, 1)
+			tc.mut(e)
+			mustFail(t, e, tc.want)
+		})
 	}
 }
 

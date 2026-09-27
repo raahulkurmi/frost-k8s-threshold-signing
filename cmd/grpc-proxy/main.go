@@ -9,7 +9,9 @@
 //	META_FILE          public-meta.json
 //	POLICY_FILE        the signers' claims policy (for max_token_expiration_seconds)
 //	SIGNER_ENDPOINTS   "1=https://signer-1:8443,2=https://signer-2:8443,..." (>= t entries)
-//	TLS_CERT, TLS_KEY  coordinator client cert (SAN exactly DNS:coordinator)
+//	COORDINATOR_ID     1..64: this replica's identity; TLS_CERT must be its
+//	                   own cert (SAN exactly DNS:coordinator-<COORDINATOR_ID>, N76)
+//	TLS_CERT, TLS_KEY  this replica's client cert
 //	TLS_CA             CA that issued the signers' server certs
 //	SOCKET_PATH | TCP_ADDR  exactly one listener
 //	GRPC_TLS_CERT, GRPC_TLS_KEY, GRPC_TLS_CA  required with TCP_ADDR: the
@@ -28,6 +30,9 @@
 //	FANOUT             optional, all (default) | hedged: contact t+1 signers
 //	                   first and the rest after HEDGE_DELAY or on a failure (N46)
 //	HEDGE_DELAY        optional, Go duration, default 50ms (hedged only)
+//	QUORUM_ABORT       optional, on (default) | off: fail a request as soon as
+//	                   t shares are impossible and cancel the rest (N76); off
+//	                   only for the benchmark's "before" variant
 package main
 
 import (
@@ -64,6 +69,8 @@ func main() {
 }
 
 type settings struct {
+	CoordID     int
+	NoAbort     bool
 	Meta        *keymeta.Meta
 	MaxToken    int64
 	Endpoints   []coordinator.Endpoint
@@ -144,6 +151,20 @@ func load(getenv func(string) string) (*settings, error) {
 	if err != nil {
 		return nil, err
 	}
+	idStr, err := require(getenv, "COORDINATOR_ID")
+	if err != nil {
+		return nil, err
+	}
+	if s.CoordID, err = strconv.Atoi(idStr); err != nil || s.CoordID < 1 || s.CoordID > tlsconf.MaxCoordinators {
+		return nil, fmt.Errorf("COORDINATOR_ID %q must be an integer in [1,%d]", idStr, tlsconf.MaxCoordinators)
+	}
+	switch v := getenv("QUORUM_ABORT"); v {
+	case "", "on":
+	case "off":
+		s.NoAbort = true
+	default:
+		return nil, fmt.Errorf("QUORUM_ABORT %q must be on or off", v)
+	}
 	cert, err := require(getenv, "TLS_CERT")
 	if err != nil {
 		return nil, err
@@ -162,7 +183,7 @@ func load(getenv func(string) string) (*settings, error) {
 	}
 	sort.Ints(ids)
 	for _, id := range ids {
-		tc, err := tlsconf.CoordinatorClient(cert, key, ca, id)
+		tc, err := tlsconf.CoordinatorClient(cert, key, ca, id, s.CoordID)
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +268,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	coord, err := coordinator.New(coordinator.Config{Meta: s.Meta, Endpoints: s.Endpoints, Deadline: s.Deadline, Strategy: s.Strategy,
-		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Breaker: s.Breaker, Logger: logger})
+		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Breaker: s.Breaker, Logger: logger, NoQuorumAbort: s.NoAbort})
 	if err != nil {
 		return err
 	}
@@ -276,7 +297,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	for i, ep := range s.Endpoints {
 		ids[i] = ep.ID
 	}
-	logger.Info("coordinator ready", "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
+	logger.Info("coordinator ready", "coordinator_id", s.CoordID, "quorum_abort", !s.NoAbort, "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
 		"signers", ids, "listen", lis.Addr().String(), "deadline", s.Deadline.String(), "strategy", s.Strategy,
 		"fanout", s.Fanout, "hedge_delay", s.HedgeDelay.String(),
 		"breaker_suspect_cooldown", bc.SuspectCooldown.String(), "breaker_fallback_after", bc.FallbackAfter,

@@ -19,6 +19,14 @@
 //	               computations (N46)
 //	SIGNER_MAX_QUEUE optional, default 64: requests that may wait for a slot;
 //	               a request waits only while it can still meet its deadline (N48)
+//	SIGNER_MAX_DEADLINE optional, Go duration, default 4s: cap on the caller's
+//	               deadline header (N76)
+//	SIGNER_QUEUE_SAMPLE optional, Go duration, off by default: log queue length
+//	               and busy slots at this interval (benchmark instrumentation, N76)
+//	SIGNER_ADMISSION optional, n48 (default) | priority: priority-consistent
+//	               admission before the N48 queue (N76). priority needs the
+//	               signers' shared key: PRIORITY_KEY_FILE (priority.key from the
+//	               dealer), or with VAULT_ADDR the key at <VAULT_MOUNT>/frost-k8s/priority-key
 package main
 
 import (
@@ -39,6 +47,7 @@ import (
 	"frost-k8s-threshold-signing/internal/keymeta"
 	"frost-k8s-threshold-signing/internal/keyshare"
 	"frost-k8s-threshold-signing/internal/policy"
+	"frost-k8s-threshold-signing/internal/prioritykey"
 	"frost-k8s-threshold-signing/internal/signer"
 	"frost-k8s-threshold-signing/internal/tlsconf"
 )
@@ -61,6 +70,9 @@ type settings struct {
 	Listen   string
 	MaxConc  int
 	MaxQueue int
+	MaxDL    time.Duration
+	QSample  time.Duration
+	PrioKey  []byte
 	Cert     string
 	Key      string
 	CA       string
@@ -145,6 +157,40 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 			return nil, fmt.Errorf("SIGNER_MAX_QUEUE %q must be a positive integer", v)
 		}
 	}
+	if v := getenv("SIGNER_MAX_DEADLINE"); v != "" {
+		if s.MaxDL, err = time.ParseDuration(v); err != nil || s.MaxDL <= 0 {
+			return nil, fmt.Errorf("SIGNER_MAX_DEADLINE %q is not a positive duration", v)
+		}
+	}
+	if v := getenv("SIGNER_QUEUE_SAMPLE"); v != "" {
+		if s.QSample, err = time.ParseDuration(v); err != nil || s.QSample < 10*time.Millisecond {
+			return nil, fmt.Errorf("SIGNER_QUEUE_SAMPLE %q must be a duration >= 10ms", v)
+		}
+	}
+	switch mode := getenv("SIGNER_ADMISSION"); mode {
+	case "", "n48":
+		if getenv("PRIORITY_KEY_FILE") != "" {
+			return nil, errors.New("PRIORITY_KEY_FILE is set but SIGNER_ADMISSION is not priority")
+		}
+	case "priority":
+		if f := getenv("PRIORITY_KEY_FILE"); f != "" {
+			if s.PrioKey, err = prioritykey.Load(f, s.Meta.KID); err != nil {
+				return nil, err
+			}
+		} else if vaultAddr != "" {
+			mount := getenv("VAULT_MOUNT")
+			if mount == "" {
+				mount = "secret"
+			}
+			if s.PrioKey, err = prioritykey.LoadFromVault(ctx, vaultAddr, getenv("VAULT_TOKEN"), mount, s.Meta.KID); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.New("SIGNER_ADMISSION=priority needs PRIORITY_KEY_FILE (or VAULT_ADDR)")
+		}
+	default:
+		return nil, fmt.Errorf("SIGNER_ADMISSION %q must be n48 or priority", mode)
+	}
 	s.Listen = getenv("LISTEN_ADDR")
 	if s.Listen == "" {
 		s.Listen = ":8443"
@@ -166,7 +212,8 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	defer auditLog.Close()
-	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger, MaxConcurrent: s.MaxConc, MaxQueue: s.MaxQueue})
+	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger, MaxConcurrent: s.MaxConc, MaxQueue: s.MaxQueue,
+		MaxDeadline: s.MaxDL, PriorityKey: s.PrioKey})
 	if err != nil {
 		return err
 	}
@@ -180,10 +227,14 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		IdleTimeout:       120 * time.Second,
 	}
 	logger.Info("signer ready", "signer_id", s.ID, "kid", s.Meta.KID, "threshold", s.Meta.Threshold,
-		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent(), "max_queue", srv.MaxQueue())
+		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent(), "max_queue", srv.MaxQueue(),
+		"admission", map[bool]string{true: "priority", false: "n48"}[s.PrioKey != nil], "max_deadline", srv.MaxDeadline().String())
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	if s.QSample > 0 {
+		go srv.SampleQueue(ctx, s.QSample)
+	}
 	errc := make(chan error, 1)
 	go func() { errc <- hs.ListenAndServeTLS("", "") }()
 	select {

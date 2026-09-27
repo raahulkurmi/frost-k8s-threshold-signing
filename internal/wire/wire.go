@@ -26,6 +26,10 @@ const (
 // context deadline, so coordinator and signer clocks never need to agree.
 const DeadlineHeader = "X-Frost-Deadline-Ms"
 
+// AdmissionLevelHeader carries a signer's priority admission level L (0..65536)
+// on a priority or fair-share refusal (HTTP 503 "overloaded", NOTES N76).
+const AdmissionLevelHeader = "X-Frost-Admission-Level"
+
 // SignShareRequest is sent by the coordinator. SigningInput is the full JWS
 // signing input base64url(header).base64url(payload); the signer hashes and
 // pads it itself (I8). Unknown fields (e.g. a digest) are rejected.

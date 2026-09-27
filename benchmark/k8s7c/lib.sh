@@ -83,9 +83,46 @@ wait_backend_ready() { # WANT_STRATEGY (empty for B1): all 3 replicas logged rea
   done
   return 1
 }
-# use_system SYS OUT_CHECK_JSON: SYS in B0 | B1 | T-5region-<strategy> | T-sameregion-<strategy>
+# ---- N76 evaluation variants: a T system may carry @<variant> ----
+#   (none) abort on, n48 admission    n48  abort off, n48 (today)    b  abort on, n48
+#   ab     abort on, priority          slots<k>  abort off, n48, SIGNER_MAX_CONCURRENT=k
+variant_cfg() { # VARIANT -> "QUORUM_ABORT ADMISSION MAXCONC"
+  case "$1" in
+    "") echo "on n48 -" ;; n48) echo "off n48 -" ;; b) echo "on n48 -" ;; ab) echo "on priority -" ;;
+    slots[1-9]*) echo "off n48 ${1#slots}" ;;
+    *) die "unknown variant @$1" ;;
+  esac
+}
+# signer_config SYS ADMISSION MAXCONC: every signer of SYS gets the admission mode
+# and SIGNER_MAX_CONCURRENT (MAXCONC, or 1 while stress caps are on, else the
+# default) and QUEUE_SAMPLE; restarted only if changed; verified from its ready line.
+signer_config() {
+  local sys="$1" adm="$2" mc="$3" pair id h tmp pids="" p rc=0 want_mc
+  [[ "$mc" == - && -n "${STRESS_ACTIVE:-}" ]] && mc=1
+  tmp="$(mktemp -d)"
+  for pair in $(t_signer_hosts "$sys"); do
+    id="${pair%%:*}" h="${pair#*:}"
+    ( cpipe "$h" sudo bash -s -- "$id" "$adm" "$mc" "${QUEUE_SAMPLE:--}" < "$REPO/deploy/aws/7c/signer-config.sh" > "$tmp/$id" ) &
+    pids="$pids $!"
+  done
+  for p in $pids; do wait "$p" || rc=1; done
+  [[ $rc == 0 ]] || { rm -rf "$tmp"; die "signer config for $sys failed"; }
+  for pair in $(t_signer_hosts "$sys"); do
+    id="${pair%%:*}"
+    want_mc="$mc"; [[ "$want_mc" == - ]] && want_mc=2   # t3.micro: NumCPU = 2
+    tail -1 "$tmp/$id" | jq -e --arg a "$adm" --argjson m "$want_mc" 'select(.admission == $a and .max_concurrent == $m)' >/dev/null \
+      || { cat "$tmp/$id"; rm -rf "$tmp"; die "signer $id of $sys is not running admission=$adm max_concurrent=$want_mc"; }
+  done
+  jq -sc 'map({signer_id, admission, max_concurrent, max_deadline})' < <(for pair in $(t_signer_hosts "$sys"); do tail -1 "$tmp/${pair%%:*}"; done)
+  rm -rf "$tmp"
+}
+
+# use_system SYS OUT_CHECK_JSON: SYS in B0 | B1 | T-5region-<strategy>[-<fanout>][@<variant>] | T-sameregion-...
 use_system() {
   local sys="$1" out="$2" stamp="$1-$(date -u +%Y%m%dT%H%M%SZ)" pin="" lbset="" mode=external
+  local variant="" qa=on adm=n48 mc=- sigcfg='null'
+  if [[ "$sys" == *@* ]]; then variant="${sys##*@}"; sys="${sys%@*}"; fi
+  read -r qa adm mc <<<"$(variant_cfg "$variant")"
   coord_down
   case "$sys" in
     B0|B0-anchor) mode=in-tree; coord_egress ;;
@@ -99,11 +136,15 @@ use_system() {
       local rest="${sys#T-5region-}" sec=secrets-t5; lbset=t5
       [[ "$sys" == T-sameregion-* ]] && { rest="${sys#T-sameregion-}"; sec=secrets-tsame; lbset=tsame; }
       local st="${rest%%-*}" fo="${rest#*-}"; [[ "$fo" == "$rest" ]] && fo=all
-      coord_compose coordinator-node.t.yml COORD_SECRETS=$sec VERIFY_STRATEGY=$st FANOUT=$fo -- up -d --force-recreate >/dev/null
+      sigcfg="$(signer_config "$sys" "$adm" "$mc")"
+      coord_compose coordinator-node.t.yml COORD_SECRETS=$sec VERIFY_STRATEGY=$st FANOUT=$fo QUORUM_ABORT=$qa -- up -d --force-recreate >/dev/null
       # shellcheck disable=SC2046
       coord_egress $(t_endpoints $sec)
       wait_backend_ready "$st" || die "coordinators not ready with strategy=$st"
-      con coord bash -c "docker logs c7-grpc-proxy-1-1 2>&1 | grep '\"coordinator ready\"' | tail -1 | jq -e 'select(.fanout==\"$fo\")' >/dev/null" || die "coordinators not running fanout=$fo"
+      local r; for r in 1 2 3; do
+        con coord bash -c "docker logs c7-grpc-proxy-$r-1 2>&1 | grep '\"coordinator ready\"' | tail -1 | jq -e 'select(.fanout==\"$fo\" and .coordinator_id==$r and .quorum_abort==$([[ $qa == on ]] && echo true || echo false))' >/dev/null" \
+          || die "coordinator $r not running fanout=$fo coordinator_id=$r quorum_abort=$qa"
+      done
       pin="$(con coord bash -c "jq -r .kid ~/tk8s/$sec/keys/public-meta.json")" ;;
     *) die "unknown system $sys" ;;
   esac
@@ -121,7 +162,9 @@ use_system() {
   rm -f "$swlog"; stamp="$stamp-try$try"
   local j
   j="$(con cp sudo /usr/local/bin/frost-7c-check "$mode" $pin)" || { echo "$j" > "$out"; die "check failed for $sys: $j"; }
-  jq -c --arg sys "$sys" --arg stamp "$stamp" --argjson sw "$sw_s" --argjson tries "$try" '. + {system: $sys, stamp: $stamp, switch_seconds: $sw, switch_tries: $tries}' <<<"$j" > "$out"
+  [[ -n "$variant" ]] && sys="$sys@$variant"
+  jq -c --arg sys "$sys" --arg stamp "$stamp" --argjson sw "$sw_s" --argjson tries "$try" --arg qa "$qa" --argjson sig "$sigcfg" \
+    '. + {system: $sys, stamp: $stamp, switch_seconds: $sw, switch_tries: $tries} + (if $sig == null then {} else {quorum_abort: $qa, signers: $sig} end)' <<<"$j" > "$out"
   log "system $sys ready: $(cat "$out")"
 }
 

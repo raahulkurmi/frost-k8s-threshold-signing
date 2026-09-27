@@ -394,7 +394,7 @@ for ip in 172.30.1.11 172.30.1.12 172.30.1.13; do
   expect_fail "default bridge -> $ip FetchKeys (lb cert)" bridge   fetchkeys "$ip:9090" "${LB_TLS[@]}"
   expect_fail "lb-net, no client cert -> $ip Sign"         "$LBNET" sign "$ip:9090" "$CL" -ca /tls/ca.crt
   expect_fail "lb-net, no client cert -> $ip FetchKeys"    "$LBNET" fetchkeys "$ip:9090" -ca /tls/ca.crt
-  expect_fail "lb-net, coordinator cert -> $ip Sign"       "$LBNET" sign "$ip:9090" "$CL" -cert /tls/coordinator/tls.crt -key /tls/coordinator/tls.key -ca /tls/ca.crt
+  expect_fail "lb-net, coordinator cert -> $ip Sign"       "$LBNET" sign "$ip:9090" "$CL" -cert /tls/coordinator-1/tls.crt -key /tls/coordinator-1/tls.key -ca /tls/ca.crt
   expect_fail "lb-net, signer-1 cert -> $ip FetchKeys"     "$LBNET" fetchkeys "$ip:9090" -cert /tls/signer-1/tls.crt -key /tls/signer-1/tls.key -ca /tls/ca.crt
   expect_fail "lb-net, plaintext gRPC -> $ip Sign"         "$LBNET" sign "$ip:9090" "$CL"
 done
@@ -436,7 +436,7 @@ if [[ "$TOPOLOGY" == multihost ]]; then
     a="${SIGNER_ADDRS[$((i-1))]}"
     if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -timeout 3s >/dev/null 2>&1; then echo "    UNEXPECTED: $a accepted a client with no cert"; N2_OK=0; else echo "    $a no client cert: refused"; fi
     if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -cert secrets/tls/lb/tls.crt -key secrets/tls/lb/tls.key -timeout 3s >/dev/null 2>&1; then echo "    UNEXPECTED: $a accepted the lb cert"; N2_OK=0; else echo "    $a lb cert: refused"; fi
-    if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -cert secrets/tls/coordinator/tls.crt -key secrets/tls/coordinator/tls.key -timeout 3s >/dev/null 2>&1; then echo "    $a coordinator cert: accepted (control)"; else echo "    CONTROL FAILED: $a refused the coordinator cert"; N2_OK=0; fi
+    if bin/e2e/probe https "$a" -ca secrets/tls/ca.crt -servername "signer-$i" -cert secrets/tls/coordinator-1/tls.crt -key secrets/tls/coordinator-1/tls.key -timeout 3s >/dev/null 2>&1; then echo "    $a coordinator cert: accepted (control)"; else echo "    CONTROL FAILED: $a refused the coordinator cert"; N2_OK=0; fi
   done
 fi
 if [[ $N2_OK == 1 && $N2_N -gt 0 ]]; then pass N2 "0 of $N2_N (container ip, listening port) pairs accept a TCP connection from the host; nothing published; socket dir root:root 0700, non-root refused"
@@ -498,6 +498,29 @@ echo "medians over joined requests (ms): nginx total $M_NG = nginx->coordinator 
 if [[ "${N_JOIN:-0}" -gt 0 && "$N_COORD" -gt 0 && $(( N_JOIN * 100 / N_COORD )) -ge 90 ]]; then
   pass TIMING "$N_JOIN of $N_COORD coordinator Sign lines joined an nginx line by request_id; median nginx total ${M_NG} ms, nginx->coordinator ${M_N2C} ms, coordinator ${M_CO} ms"
 else fail TIMING "only ${N_JOIN:-0} of $N_COORD coordinator Sign lines joined an nginx timing line"; fi
+
+section "N76-ID: signers saw only per-replica coordinator identities"
+signer_ctl audit
+CLIENTS="$(cat audit/signer-*/audit.log | jq -r '.client // empty' | sort | uniq -c)"
+echo "$CLIENTS"
+if [[ -n "$CLIENTS" ]] && ! grep -vqE '^ *[0-9]+ coordinator-[123]$' <<<"$CLIENTS" && grep -q 'coordinator-' <<<"$CLIENTS"; then
+  pass N76-ID "every audited sign-share came from coordinator-1..3 (own cert per replica): $(awk '{printf "%s=%s ", $2, $1}' <<<"$CLIENTS")"
+else fail N76-ID "unexpected client identities in signer audit logs"; fi
+
+if [[ "$TOPOLOGY" == single ]]; then
+  section "N76-PRIO: signers restarted with priority admission; issuance and review still work"
+  SIGNER_ADMISSION=priority PRIORITY_KEY_FILE=/run/frost/priority.key "${COMPOSE[@]}" up -d --no-deps signer-1 signer-2 signer-3 signer-4 signer-5 >/dev/null 2>&1
+  PRIO_READY=0
+  for _ in $(seq 1 100); do
+    PRIO_READY="$("${COMPOSE[@]}" logs --no-color --no-log-prefix signer-1 signer-2 signer-3 signer-4 signer-5 2>/dev/null | grep '"msg":"signer ready"' | jq -r 'select(.admission=="priority") | .signer_id' | sort -u | grep -c . || true)"
+    [[ "$PRIO_READY" -ge 5 ]] && break; sleep 0.2
+  done
+  PT="" ; for _ in $(seq 1 100); do PT="$(K create token default --duration=10m 2>/dev/null)" && break; sleep 0.2; done
+  PR="$( [[ -n "$PT" ]] && tokenreview "$PT" | jq -r .status.authenticated )"
+  if [[ "$PRIO_READY" -ge 5 && "$PR" == true && "$(jwt_header "$PT" | jq -r .kid)" == "$KID" ]]; then
+    pass N76-PRIO "5 signers ready with admission=priority (shared priority.key mounted); token issued, kid $KID, TokenReview authenticated"
+  else fail N76-PRIO "priority-mode signers ready: $PRIO_READY/5, token review: ${PR:-none}"; fi
+fi
 
 section "Signer policy decisions (all signers, from audit logs)"
 signer_ctl audit

@@ -25,7 +25,7 @@ original README. Its keys were committed to this public repository and are **bur
 ## How it works
 
 ```
-kube-apiserver ──unix socket (dir 0700)──▶ nginx ──mTLS "lb"──▶ coordinator ×3 ──mTLS "coordinator"──▶ signer ×5
+kube-apiserver ──unix socket (dir 0700)──▶ nginx ──mTLS "lb"──▶ coordinator ×3 ──mTLS "coordinator-<k>"──▶ signer ×5
   (FetchKeys: group public key; Sign: header + claims)            (public metadata only)          (one share each,
                                                                                                     own claims policy)
 ```

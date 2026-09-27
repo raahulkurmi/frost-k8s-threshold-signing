@@ -6,6 +6,9 @@
 #                                             rotated per run), c = CONCS, N after WARMUP
 #   RES=<dir> benchmark/k8s7c/run.sh scale    pod scale-up interleaved: for each rep, every
 #                                             system (rotated), sizes SIZES; cooldown per rep
+#   RES=<dir> benchmark/k8s7c/run.sh lever|stress   lever check / stress test (N70)
+#   RES=<dir> benchmark/k8s7c/run.sh eval-stress|eval-noregress|eval-slots
+#                                             N76 evaluation (docs/PRIORITY_ADMISSION.md §5)
 #   RES=<dir> benchmark/k8s7c/run.sh summary  regenerate summary.md from the raw files
 # RES defaults to a new benchmark/results/<UTC>-<sha>-7C directory (reuse it for all phases).
 #
@@ -66,6 +69,10 @@ measure() { # SYS C RUN -> 0 iff clean
     local tg="" i=1 ep; for ep in $(t_endpoints $sec); do tg="$tg $i=$ep"; i=$((i + 1)); done
     con coord bash -c "nohup python3 /tmp/rtt_sampler.py /tmp/rtt.json $tg >/dev/null 2>&1 & echo \$! > /tmp/rtt.pid" || return 1
   fi
+  if [[ -n "${SIGNER_SAMPLES:-}" ]] && is_t "$sys"; then   # N76 §6: 1 Hz signer CPU + cgroup throttling
+    local sp sid; for sp in $(t_signer_hosts "$sys"); do sid="${sp%%:*}"
+      cpipe "${sp#*:}" sudo bash -s -- start "$sid" < "$REPO/deploy/aws/7c/signer-sampler.sh" || return 1; done
+  fi
   rdetach lg tb "~/tokenbench -kubeconfig ~/.kube/config -n $N -warmup $WARMUP -c $c -label $lab -out /tmp/$lab.csv" || return 1
   rc="$(rwait lg tb 3600)" || return 1
   [[ "$rc" == 0 ]] || { echo "tokenbench exit $rc: $(on lg tail -2 /tmp/tb.log 2>/dev/null | tr '\n' ' ')" >> "$ERRF.events"; return 1; }
@@ -87,6 +94,14 @@ measure() { # SYS C RUN -> 0 iff clean
   if [[ -n "$scb" ]]; then
     sca="$(mktemp)"; signer_cpu_snapshot "$sys" "$sca" || { echo "signer cpu snapshot failed" >> "$ERRF.events"; return 1; }
     sj="$(signer_cpu_json "$scb" "$sca")"; rm -f "$scb" "$sca"
+  fi
+  if [[ -n "${SIGNER_SAMPLES:-}" ]] && is_t "$sys"; then
+    local sp sid; for sp in $(t_signer_hosts "$sys"); do sid="${sp%%:*}"
+      cpipe "${sp#*:}" sudo bash -s -- stop "$sid" < "$REPO/deploy/aws/7c/signer-sampler.sh" > "$dir/$lab.cpu-signer$sid.txt" || return 1
+      # queue samples, admission-level windows and per-share RSA timing (journald, this configuration only)
+      con "${sp#*:}" sudo journalctl -u "frost-signer-$sid" --since "@${since_p%.*}" -o cat --no-pager \
+        | { grep -E '"msg":"(queue sample|admission level|sign-share)"' || true; } | gzip -9 > "$dir/$lab.signer$sid.log.jsonl.gz" || return 1
+    done
   fi
   if [[ -n "${SIGNER_AUDIT:-}" ]] && is_t "$sys"; then   # stress test: shares computed / shed per signer
     local pair id h
@@ -222,6 +237,7 @@ phase_lever() {
 # logs (shares computed / shed) captured per configuration.
 stress_caps() { # on|off
   local id
+  if [[ "$1" == on ]]; then export STRESS_ACTIVE=1; else unset STRESS_ACTIVE; fi
   for id in 1 2 3 4 5; do
     if [[ "$1" == on ]]; then
       on "ts-$id" sudo bash -c "set -e; f=/etc/frost-signer-$id/env; sed -i '/^SIGNER_MAX_CONCURRENT=/d' \$f; echo SIGNER_MAX_CONCURRENT=1 >> \$f; systemctl restart frost-signer-$id; systemctl set-property --runtime frost-signer-$id CPUQuota=${STRESS_QUOTA:-25%}; sleep 1; systemctl is-active --quiet frost-signer-$id"
@@ -261,6 +277,66 @@ phase_stress() {
   stress_caps off
 }
 
+# ------------------------------------------------------------------- N76 evaluation
+# docs/PRIORITY_ADMISSION.md §5, rules fixed there before any run. Variants are
+# selected per system with @<variant> (lib.sh variant_cfg) and verified at every
+# switch: coordinator quorum_abort, each signer's admission and max_concurrent.
+# eval_loop SYSTEMS CONCS PHASE: per run, systems rotated; per system, c rotated.
+eval_loop() {
+  local systems="$1" concs="$2" ph="$3" run sys c ok att
+  for run in $(seq 1 "$RUNS"); do
+    echo "================ $ph run $run/$RUNS ($(date -u +%T)) ================"
+    source deploy/multihost/clock-check.sh
+    # shellcheck disable=SC2086
+    clock_check $ALL_HOSTS || die "clock check failed (N50)"
+    # shellcheck disable=SC2086
+    for sys in $(rotate $((run - 1)) $systems); do
+      use_system "$sys" /tmp/c7check.json; jq -c --argjson run "$run" --arg phase "$ph" '. + {run: $run, phase: $phase}' /tmp/c7check.json >> "$CHECKS"
+      # shellcheck disable=SC2086
+      for c in $(rotate $((run - 1)) $concs); do
+        ok=0
+        for att in 1 2; do
+          cfg_begin
+          if measure "$sys" "$c" "$run"; then ok=1; cfg_end; break; fi
+          local d="$RES/run$run" l="$sys-c$c"
+          mark_invalid "$EVENTS" config "run$run/$l" "$att" "$RES" "$d/$l.csv" "$d/$l.coord.jsonl" "$d/$l.nginx.jsonl" "$d/$l.rtt.json" "$d/$l.metrics.json" "$d"/"$l".audit-signer*.jsonl.gz "$d"/"$l".cpu-signer*.txt "$d"/"$l".signer*.log.jsonl.gz
+          cfg_end; wait_net
+          [[ $att == 1 ]] && use_system "$sys" /tmp/c7check.json
+        done
+        if [[ $ok == 1 ]]; then
+          echo "  run$run $sys c=$c: $(tail -n +2 "$RES/run$run/$sys-c$c.csv" | awk -F, '{n++; if($5!="1")e++} END{printf "%d rows, %d errors", n, e}')$(is_t "$sys" && [[ -n "${SIGNER_CPU:-}" ]] && echo "; signer CPU mean $(jq -r .signer_cpu_mean_pct "$RES/run$run/$sys-c$c.metrics.json")%")"
+        else echo "  run$run $sys c=$c: INVALID twice; excluded"; fi
+      done
+    done
+  done
+}
+# §5.1 stress test before/after: today (n48) vs abort only (b) vs abort + priority (ab)
+phase_eval_stress() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_CPU=1 SIGNER_AUDIT=1 SIGNER_SAMPLES=1 QUEUE_SAMPLE="${QUEUE_SAMPLE:-100ms}"
+  echo "== STRESS TEST (CPU-capped signers, SIGNER_MAX_CONCURRENT=1), N76 before/after: applying caps"
+  stress_caps on
+  eval_loop "T-sameregion-optimistic@n48 T-sameregion-optimistic@b T-sameregion-optimistic@ab" "${STRESS_CONCS:-10 25 50 100 150 200}" eval-stress
+  echo "== removing stress caps"
+  stress_caps off
+  unset QUEUE_SAMPLE; signer_config T-sameregion-optimistic n48 - >/dev/null
+}
+# §5.2 no regression: uncapped, n48 vs ab, both placements, B0 anchor
+phase_eval_noregress() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_AUDIT=1
+  eval_loop "${NOREGRESS_SYSTEMS:-B0 T-sameregion-optimistic@n48 T-sameregion-optimistic@ab T-5region-optimistic@n48 T-5region-optimistic@ab}" "$CONCS" eval-noregress
+  signer_config T-sameregion-optimistic n48 - >/dev/null
+  [[ -f "$S7/topology-t5.env" ]] && signer_config T-5region-optimistic n48 - >/dev/null
+}
+# §5.3 inference test (admission slots): SIGNER_MAX_CONCURRENT 2/4/8, c=50, uncapped
+phase_eval_slots() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_CPU=1 SIGNER_SAMPLES=1
+  eval_loop "T-sameregion-optimistic@slots2 T-sameregion-optimistic@slots4 T-sameregion-optimistic@slots8" 50 eval-slots
+  signer_config T-sameregion-optimistic n48 - >/dev/null
+}
+
 # ------------------------------------------------------------------- env + summary
 write_env() {
   local h hosts=""
@@ -291,6 +367,9 @@ phase_summary() {
 case "$PHASE" in
   tokens) phase_tokens; phase_summary;;
   lever) phase_lever; phase_summary;;
+  eval-stress) phase_eval_stress; phase_summary;;
+  eval-noregress) phase_eval_noregress; phase_summary;;
+  eval-slots) phase_eval_slots; phase_summary;;
   stress) phase_stress; phase_summary;;
   scale) phase_scale; phase_summary;;
   summary) phase_summary;;

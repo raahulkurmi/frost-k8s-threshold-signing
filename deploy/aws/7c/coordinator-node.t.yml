@@ -13,7 +13,7 @@ x-coordinator: &coordinator
   read_only: true
   restart: unless-stopped
   env_file: ["../../../${COORD_SECRETS:?set COORD_SECRETS}/multihost.env"]
-  environment:
+  environment: &coordinator-env
     META_FILE: /etc/frost/public-meta.json
     POLICY_FILE: /etc/frost/policy.json
     TLS_CERT: /etc/frost/tls/tls.crt
@@ -27,18 +27,41 @@ x-coordinator: &coordinator
     VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
     FANOUT: ${FANOUT:-all}
     HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
-  volumes:
-    - ../../../${COORD_SECRETS}/keys/public-meta.json:/etc/frost/public-meta.json:ro
-    - ../../policy.json:/etc/frost/policy.json:ro
-    - ../../../${COORD_SECRETS}/tls/ca.crt:/etc/frost/ca.crt:ro
-    - ../../../${COORD_SECRETS}/tls/coordinator:/etc/frost/tls:ro
-    - ../../../${COORD_SECRETS}/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+    QUORUM_ABORT: ${QUORUM_ABORT:-on}
   networks: [coord-net]
 
+# Each replica mounts only its OWN client cert, coordinator-<k> (NOTES N76).
 services:
-  grpc-proxy-1: {<<: *coordinator, ports: ["${COORD_PRIV_IP:?set COORD_PRIV_IP}:9090:9090"]}
-  grpc-proxy-2: {<<: *coordinator, ports: ["${COORD_PRIV_IP}:9091:9090"]}
-  grpc-proxy-3: {<<: *coordinator, ports: ["${COORD_PRIV_IP}:9092:9090"]}
+  grpc-proxy-1:
+    <<: *coordinator
+    environment: {<<: *coordinator-env, COORDINATOR_ID: "1"}
+    volumes:
+      - ../../../${COORD_SECRETS}/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ../../policy.json:/etc/frost/policy.json:ro
+      - ../../../${COORD_SECRETS}/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../../../${COORD_SECRETS}/tls/coordinator-1:/etc/frost/tls:ro
+      - ../../../${COORD_SECRETS}/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+    ports: ["${COORD_PRIV_IP:?set COORD_PRIV_IP}:9090:9090"]
+  grpc-proxy-2:
+    <<: *coordinator
+    environment: {<<: *coordinator-env, COORDINATOR_ID: "2"}
+    volumes:
+      - ../../../${COORD_SECRETS}/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ../../policy.json:/etc/frost/policy.json:ro
+      - ../../../${COORD_SECRETS}/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../../../${COORD_SECRETS}/tls/coordinator-2:/etc/frost/tls:ro
+      - ../../../${COORD_SECRETS}/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+    ports: ["${COORD_PRIV_IP}:9091:9090"]
+  grpc-proxy-3:
+    <<: *coordinator
+    environment: {<<: *coordinator-env, COORDINATOR_ID: "3"}
+    volumes:
+      - ../../../${COORD_SECRETS}/keys/public-meta.json:/etc/frost/public-meta.json:ro
+      - ../../policy.json:/etc/frost/policy.json:ro
+      - ../../../${COORD_SECRETS}/tls/ca.crt:/etc/frost/ca.crt:ro
+      - ../../../${COORD_SECRETS}/tls/coordinator-3:/etc/frost/tls:ro
+      - ../../../${COORD_SECRETS}/tls/coordinator-grpc:/etc/frost/grpc-tls:ro
+    ports: ["${COORD_PRIV_IP}:9092:9090"]
 
 networks:
   coord-net:

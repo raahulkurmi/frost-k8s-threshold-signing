@@ -63,7 +63,7 @@ W="$(mktemp -d "${TMPDIR:-/tmp}/frost-ceremony.XXXXXX")"
 chmod 700 "$W"
 cleanup() {
   # Best-effort secure delete of every share, key and the CA key (APFS/SSD: see README).
-  find "$W" -type f \( -name 'share*.json' -o -name '*.key' -o -name '*.tgz' \) -exec rm -P {} + 2>/dev/null || true
+  find "$W" -type f \( -name 'share*.json' -o -name '*.key' -o -name '*.tgz' \) -exec rm -P {} + 2>/dev/null || true   # *.key includes priority.key
   rm -rf "$W"
 }
 trap cleanup EXIT
@@ -91,6 +91,7 @@ stage_host() { # vm
   for id in $(vm_ids "$vm"); do
     mkdir -p "$d/signer-$id"
     cp "$W/keys/share-$id.json" "$d/signer-$id/share.json"
+    cp "$W/keys/priority.key" "$d/signer-$id/priority.key"   # N76: same key at every signer
     cp "$W/pki/tls/signer-$id/tls.crt" "$W/pki/tls/signer-$id/tls.key" "$d/signer-$id/"
   done
   # Guard: exactly the assigned shares, each with the right signer_index.
@@ -127,12 +128,12 @@ C="$W/stage-coord"
 mkdir -p "$C/keys" "$C/tls"
 cp "$W/keys/public-meta.json" "$C/keys/"
 cp "$W/pki/tls/ca.crt" "$C/tls/"
-cp -r "$W/pki/tls/coordinator" "$W/pki/tls/coordinator-grpc" "$C/tls/"
+cp -r "$W/pki/tls/coordinator-1" "$W/pki/tls/coordinator-2" "$W/pki/tls/coordinator-3" "$W/pki/tls/coordinator-grpc" "$C/tls/"   # one client cert per replica (N76)
 [[ -n "$LB_HOST" ]] || cp -r "$W/pki/tls/lb" "$C/tls/"
 ENDPOINTS=""
 for id in 1 2 3 4 5; do ENDPOINTS="${ENDPOINTS:+$ENDPOINTS,}$id=https://$(vm_service_ip "$(id_vm "$id")"):$(id_port "$id")"; done
 printf 'SIGNER_ENDPOINTS=%s\nN4_OPERATOR_TARGET=%s:22\n' "$ENDPOINTS" "$ADMIN_IP" > "$C/multihost.env"
-[[ -z "$(find "$C" -name 'share*' -o -name 'ca.key' -o -path '*signer-*')" ]] || die "REFUSING: share, CA key or signer cert staged for the coordinator host"
+[[ -z "$(find "$C" -name 'share*' -o -name 'priority*' -o -name 'ca.key' -o -path '*signer-*')" ]] || die "REFUSING: share, priority key, CA key or signer cert staged for the coordinator host"
 COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -C "$C" -czf "$W/stage-coord.tgz" .
 push "$COORD_VM" "$W/stage-coord.tgz" /tmp/frost-coord.tgz
 on "$COORD_VM" bash -c "set -e; cd ~/tk8s; rm -rf $COORD_SECRETS_DIR; umask 077; mkdir $COORD_SECRETS_DIR; tar -xzf /tmp/frost-coord.tgz -C $COORD_SECRETS_DIR; shred -u /tmp/frost-coord.tgz; chmod 644 $COORD_SECRETS_DIR/keys/public-meta.json $COORD_SECRETS_DIR/tls/ca.crt $COORD_SECRETS_DIR/tls/*/tls.crt"

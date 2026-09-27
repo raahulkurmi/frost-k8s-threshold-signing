@@ -83,9 +83,13 @@ func (p *PKI) Issue(t testing.TB, name string, sans []string, eku x509.ExtKeyUsa
 	return cp
 }
 
-// Coordinator issues the coordinator client cert.
-func (p *PKI) Coordinator(t testing.TB) CertPaths {
-	return p.Issue(t, "coordinator", []string{"coordinator"}, x509.ExtKeyUsageClientAuth)
+// Coordinator issues coordinator replica 1's client cert (coordinator-1).
+func (p *PKI) Coordinator(t testing.TB) CertPaths { return p.CoordinatorN(t, 1) }
+
+// CoordinatorN issues coordinator replica k's client cert (coordinator-<k>, N76).
+func (p *PKI) CoordinatorN(t testing.TB, k int) CertPaths {
+	name := "coordinator-" + itoa(k)
+	return p.Issue(t, name, []string{name}, x509.ExtKeyUsageClientAuth)
 }
 
 // LB issues the nginx client cert used towards coordinators.

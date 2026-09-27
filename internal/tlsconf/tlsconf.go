@@ -1,6 +1,7 @@
 // Package tlsconf builds the mutually authenticated TLS configurations
 // between the coordinator and the signers. Identities are DNS SANs issued by
-// scripts/gen-certs.sh: "coordinator" (clientAuth) and "signer-<i>" (serverAuth).
+// scripts/gen-certs.sh: "coordinator-<k>" (clientAuth, one per coordinator
+// replica, NOTES N76) and "signer-<i>" (serverAuth).
 package tlsconf
 
 import (
@@ -9,10 +10,42 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
-// CoordinatorName is the only client identity signers accept.
-const CoordinatorName = "coordinator"
+// MaxCoordinators bounds coordinator replica ids (coordinator-1..64).
+const MaxCoordinators = 64
+
+// CoordinatorName returns replica k's client identity, coordinator-<k>. Each
+// replica has its own certificate, so a signer can tell replicas apart and
+// give each a fair share under overload (N76).
+func CoordinatorName(k int) string { return fmt.Sprintf("coordinator-%d", k) }
+
+// CoordinatorID parses a coordinator client identity. Only the canonical
+// form coordinator-<k> with k in [1, MaxCoordinators] is accepted.
+func CoordinatorID(san string) (int, bool) {
+	rest, ok := strings.CutPrefix(san, "coordinator-")
+	if !ok || rest == "" || len(rest) > 2 || rest[0] == '0' {
+		return 0, false
+	}
+	k, err := strconv.Atoi(rest)
+	if err != nil || k < 1 || k > MaxCoordinators || strconv.Itoa(k) != rest {
+		return 0, false
+	}
+	return k, true
+}
+
+// coordinatorSAN checks that cert has exactly one DNS SAN, a coordinator
+// identity, and no other SAN types.
+func coordinatorSAN(cert *x509.Certificate) error {
+	if len(cert.DNSNames) == 1 && len(cert.IPAddresses) == 0 && len(cert.EmailAddresses) == 0 && len(cert.URIs) == 0 {
+		if _, ok := CoordinatorID(cert.DNSNames[0]); ok {
+			return nil
+		}
+	}
+	return fmt.Errorf("certificate SANs %v (ip %v) are not exactly one DNS:coordinator-<1..%d>", cert.DNSNames, cert.IPAddresses, MaxCoordinators)
+}
 
 // SignerName returns the identity of signer i.
 func SignerName(i int) string { return fmt.Sprintf("signer-%d", i) }
@@ -58,7 +91,7 @@ func loadLeaf(certFile, keyFile, want string) (tls.Certificate, error) {
 
 // SignerServer returns the TLS config for signer i: its own cert must be
 // exactly DNS:signer-<i>; clients must present a cert chaining to caFile with
-// exactly DNS:coordinator and clientAuth EKU. TLS 1.3 only.
+// exactly one DNS:coordinator-<k> and clientAuth EKU. TLS 1.3 only.
 func SignerServer(certFile, keyFile, caFile string, i int) (*tls.Config, error) {
 	own, err := loadLeaf(certFile, keyFile, SignerName(i))
 	if err != nil {
@@ -77,17 +110,20 @@ func SignerServer(certFile, keyFile, caFile string, i int) (*tls.Config, error) 
 			if len(cs.PeerCertificates) == 0 {
 				return errors.New("no client certificate")
 			}
-			return exactlyOneSAN(cs.PeerCertificates[0], CoordinatorName)
+			return coordinatorSAN(cs.PeerCertificates[0])
 		},
 	}, nil
 }
 
-// CoordinatorClient returns the TLS config the coordinator uses to reach
-// signer i: its own cert must be exactly DNS:coordinator; the server must
+// CoordinatorClient returns the TLS config coordinator replica coordID uses to
+// reach signer i: its own cert must be exactly DNS:coordinator-<coordID>; the server must
 // present a cert chaining to caFile with exactly DNS:signer-<i>, regardless of
 // the endpoint's host name or IP.
-func CoordinatorClient(certFile, keyFile, caFile string, i int) (*tls.Config, error) {
-	own, err := loadLeaf(certFile, keyFile, CoordinatorName)
+func CoordinatorClient(certFile, keyFile, caFile string, i, coordID int) (*tls.Config, error) {
+	if coordID < 1 || coordID > MaxCoordinators {
+		return nil, fmt.Errorf("tls: coordinator id %d outside [1,%d]", coordID, MaxCoordinators)
+	}
+	own, err := loadLeaf(certFile, keyFile, CoordinatorName(coordID))
 	if err != nil {
 		return nil, err
 	}

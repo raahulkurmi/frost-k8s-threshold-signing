@@ -312,29 +312,45 @@ func TestTLSRejectsClientWithoutCoordinatorSAN(t *testing.T) {
 	coord := pki.Coordinator(t)
 	signer2 := pki.Signer(t, 2)
 	attacker := pki.Issue(t, "attacker", []string{"attacker"}, x509.ExtKeyUsageClientAuth)
-	twoSANs := pki.Issue(t, "coordinator-plus", []string{"coordinator", "signer-1"}, x509.ExtKeyUsageClientAuth)
-	serverEKU := pki.Issue(t, "coordinator-server-eku", []string{"coordinator"}, x509.ExtKeyUsageServerAuth)
+	twoSANs := pki.Issue(t, "coordinator-plus", []string{"coordinator-1", "signer-1"}, x509.ExtKeyUsageClientAuth)
+	twoReplicas := pki.Issue(t, "coordinator-1-and-2", []string{"coordinator-1", "coordinator-2"}, x509.ExtKeyUsageClientAuth)
+	serverEKU := pki.Issue(t, "coordinator-server-eku", []string{"coordinator-1"}, x509.ExtKeyUsageServerAuth)
 	foreign := other.Coordinator(t)
+	// N76: the shared pre-N76 identity and non-canonical replica names are refused.
+	legacy := pki.Issue(t, "legacy-coordinator", []string{"coordinator"}, x509.ExtKeyUsageClientAuth)
+	zero := pki.Issue(t, "coordinator-0", []string{"coordinator-0"}, x509.ExtKeyUsageClientAuth)
+	padded := pki.Issue(t, "coordinator-01", []string{"coordinator-01"}, x509.ExtKeyUsageClientAuth)
+	tooHigh := pki.Issue(t, "coordinator-65", []string{"coordinator-65"}, x509.ExtKeyUsageClientAuth)
+	grpcName := pki.Issue(t, "coordinator-grpc-client", []string{"coordinator-grpc"}, x509.ExtKeyUsageClientAuth)
+	replica3 := pki.CoordinatorN(t, 3)
 
 	body := func() *strings.Reader {
 		return strings.NewReader(`{"signing_input":"` + e.input(t, nil) + `","request_id":"tls"}`)
 	}
-	resp, err := clientWith(t, pki, &coord).Post(ts.URL+wire.SignSharePath, "application/json", body())
-	if err != nil {
-		t.Fatalf("coordinator client rejected: %v", err)
-	}
-	resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("coordinator client got %d", resp.StatusCode)
+	for name, c := range map[string]*testutil.CertPaths{"coordinator-1": &coord, "coordinator-3": &replica3} {
+		resp, err := clientWith(t, pki, c).Post(ts.URL+wire.SignSharePath, "application/json", body())
+		if err != nil {
+			t.Fatalf("%s client rejected: %v", name, err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s client got %d", name, resp.StatusCode)
+		}
 	}
 
 	for name, c := range map[string]*testutil.CertPaths{
-		"no client cert":                  nil,
-		"signer-2 cert (same CA)":         &signer2,
-		"SAN attacker (same CA)":          &attacker,
-		"SANs coordinator+signer-1":       &twoSANs,
-		"coordinator SAN, serverAuth EKU": &serverEKU,
-		"coordinator SAN, foreign CA":     &foreign,
+		"no client cert":                   nil,
+		"signer-2 cert (same CA)":          &signer2,
+		"SAN attacker (same CA)":           &attacker,
+		"SANs coordinator-1+signer-1":      &twoSANs,
+		"SANs coordinator-1+coordinator-2": &twoReplicas,
+		"legacy shared SAN coordinator":    &legacy,
+		"SAN coordinator-0":                &zero,
+		"SAN coordinator-01":               &padded,
+		"SAN coordinator-65":               &tooHigh,
+		"SAN coordinator-grpc":             &grpcName,
+		"coordinator SAN, serverAuth EKU":  &serverEKU,
+		"coordinator SAN, foreign CA":      &foreign,
 	} {
 		resp, err := clientWith(t, pki, c).Post(ts.URL+wire.SignSharePath, "application/json", body())
 		if err == nil {

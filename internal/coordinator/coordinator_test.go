@@ -122,7 +122,9 @@ func TestThreeMaliciousFails(t *testing.T) {
 		return h
 	}})
 	for _, st := range strategies {
-		co := c.NewCoordinator(t, st, 5*time.Second, nil)
+		// Without the quorum-impossible abort (N76) the coordinator waits for
+		// every signer: exactly the 2 honest shares are valid.
+		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, NoQuorumAbort: true})
 		res, err := co.Sign(context.Background(), claims(t))
 		var te *coordinator.ThresholdError
 		if !errors.As(err, &te) || res != nil {
@@ -133,6 +135,26 @@ func TestThreeMaliciousFails(t *testing.T) {
 		}
 		t.Logf("%s: %v", st, err)
 	}
+	// With the abort (default) it stops once 3 shares are known bad: no token,
+	// the 3 corrupt signers attributed, at most the 2 honest shares counted.
+	for _, st := range strategies {
+		co := c.NewCoordinator(t, st, 5*time.Second, nil)
+		res, err := co.Sign(context.Background(), claims(t))
+		var te *coordinator.ThresholdError
+		if !errors.As(err, &te) || res != nil || te.Valid > 2 {
+			t.Fatalf("%s (abort): res=%v err=%v", st, res, err)
+		}
+		bad := 0
+		for _, f := range te.Failures {
+			if f.SignerID <= 3 {
+				bad++
+			}
+		}
+		if bad != 3 && st == coordinator.Strict {
+			t.Fatalf("%s (abort): %d of the 3 corrupt signers attributed: %v", st, bad, te.Failures)
+		}
+		t.Logf("%s (abort): %v", st, err)
+	}
 }
 
 func TestBelowThresholdSigners(t *testing.T) {
@@ -142,13 +164,21 @@ func TestBelowThresholdSigners(t *testing.T) {
 		}
 		return h
 	}})
-	co := c.NewCoordinator(t, coordinator.Strict, 5*time.Second, nil)
+	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict, NoQuorumAbort: true})
 	res, err := co.Sign(context.Background(), claims(t))
 	var te *coordinator.ThresholdError
 	if !errors.As(err, &te) || res != nil || te.Valid != 2 || len(te.Failures) != 3 {
 		t.Fatalf("res=%v err=%v", res, err)
 	}
 	t.Log(err)
+	// With the quorum-impossible abort (N76, default): the 3 down signers are
+	// attributed and the request fails at once, with at most 2 valid shares.
+	co = c.NewCoordinator(t, coordinator.Strict, 5*time.Second, nil)
+	res, err = co.Sign(context.Background(), claims(t))
+	if !errors.As(err, &te) || res != nil || te.Valid > 2 || len(te.Failures) != 3 || co.Stats().QuorumAborts != 1 {
+		t.Fatalf("abort: res=%v err=%v aborts=%d", res, err, co.Stats().QuorumAborts)
+	}
+	t.Log("abort:", err)
 }
 
 func TestDeadlineRespected(t *testing.T) {

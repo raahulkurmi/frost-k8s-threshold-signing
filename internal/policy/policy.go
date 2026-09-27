@@ -62,6 +62,7 @@ type Decision struct {
 	Namespace      string
 	ServiceAccount string
 	Audiences      []string
+	IssuedAt       int64 // the validated iat claim (admission priority epoch, N76)
 }
 
 // MinTokenSeconds is kube-apiserver's lower bound for max_token_expiration_seconds
@@ -315,7 +316,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
 	if p.denySA[ns+":"+name] {
 		return nil, violation("deny", "service account %s:%s is denied", ns, name)
 	}
-	return &Decision{Subject: *sub, Namespace: ns, ServiceAccount: name, Audiences: auds}, nil
+	return &Decision{Subject: *sub, Namespace: ns, ServiceAccount: name, Audiences: auds, IssuedAt: iat}, nil
 }
 
 // checkK8sClaims requires kubernetes.io.namespace and .serviceaccount.name to
