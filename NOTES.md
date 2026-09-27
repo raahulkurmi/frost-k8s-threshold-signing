@@ -1113,3 +1113,35 @@ short. Switches now get 25 min and one retry.
   backgrounded smoke run, and CI was not checked after those commits. Fixed by the same
   field rename (`reports/aws/7c/POSTPROCESSING.md`). The rule for every PASS from now on:
   full-tree gitleaks + T11 locally, and CI green on the pushed commit.
+
+### N70. c=50 latency is Little's law; throughput attributed to signer compute; lever check and stress test
+- **Little's law:** with a closed loop of c=50 clients and T's plateau of ≈ 70 tokens/s
+  (optimistic), the expected latency is L = c / X ≈ 50 / 70 ≈ 0.71 s. Measured: 723 ms
+  (T-same-region) and 730 ms (T-5-region) median at c=50. The c=50 latency is therefore
+  queueing at a throughput limit, not per-request slowness. (Strict: 50 / 49 ≈ 1.02 s vs
+  904–1017 ms measured.)
+- **Throughput is independent of placement** (T-same-region 69.8 vs T-5-region 67.8 tokens/s
+  optimistic, with quorum RTT ≈ 1 ms vs ≈ 125 ms) and no signer returned 503. It is
+  **attributed to signer compute**: with fan-out all, every t3.micro signer computes a share
+  for every token. This is an inference until confirmed by the lever check and the stress
+  test (below), which sample signer CPU directly.
+- **nginx capture fix:** `kubectl logs` reads only the current container log file, and the
+  kubelet rotates at 10 MiB (current + `0.log.<ts>` + gzipped older files), so one token
+  configuration captured 2198 of 3000 nginx lines. `deploy/aws/7c/nginx-lines.sh` now reads
+  every file the kubelet keeps, filtering by nginx's own `msec`. Verified: 600 of 600 lines
+  on a short run (`reports/aws/7c/nginx-capture-verify.txt`), plus a local test with rotated
+  and gzipped files.
+- **Lever check** (label "lever check"): T-same-region optimistic at c=50, uncapped signers,
+  3 runs, fan-out **all** vs **hedged** (hedged contacts t+1 = 4 signers first, so 20 % fewer
+  share computations per token). Signer CPU = systemd `CPUUsageNSec` per signer process (% of
+  one vCPU). If signer compute is the limit, hedged should raise goodput and lower
+  per-signer CPU per token.
+- **Stress test** (label "stress test (CPU-capped signers, SIGNER_MAX_CONCURRENT=1)", not a
+  realistic workload): T-same-region signers with systemd `CPUQuota=25%` and
+  `SIGNER_MAX_CONCURRENT=1`, T-same-region optimistic, fan-out all, c = 10/25/50/100/150/200,
+  3 runs; signer CPU and signer audit logs per configuration. Signer audit `allow` is written
+  after admission and immediately before the share computation (`internal/signer/signer.go`),
+  so it counts computed shares; `shed` counts 503s. **Decision rule, fixed before the run:**
+  DAGOR-style priority-consistent admission is indicated only if goodput < 0.8 × peak
+  goodput **and** ≥ 20 % of computed shares were for requests that failed; otherwise "not
+  observed".

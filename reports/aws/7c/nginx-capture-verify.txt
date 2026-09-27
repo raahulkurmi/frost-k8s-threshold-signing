@@ -1,0 +1,6 @@
+# nginx capture verification after the N70 fix (2026-09-27T15:32:21Z, commit 9a5e7d4)
+T-sameregion-optimistic, c=50, N=500 after 100 warm-up (1 run):
+requests sent: 600
+nginx Sign lines captured (frost-7c-nginx-lines, all kubelet log files): 600
+coordinator Sign lines: 600
+system check: {"system":"T-sameregion-optimistic","ok":true,"mode":"external","jwt_header_kid":"wvQG_NBRUzel2Tysz2sCvA","pinned_kid":"wvQG_NBRUzel2Tysz2sCvA","tokenreview_authenticated":"true"}
