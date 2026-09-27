@@ -36,14 +36,20 @@ clock_check() {
   #    takes 6-17 s on EC2 (measured), so waiting from the operator one host at a
   #    time was far too slow for 15 hosts.
   for vm in "$@"; do
-    ( _ck_on "$vm" sudo bash -c 'if systemctl is-active --quiet chrony; then chronyc -a makestep >/dev/null; else systemctl restart systemd-timesyncd; fi
-        for i in $(seq 1 30); do [ "$(timedatectl show -p NTPSynchronized --value)" = yes ] && exit 0; sleep 1; done; exit 3' >/dev/null 2>&1
-      echo $? > "$tmp/$vm.rc" ) &
+    # The resync is idempotent: an ssh connection failure (exit 255, operator
+    # network) is retried up to 3 times instead of failing the clock check.
+    ( for try in 1 2 3; do
+        _ck_on "$vm" sudo bash -c 'if systemctl is-active --quiet chrony; then chronyc -a makestep >/dev/null; else systemctl restart systemd-timesyncd; fi
+          for i in $(seq 1 30); do [ "$(timedatectl show -p NTPSynchronized --value)" = yes ] && exit 0; sleep 1; done; exit 3' >/dev/null 2>&1
+        rc=$?; [ "$rc" != 255 ] && break; sleep 2
+      done
+      echo "$rc" > "$tmp/$vm.rc" ) &
   done
   wait
   for vm in "$@"; do
     case "$(cat "$tmp/$vm.rc" 2>/dev/null)" in
       0) ;; 3) echo "clock-check: $vm: NTP sync not reported within 30 s after the resync (see NTPSynchronized below)" >&2 ;;
+      255) echo "clock-check: FAIL: $vm: unreachable over ssh for the resync (3 tries)" >&2; bad=1 ;;
       *) echo "clock-check: $vm: cannot force a time resync (chrony/systemd-timesyncd)" >&2; bad=1 ;;
     esac
   done
