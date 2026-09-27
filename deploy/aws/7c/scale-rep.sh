@@ -15,21 +15,23 @@ K() { kubectl "$@"; }
 cpu_now() { awk '/^cpu /{t=0; for(i=2;i<=NF;i++) t+=$i; print t, $5+$6, $9}' /proc/stat; }
 AUDIT=/var/log/kubernetes/audit.log
 [[ -f "$AUDIT" ]] || { echo "apiserver audit log missing" >&2; exit 1; }
-# fit check on the schedulable nodes
+# delete + re-create at 0, warm the pause image on every schedulable node (not
+# measured), then the cooldown right before the measured scale-up
+t0=$(date +%s)
+K delete -f "$DEP" --wait=true >/dev/null 2>&1 || true
+K wait --for=delete pod -l app=scale-pause --timeout=300s >/dev/null 2>&1 || true
+# fit check on the schedulable nodes, AFTER the previous repetition's pods are gone,
+# counting only non-terminating pods (checking earlier counted the previous rep's
+# terminating pods and wrongly skipped 200 pods for 5 of 6 systems, NOTES N71)
 nodes=$(K get nodes -o json | jq -r '.items[] | select(((.spec.taints // []) | map(.effect=="NoSchedule") | any) | not) | .metadata.name')
 fit=$(K get nodes -o json | jq '[.items[] | select(((.spec.taints // []) | map(.effect=="NoSchedule") | any) | not) | .status.allocatable.pods | tonumber] | add')
-used=$(K get pods -A -o json | jq --arg n "$nodes" '[.items[] | select(.status.phase!="Succeeded" and .status.phase!="Failed") | select(.spec.nodeName as $x | ($n | split("\n")) | index($x))] | length')
+used=$(K get pods -A -o json | jq --arg n "$nodes" '[.items[] | select(.status.phase!="Succeeded" and .status.phase!="Failed" and .metadata.deletionTimestamp == null) | select(.spec.nodeName as $x | ($n | split("\n")) | index($x))] | length')
 free=$((fit - used)); workers=$(wc -w <<<"$nodes")
 if (( SIZE > free )); then
   jq -cn --arg s "$SYS" --argjson n "$SIZE" --arg why "only $free pods fit on $workers schedulable nodes ($fit allocatable, $used in use)" \
     '{system: $s, replicas: $n, skipped: true, reason: $why}' > "$OUT/$SYS-n$SIZE-skipped.json"
   echo "SKIPPED: $SIZE > $free"; exit 0
 fi
-# delete + re-create at 0, warm the pause image on every schedulable node (not
-# measured), then the cooldown right before the measured scale-up
-t0=$(date +%s)
-K delete -f "$DEP" --wait=true >/dev/null 2>&1 || true
-K wait --for=delete pod -l app=scale-pause --timeout=300s >/dev/null 2>&1 || true
 K apply -f "$DEP" >/dev/null
 K scale deploy/scale-pause --replicas="$workers" >/dev/null
 K wait deploy/scale-pause --for=jsonpath='{.status.readyReplicas}'="$workers" --timeout=300s >/dev/null || true

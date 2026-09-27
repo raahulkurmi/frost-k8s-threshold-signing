@@ -1145,3 +1145,13 @@ short. Switches now get 25 min and one retry.
   DAGOR-style priority-consistent admission is indicated only if goodput < 0.8 × peak
   goodput **and** ≥ 20 % of computed shares were for requests that failed; otherwise "not
   observed".
+
+### N71. Scale-up fit check raced the previous repetition's terminating pods (fixed; run restarted)
+The first interleaved scale-up attempt skipped the 200-pod size for 5 of 6 systems in rep 1
+("only 188–199 pods fit": 21–32 pods "in use" on the workers, against ≈ 4–6 system pods).
+`scale-rep.sh` checked the fit **before** deleting the previous repetition's Deployment,
+counting its still-terminating pods. It now checks after the Deployment is deleted and its
+pods are gone, and ignores terminating pods. Rep 1 was stopped at 15:52Z; its partial data
+(35 files, unfair: only B0 has a 200-pod rep) is set aside in
+`benchmark/results/20260927T131349Z-73be90f-7C-scale-ABORTED-fitcheck/` (not committed,
+not used). The scale phase was re-run from scratch.
