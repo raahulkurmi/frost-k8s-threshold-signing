@@ -981,3 +981,18 @@ validation, including `make check-images`** (all jobs green at `bfab4d9`; e2e 18
 with strategy=optimistic, TIMING 71/72 joined:
 `reports/gates/overload-fix-ci-e2e-run36275189321-bfab4d9.log`). The under-load timing
 breakdown (c=1/10/50) moves to Phase 7C.
+
+## Phase 7C notes
+
+### N66. ap-south-1 vCPU quota request (Phase 7C)
+The full 7C spec needs 11 instances in ap-south-1: control plane, 2 workers, coordinator
+node, load generator, 5 T-same-region signers and the T-5-region Mumbai signer. Every Free
+Plan instance type has 2 vCPU, so that is 22 vCPU; the quota "Running On-Demand Standard
+(A, C, D, H, I, M, R, T, Z) instances" (L-1216C47A) is 16. **Decision (2026-09-27):** request
+16 → 24 and do not wait for it. Run the phases that fit in 16 vCPU first (B0, B1,
+T-5-region: 6 instances, 12 vCPU in ap-south-1), and T-same-region only if the request is
+approved. If it is denied or still pending after those phases, stop and report. The spec is
+not shrunk unilaterally. If the fallback is 1 worker, every system's scale-up is re-run on
+the same 1-worker cluster; token benchmarks may be reused if the worker count is recorded.
+- Request **d54be0b2167647c4b59a05d04108c29cyFO4OQwl**, submitted **2026-09-27T08:40:50Z**
+  (14:10:50 IST), desired 24, status at submission **PENDING**, case id none yet.
