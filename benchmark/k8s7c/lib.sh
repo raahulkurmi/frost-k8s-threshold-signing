@@ -104,7 +104,11 @@ use_system() {
       pin="$(con coord bash -c "jq -r .kid ~/tk8s/$sec/keys/public-meta.json")" ;;
     *) die "unknown system $sys" ;;
   esac
-  con cp sudo /usr/local/bin/frost-7c-switch "$mode" "$stamp" $lbset >/dev/null || die "switch to $sys failed"
+  local swlog; swlog="$(mktemp "${TMPDIR:-/tmp}/c7switch.XXXXXX")"
+  if ! con cp sudo /usr/local/bin/frost-7c-switch "$mode" "$stamp" $lbset > "$swlog" 2>&1; then
+    echo "switch output:"; tail -20 "$swlog"; rm -f "$swlog"; die "switch to $sys failed"
+  fi
+  rm -f "$swlog"
   local j
   j="$(con cp sudo /usr/local/bin/frost-7c-check "$mode" $pin)" || { echo "$j" > "$out"; die "check failed for $sys: $j"; }
   jq -c --arg sys "$sys" --arg stamp "$stamp" '. + {system: $sys, stamp: $stamp}' <<<"$j" > "$out"
