@@ -1071,3 +1071,45 @@ the same 1-worker cluster; token benchmarks may be reused if the worker count is
   `wvQG_NBR…`), pinned independently for B1/T; TokenReview authenticated.
 - Driver smoke (N=20; B1, T-same optimistic): breakdown joined 20/20 at c=1. It was
   deleted after the check; the real run is `benchmark/results/20260927T123218Z-7faa09c-7C`.
+
+### N69. Phase 7C token benchmark: results and observations
+Run `benchmark/results/20260927T131349Z-73be90f-7C`: 3 runs × 6 systems × c=1/10/20/50,
+N=1000 after 100 warm-up, fan-out all, commit 73be90f. 72 configurations, **0 INVALID**,
+18 system switches all verified (kid, mode, TokenReview; 110–363 s each). An earlier
+attempt (`…20260927T123218Z-7faa09c-7C-ABORTED-switch-alarm`, not committed and not used)
+stopped mid-switch after B0/B1 of run 1, when the 600 s per-call ssh alarm cut a switch
+short. Switches now get 25 min and one retry.
+- **0 % errors in every configuration.** No signer returned 503 (optimistic and strict,
+  both placements). Strict T-same-region at c=50 had 3 deadline timeouts in 3000.
+- **T throughput is placement-independent**: optimistic ≈ 68–70 tokens/s at c=20/50
+  (T-5-region 67.8, T-same-region 69.8), strict ≈ 48–49/s, although the quorum RTT differs
+  (≈ 125 ms vs ≈ 1 ms). In optimistic the time is almost entirely inside the
+  coordinator's Sign (e.g. 719 of 723 ms at c=50), nginx→coordinator ≈ 1 ms, and outside
+  nginx (kube-apiserver + client) ≈ 3 ms. This points at the **signers' compute** (each of
+  the 5 t3.micro signers computes a share for every token under fan-out all; N48 queues
+  requests up to the deadline instead of shedding). Signer CPU was **not** sampled in the
+  token runs, so this is an inference from latency composition and the plateau, to be
+  measured directly in the stress test.
+- **Strict at c=50 adds queueing before the coordinator's handler:** nginx→coordinator
+  124/339 ms (median/p95) and 130/377 ms of "rest", i.e. the coordinator node (2 vCPU,
+  per-share verification) is the bottleneck, now on its own node instead of kube-apiserver's
+  (cf. 7B, N63). Strict fails N49-3 (failed p95 2622–2654 ms, ok p95 1777–2067 ms);
+  optimistic passes all three N49 criteria in both placements.
+- **B1 vs B0:** +0.9 ms at c=1 (1.34×), but B1 is *faster* at c=50 (42.1 vs 60.0 ms):
+  B0 signs inside kube-apiserver on the control plane (35 % CPU), B1 offloads signing to
+  the coordinator node.
+- **nginx log capture gap:** for T-5-region strict c=50 only 2198 of 3000 nginx lines were
+  captured (kubectl logs of the static pod reads only the current, rotated container log),
+  so that breakdown row pools 2198 joined requests and its "outside nginx" (client median −
+  nginx median over different sets) is not meaningful (−24.4 ms). Client and coordinator
+  latencies are unaffected. To fix for the scale phase: read nginx's log from the node's
+  rotated files, not `kubectl logs`.
+- gitleaks flagged the field name `token_kid` (public key IDs); renamed to
+  `jwt_header_kid` in `check.sh` and, as a documented mechanical change, in three result
+  files (`POSTPROCESSING.md`). Raw JSONL logs are gzipped (summary identical).
+- **CI was red from a0173b4 to 73be90f** (3 CI runs): the gitleaks tree scan (and T11)
+  flagged `token_kid` in the committed `reports/aws/7c/bootstrap-checks.jsonl`. The
+  pre-commit scan's output was lost because it ran in the same command as a
+  backgrounded smoke run, and CI was not checked after those commits. Fixed by the same
+  field rename (`reports/aws/7c/POSTPROCESSING.md`). The rule for every PASS from now on:
+  full-tree gitleaks + T11 locally, and CI green on the pushed commit.

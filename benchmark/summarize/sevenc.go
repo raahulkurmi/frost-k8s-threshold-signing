@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -186,7 +185,7 @@ func breakdownSection(dir string, runs []string, systems []string, med func(labe
 			found := false
 			for _, rd := range runs {
 				base := filepath.Join(rd, lab)
-				if _, err := os.Stat(base + ".nginx.jsonl"); err != nil {
+				if !exists(base + ".nginx.jsonl") {
 					continue
 				}
 				found = true

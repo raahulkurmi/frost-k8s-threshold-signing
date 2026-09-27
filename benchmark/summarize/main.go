@@ -206,7 +206,7 @@ func load(tag, path string) ([]*stats, error) {
 func loadCoord(st *stats, path string, measuredStartNs int64) {
 	lines := readLines(path)
 	if lines == nil {
-		if _, err := os.Stat(path); err != nil {
+		if !exists(path) {
 			return
 		}
 	}

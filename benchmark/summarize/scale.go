@@ -11,8 +11,10 @@ package main
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -53,14 +55,38 @@ type auditEvent struct {
 	} `json:"responseStatus"`
 }
 
+// exists reports whether path or path+".gz" exists (raw logs may be gzipped).
+func exists(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	_, err := os.Stat(path + ".gz")
+	return err == nil
+}
+
+// readLines returns the non-empty lines of path, or of path+".gz" if only the
+// gzipped file exists (large raw JSONL logs are stored compressed).
 func readLines(path string) []string {
+	var r io.Reader
 	f, err := os.Open(path)
 	if err != nil {
-		return nil
+		g, gerr := os.Open(path + ".gz")
+		if gerr != nil {
+			return nil
+		}
+		defer g.Close()
+		zr, zerr := gzip.NewReader(g)
+		if zerr != nil {
+			return nil
+		}
+		defer zr.Close()
+		r = zr
+	} else {
+		defer f.Close()
+		r = f
 	}
-	defer f.Close()
 	var out []string
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 1<<20), 1<<24)
 	for sc.Scan() {
 		if t := strings.TrimSpace(sc.Text()); t != "" {
@@ -96,9 +122,7 @@ func auditStats(path string) (lat []float64, reqs, errs int) {
 // "sign failed", and occurrences of "HTTP 503" (signer overloaded/shed).
 func coordStats(path string) (lat []float64, fails, n503 int, present bool) {
 	lines := readLines(path)
-	if _, err := os.Stat(path); err == nil {
-		present = true
-	}
+	present = exists(path)
 	for _, l := range lines {
 		n503 += strings.Count(l, "HTTP 503")
 		var m map[string]any

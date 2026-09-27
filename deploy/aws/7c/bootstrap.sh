@@ -99,7 +99,7 @@ step_smoke() {
   [[ -f "$S7/topology-tsame.env" ]] && systems="$systems T-sameregion-optimistic T-sameregion-strict"
   : > "$out"
   for sys in $systems; do use_system "$sys" /tmp/c7check.json; cat /tmp/c7check.json >> "$out"; done
-  jq -c '{system, ok, mode, token_kid, expected_kid, pinned_kid, tokenreview_authenticated}' "$out"
+  jq -c '{system, ok, mode, jwt_header_kid, expected_kid, pinned_kid, tokenreview_authenticated}' "$out"
 }
 
 [[ $# -ge 1 ]] || { sed -n '2,17p' "$0"; exit 2; }

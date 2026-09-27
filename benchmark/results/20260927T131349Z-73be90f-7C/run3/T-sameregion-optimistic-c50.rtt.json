@@ -1,0 +1,57 @@
+[
+ {
+  "signer_id": 1,
+  "ip": "172.31.36.255",
+  "port": 8441,
+  "rtt_ms": 0.369,
+  "rtt_min_ms": 0.339,
+  "rtt_max_ms": 0.634,
+  "samples": 32,
+  "failures": 0,
+  "measured": "TCP connect to the signer port from the coordinator host, median during the run"
+ },
+ {
+  "signer_id": 2,
+  "ip": "172.31.47.203",
+  "port": 8441,
+  "rtt_ms": 0.307,
+  "rtt_min_ms": 0.287,
+  "rtt_max_ms": 0.373,
+  "samples": 32,
+  "failures": 0,
+  "measured": "TCP connect to the signer port from the coordinator host, median during the run"
+ },
+ {
+  "signer_id": 3,
+  "ip": "172.31.11.172",
+  "port": 8441,
+  "rtt_ms": 0.628,
+  "rtt_min_ms": 0.611,
+  "rtt_max_ms": 2.503,
+  "samples": 32,
+  "failures": 0,
+  "measured": "TCP connect to the signer port from the coordinator host, median during the run"
+ },
+ {
+  "signer_id": 4,
+  "ip": "172.31.11.186",
+  "port": 8441,
+  "rtt_ms": 0.638,
+  "rtt_min_ms": 0.61,
+  "rtt_max_ms": 0.684,
+  "samples": 32,
+  "failures": 0,
+  "measured": "TCP connect to the signer port from the coordinator host, median during the run"
+ },
+ {
+  "signer_id": 5,
+  "ip": "172.31.27.192",
+  "port": 8441,
+  "rtt_ms": 0.444,
+  "rtt_min_ms": 0.423,
+  "rtt_max_ms": 0.49,
+  "samples": 32,
+  "failures": 0,
+  "measured": "TCP connect to the signer port from the coordinator host, median during the run"
+ }
+]

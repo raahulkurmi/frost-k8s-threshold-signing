@@ -19,5 +19,5 @@ ok=true
 [[ "$mode" == "$want" && "$kid" == "$expect" && "$alg" == RS256 && "$auth" == true ]] || ok=false
 [[ -z "$pin" || "$kid" == "$pin" ]] || ok=false
 jq -cn --arg mode "$mode" --arg want "$want" --arg kid "$kid" --arg expect "$expect" --arg src "$src" --arg pin "$pin" --arg alg "$alg" --arg auth "$auth" --argjson ok "$ok" \
-  '{ok: $ok, mode: $mode, expected_mode: $want, token_kid: $kid, expected_kid: $expect, expected_from: $src, pinned_kid: $pin, alg: $alg, tokenreview_authenticated: $auth}'
+  '{ok: $ok, mode: $mode, expected_mode: $want, jwt_header_kid: $kid, expected_kid: $expect, expected_from: $src, pinned_kid: $pin, alg: $alg, tokenreview_authenticated: $auth}'
 [[ "$ok" == true ]]
