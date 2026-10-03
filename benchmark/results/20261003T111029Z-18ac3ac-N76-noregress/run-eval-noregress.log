@@ -1,0 +1,322 @@
+LABEL: 7C configuration, no-regression check: today (n48) vs A+B stable-identity priority (abs), T-same-region and T-5-region optimistic, fan-out all, uncapped signers, 300 identities, B0 anchor in the same session; N76/N77 AWS session
+phase eval-noregress; commit 18ac3ac68ab172b7de86d98fd8d097ca9a6d9868; systems: B0 B1 T-5region-optimistic T-5region-strict T-sameregion-optimistic T-sameregion-strict; results benchmark/results/20261003T111029Z-18ac3ac-N76-noregress
+storm: 300 of 300 service accounts ready
+================ eval-noregress run 1/3 (11:10:32) ================
+clock-check: coord  chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +40 ms (exec round trip 100 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +38 ms (exec round trip 84 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.000 ms (last offset 0.006 ms) [primary]; round-trip skew    +40 ms (exec round trip 84 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +43 ms (exec round trip 99 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.000 ms (last offset -0.010 ms) [primary]; round-trip skew    +61 ms (exec round trip 238 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +99 ms (exec round trip 352 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew   +105 ms (exec round trip 366 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew   +205 ms (exec round trip 636 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +42 ms (exec round trip 89 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +41 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +42 ms (exec round trip 92 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset     0.000 ms (last offset 0.004 ms) [primary]; round-trip skew    +42 ms (exec round trip 92 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset    -0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +42 ms (exec round trip 89 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +40 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +36 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+[11:16:38Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"-PSoo5T4iy3QsxuGOZtxPCM7zJijqlLp9DaH-OZ_CzU","expected_kid":"-PSoo5T4iy3QsxuGOZtxPCM7zJijqlLp9DaH-OZ_CzU","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20261003T111050Z-try1","switch_seconds":347,"switch_tries":1}
+  run1 B0 c=1: 1000 rows, 0 errors
+  run1 B0 c=10: 1000 rows, 0 errors
+  run1 B0 c=20: 1000 rows, 0 errors
+  run1 B0 c=50: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[11:22:55Z] system T-sameregion-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@n48","stamp":"T-sameregion-optimistic@n48-20261003T111701Z-try1","switch_seconds":351,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"}]}
+  run1 T-sameregion-optimistic@n48 c=1: 1000 rows, 0 errors
+  run1 T-sameregion-optimistic@n48 c=10: 1000 rows, 0 errors
+  run1 T-sameregion-optimistic@n48 c=20: 1000 rows, 0 errors
+  run1 T-sameregion-optimistic@n48 c=50: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[11:30:39Z] system T-sameregion-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@abs","stamp":"T-sameregion-optimistic@abs-20261003T112435Z-try1","switch_seconds":361,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"}]}
+  run1 T-sameregion-optimistic@abs c=1: 1000 rows, 0 errors
+  run1 T-sameregion-optimistic@abs c=10: 1000 rows, 0 errors
+  run1 T-sameregion-optimistic@abs c=20: 1000 rows, 0 errors
+  run1 T-sameregion-optimistic@abs c=50: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[11:38:22Z] system T-5region-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"9gu_VGBelENBq30fjQ6XBw","expected_kid":"9gu_VGBelENBq30fjQ6XBw","expected_from":"signer FetchKeys","pinned_kid":"9gu_VGBelENBq30fjQ6XBw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic@n48","stamp":"T-5region-optimistic@n48-20261003T113219Z-try1","switch_seconds":355,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"}]}
+  run1 T-5region-optimistic@n48 c=1: 1000 rows, 0 errors
+  run1 T-5region-optimistic@n48 c=10: 1000 rows, 0 errors
+  run1 T-5region-optimistic@n48 c=20: 1000 rows, 0 errors
+  run1 T-5region-optimistic@n48 c=50: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[11:48:22Z] system T-5region-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"9gu_VGBelENBq30fjQ6XBw","expected_kid":"9gu_VGBelENBq30fjQ6XBw","expected_from":"signer FetchKeys","pinned_kid":"9gu_VGBelENBq30fjQ6XBw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic@abs","stamp":"T-5region-optimistic@abs-20261003T114246Z-try1","switch_seconds":333,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"}]}
+  run1 T-5region-optimistic@abs c=1: 1000 rows, 0 errors
+  run1 T-5region-optimistic@abs c=10: 1000 rows, 0 errors
+  run1 T-5region-optimistic@abs c=20: 1000 rows, 0 errors
+  run1 T-5region-optimistic@abs c=50: 1000 rows, 0 errors
+================ eval-noregress run 2/3 (11:52:38) ================
+clock-check: coord  chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +31 ms (exec round trip 105 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +30 ms (exec round trip 94 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +24 ms (exec round trip 78 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.003 ms (last offset 0.004 ms) [primary]; round-trip skew    +28 ms (exec round trip 97 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.007 ms (last offset 0.012 ms) [primary]; round-trip skew    +54 ms (exec round trip 211 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +87 ms (exec round trip 351 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +90 ms (exec round trip 369 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew   +161 ms (exec round trip 574 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.012 ms (last offset -0.020 ms) [primary]; round-trip skew    +25 ms (exec round trip 81 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.011 ms (last offset 0.013 ms) [primary]; round-trip skew    +26 ms (exec round trip 69 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +32 ms (exec round trip 96 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset     0.001 ms (last offset 0.004 ms) [primary]; round-trip skew    +22 ms (exec round trip 72 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +30 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +43 ms (exec round trip 97 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +27 ms (exec round trip 66 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[11:55:08Z] system T-sameregion-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@n48","stamp":"T-sameregion-optimistic@n48-20261003T115257Z-try1","switch_seconds":127,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"}]}
+  run2 T-sameregion-optimistic@n48 c=10: 1000 rows, 0 errors
+  run2 T-sameregion-optimistic@n48 c=20: 1000 rows, 0 errors
+  run2 T-sameregion-optimistic@n48 c=50: 1000 rows, 0 errors
+  run2 T-sameregion-optimistic@n48 c=1: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[11:58:40Z] system T-sameregion-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@abs","stamp":"T-sameregion-optimistic@abs-20261003T115648Z-try1","switch_seconds":109,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"}]}
+  run2 T-sameregion-optimistic@abs c=10: 1000 rows, 0 errors
+  run2 T-sameregion-optimistic@abs c=20: 1000 rows, 0 errors
+  run2 T-sameregion-optimistic@abs c=50: 1000 rows, 0 errors
+  run2 T-sameregion-optimistic@abs c=1: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[12:02:29Z] system T-5region-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"9gu_VGBelENBq30fjQ6XBw","expected_kid":"9gu_VGBelENBq30fjQ6XBw","expected_from":"signer FetchKeys","pinned_kid":"9gu_VGBelENBq30fjQ6XBw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic@n48","stamp":"T-5region-optimistic@n48-20261003T120026Z-try1","switch_seconds":119,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"}]}
+  run2 T-5region-optimistic@n48 c=10: 1000 rows, 0 errors
+  run2 T-5region-optimistic@n48 c=20: 1000 rows, 0 errors
+  run2 T-5region-optimistic@n48 c=50: 1000 rows, 0 errors
+  run2 T-5region-optimistic@n48 c=1: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[12:08:57Z] system T-5region-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"9gu_VGBelENBq30fjQ6XBw","expected_kid":"9gu_VGBelENBq30fjQ6XBw","expected_from":"signer FetchKeys","pinned_kid":"9gu_VGBelENBq30fjQ6XBw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic@abs","stamp":"T-5region-optimistic@abs-20261003T120647Z-try1","switch_seconds":126,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"}]}
+  run2 T-5region-optimistic@abs c=10: 1000 rows, 0 errors
+  run2 T-5region-optimistic@abs c=20: 1000 rows, 0 errors
+  run2 T-5region-optimistic@abs c=50: 1000 rows, 0 errors
+  run2 T-5region-optimistic@abs c=1: 1000 rows, 0 errors
+[12:16:50Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"-PSoo5T4iy3QsxuGOZtxPCM7zJijqlLp9DaH-OZ_CzU","expected_kid":"-PSoo5T4iy3QsxuGOZtxPCM7zJijqlLp9DaH-OZ_CzU","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20261003T121316Z-try1","switch_seconds":212,"switch_tries":1}
+  run2 B0 c=10: 1000 rows, 0 errors
+  run2 B0 c=20: 1000 rows, 0 errors
+  run2 B0 c=50: 1000 rows, 0 errors
+  run2 B0 c=1: 1000 rows, 0 errors
+================ eval-noregress run 3/3 (12:17:12) ================
+clock-check: coord  chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +23 ms (exec round trip 99 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +21 ms (exec round trip 85 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +22 ms (exec round trip 83 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +32 ms (exec round trip 101 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +45 ms (exec round trip 198 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.009 ms (last offset -0.019 ms) [primary]; round-trip skew    +77 ms (exec round trip 345 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +82 ms (exec round trip 351 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew   +156 ms (exec round trip 574 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.003 ms (last offset -0.003 ms) [primary]; round-trip skew    +20 ms (exec round trip 70 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset    -0.016 ms (last offset -0.022 ms) [primary]; round-trip skew    +21 ms (exec round trip 83 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 67 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +21 ms (exec round trip 67 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +23 ms (exec round trip 73 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset     0.006 ms (last offset 0.011 ms) [primary]; round-trip skew    +24 ms (exec round trip 65 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +23 ms (exec round trip 77 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[12:23:38Z] system T-sameregion-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@abs","stamp":"T-sameregion-optimistic@abs-20261003T121731Z-try1","switch_seconds":365,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"}]}
+  run3 T-sameregion-optimistic@abs c=20: 1000 rows, 0 errors
+  run3 T-sameregion-optimistic@abs c=50: 1000 rows, 0 errors
+  run3 T-sameregion-optimistic@abs c=1: 1000 rows, 0 errors
+  run3 T-sameregion-optimistic@abs c=10: 1000 rows, 0 errors
+Warning: The unit file, source configuration file or drop-ins of frost-signer-1.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[12:31:13Z] system T-5region-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"9gu_VGBelENBq30fjQ6XBw","expected_kid":"9gu_VGBelENBq30fjQ6XBw","expected_from":"signer FetchKeys","pinned_kid":"9gu_VGBelENBq30fjQ6XBw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic@n48","stamp":"T-5region-optimistic@n48-20261003T122520Z-try1","switch_seconds":349,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"}]}
+  run3 T-5region-optimistic@n48 c=20: 1000 rows, 0 errors
+  run3 T-5region-optimistic@n48 c=50: 1000 rows, 0 errors
+  run3 T-5region-optimistic@n48 c=1: 1000 rows, 0 errors
+  run3 T-5region-optimistic@n48 c=10: 1000 rows, 0 errors
+Warning: The unit file, source configuration file or drop-ins of frost-signer-1.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[12:41:37Z] system T-5region-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"9gu_VGBelENBq30fjQ6XBw","expected_kid":"9gu_VGBelENBq30fjQ6XBw","expected_from":"signer FetchKeys","pinned_kid":"9gu_VGBelENBq30fjQ6XBw","alg":"RS256","tokenreview_authenticated":"true","system":"T-5region-optimistic@abs","stamp":"T-5region-optimistic@abs-20261003T123542Z-try1","switch_seconds":350,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":2,"max_deadline":"4s"}]}
+  run3 T-5region-optimistic@abs c=20: 1000 rows, 0 errors
+  run3 T-5region-optimistic@abs c=50: 1000 rows, 0 errors
+  run3 T-5region-optimistic@abs c=1: 1000 rows, 0 errors
+  run3 T-5region-optimistic@abs c=10: 1000 rows, 0 errors
+[12:48:09Z] system B0 ready: {"ok":true,"mode":"in-tree","expected_mode":"in-tree","jwt_header_kid":"-PSoo5T4iy3QsxuGOZtxPCM7zJijqlLp9DaH-OZ_CzU","expected_kid":"-PSoo5T4iy3QsxuGOZtxPCM7zJijqlLp9DaH-OZ_CzU","expected_from":"sa.pub","pinned_kid":"","alg":"RS256","tokenreview_authenticated":"true","system":"B0","stamp":"B0-20261003T124603Z-try1","switch_seconds":124,"switch_tries":1}
+  run3 B0 c=20: 1000 rows, 0 errors
+  run3 B0 c=50: 1000 rows, 0 errors
+  run3 B0 c=1: 1000 rows, 0 errors
+  run3 B0 c=10: 1000 rows, 0 errors
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[12:50:29Z] system T-sameregion-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@n48","stamp":"T-sameregion-optimistic@n48-20261003T124831Z-try1","switch_seconds":114,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":2,"max_deadline":"4s"}]}
+  run3 T-sameregion-optimistic@n48 c=20: 1000 rows, 0 errors
+  run3 T-sameregion-optimistic@n48 c=50: 1000 rows, 0 errors
+  run3 T-sameregion-optimistic@n48 c=1: 1000 rows, 0 errors
+  run3 T-sameregion-optimistic@n48 c=10: 1000 rows, 0 errors
+Warning: The unit file, source configuration file or drop-ins of frost-signer-1.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+summary: benchmark/results/20261003T111029Z-18ac3ac-N76-noregress/summary.md

@@ -1,0 +1,340 @@
+LABEL: stress test (CPU-capped signers CPUQuota=25%, SIGNER_MAX_CONCURRENT=1): T-same-region optimistic, fan-out all, variants n48 / b / ab / abs, 300 identities; N76/N77 AWS session
+phase eval-stress; commit 18ac3ac68ab172b7de86d98fd8d097ca9a6d9868; systems: B0 B1 T-5region-optimistic T-5region-strict T-sameregion-optimistic T-sameregion-strict; results benchmark/results/20261003T125216Z-18ac3ac-N76-stress
+storm: 300 of 300 service accounts ready
+== STRESS TEST (CPU-capped signers, SIGNER_MAX_CONCURRENT=1), N76/N77 before/after: applying caps
+  ts-1 signer-1: 250ms {"max_concurrent":1,"max_queue":64} 
+  ts-2 signer-2: 250ms {"max_concurrent":1,"max_queue":64} 
+  ts-3 signer-3: 250ms {"max_concurrent":1,"max_queue":64} 
+  ts-4 signer-4: 250ms {"max_concurrent":1,"max_queue":64} 
+  ts-5 signer-5: 250ms {"max_concurrent":1,"max_queue":64} 
+================ eval-stress run 1/3 (12:52:43) ================
+clock-check: coord  chrony offset    -0.002 ms (last offset -0.002 ms) [primary]; round-trip skew    +22 ms (exec round trip 78 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.000 ms (last offset 0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 62 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +18 ms (exec round trip 69 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.001 ms (last offset 0.002 ms) [primary]; round-trip skew    +20 ms (exec round trip 74 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset    -0.007 ms (last offset -0.010 ms) [primary]; round-trip skew    +42 ms (exec round trip 235 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset    -0.004 ms (last offset -0.005 ms) [primary]; round-trip skew    +77 ms (exec round trip 337 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +79 ms (exec round trip 349 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew   +153 ms (exec round trip 573 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.006 ms (last offset -0.006 ms) [primary]; round-trip skew    +20 ms (exec round trip 77 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +14 ms (exec round trip 74 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.000 ms (last offset -0.001 ms) [primary]; round-trip skew    +16 ms (exec round trip 75 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +17 ms (exec round trip 73 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +23 ms (exec round trip 81 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +17 ms (exec round trip 60 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +23 ms (exec round trip 69 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[12:55:09Z] system T-sameregion-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@n48","stamp":"T-sameregion-optimistic@n48-20261003T125301Z-try1","switch_seconds":124,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run1 T-sameregion-optimistic@n48 c=10: 1000 rows, 0 errors; signer CPU mean 22.9%
+  run1 T-sameregion-optimistic@n48 c=25: 1000 rows, 3 errors; signer CPU mean 23.580000000000002%
+  run1 T-sameregion-optimistic@n48 c=50: 1000 rows, 569 errors; signer CPU mean 20.2%
+  run1 T-sameregion-optimistic@n48 c=100: 1000 rows, 811 errors; signer CPU mean 19.779999999999998%
+  run1 T-sameregion-optimistic@n48 c=150: 1000 rows, 912 errors; signer CPU mean 16.359999999999996%
+  run1 T-sameregion-optimistic@n48 c=200: 1000 rows, 951 errors; signer CPU mean 12.540000000000001%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[13:02:38Z] system T-sameregion-optimistic@b ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@b","stamp":"T-sameregion-optimistic@b-20261003T130033Z-try1","switch_seconds":122,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run1 T-sameregion-optimistic@b c=10: 1000 rows, 0 errors; signer CPU mean 22.98%
+  run1 T-sameregion-optimistic@b c=25: 1000 rows, 5 errors; signer CPU mean 22.7%
+  run1 T-sameregion-optimistic@b c=50: 1000 rows, 610 errors; signer CPU mean 19.8%
+  run1 T-sameregion-optimistic@b c=100: 1000 rows, 951 errors; signer CPU mean 8.84%
+  run1 T-sameregion-optimistic@b c=150: 1000 rows, 975 errors; signer CPU mean 11.6%
+  run1 T-sameregion-optimistic@b c=200: 1000 rows, 978 errors; signer CPU mean 11.22%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[13:11:22Z] system T-sameregion-optimistic@ab ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@ab","stamp":"T-sameregion-optimistic@ab-20261003T130746Z-try1","switch_seconds":212,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run1 T-sameregion-optimistic@ab c=10: 1000 rows, 126 errors; signer CPU mean 22.84%
+  run1 T-sameregion-optimistic@ab c=25: 1000 rows, 759 errors; signer CPU mean 18%
+  run1 T-sameregion-optimistic@ab c=50: 1000 rows, 899 errors; signer CPU mean 16.36%
+  run1 T-sameregion-optimistic@ab c=100: 1000 rows, 961 errors; signer CPU mean 8.36%
+  run1 T-sameregion-optimistic@ab c=150: 1000 rows, 959 errors; signer CPU mean 9.28%
+  run1 T-sameregion-optimistic@ab c=200: 1000 rows, 961 errors; signer CPU mean 8.559999999999999%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[13:20:01Z] system T-sameregion-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@abs","stamp":"T-sameregion-optimistic@abs-20261003T131421Z-try1","switch_seconds":336,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"}]}
+  run1 T-sameregion-optimistic@abs c=10: 1000 rows, 0 errors; signer CPU mean 23.36%
+  run1 T-sameregion-optimistic@abs c=25: 1000 rows, 919 errors; signer CPU mean 16.94%
+  run1 T-sameregion-optimistic@abs c=50: 1000 rows, 983 errors; signer CPU mean 6.9399999999999995%
+  run1 T-sameregion-optimistic@abs c=100: 1000 rows, 956 errors; signer CPU mean 8.3%
+  run1 T-sameregion-optimistic@abs c=150: 1000 rows, 976 errors; signer CPU mean 8.6%
+  run1 T-sameregion-optimistic@abs c=200: 1000 rows, 975 errors; signer CPU mean 10.08%
+================ eval-stress run 2/3 (13:22:46) ================
+clock-check: coord  chrony offset     0.001 ms (last offset 0.000 ms) [primary]; round-trip skew    +17 ms (exec round trip 78 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset     0.003 ms (last offset 0.005 ms) [primary]; round-trip skew    +15 ms (exec round trip 63 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.000 ms (last offset 0.004 ms) [primary]; round-trip skew    +12 ms (exec round trip 68 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.001 ms (last offset -0.000 ms) [primary]; round-trip skew    +20 ms (exec round trip 86 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.005 ms (last offset 0.004 ms) [primary]; round-trip skew    +33 ms (exec round trip 180 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +68 ms (exec round trip 359 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +73 ms (exec round trip 342 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew   +155 ms (exec round trip 604 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +18 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset    -0.001 ms (last offset -0.001 ms) [primary]; round-trip skew    +11 ms (exec round trip 74 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +15 ms (exec round trip 81 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +11 ms (exec round trip 75 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +19 ms (exec round trip 82 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset    -0.001 ms (last offset -0.000 ms) [primary]; round-trip skew    +16 ms (exec round trip 76 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset     0.001 ms (last offset -0.000 ms) [primary]; round-trip skew    +14 ms (exec round trip 72 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[13:28:51Z] system T-sameregion-optimistic@b ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@b","stamp":"T-sameregion-optimistic@b-20261003T132307Z-try1","switch_seconds":339,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run2 T-sameregion-optimistic@b c=25: 1000 rows, 16 errors; signer CPU mean 23.5%
+  run2 T-sameregion-optimistic@b c=50: 1000 rows, 572 errors; signer CPU mean 21.78%
+  run2 T-sameregion-optimistic@b c=100: 1000 rows, 957 errors; signer CPU mean 12.479999999999999%
+  run2 T-sameregion-optimistic@b c=150: 1000 rows, 967 errors; signer CPU mean 12.86%
+  run2 T-sameregion-optimistic@b c=200: 1000 rows, 977 errors; signer CPU mean 11.7%
+  run2 T-sameregion-optimistic@b c=10: 1000 rows, 0 errors; signer CPU mean 23.32%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[13:39:21Z] system T-sameregion-optimistic@ab ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@ab","stamp":"T-sameregion-optimistic@ab-20261003T133336Z-try1","switch_seconds":341,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run2 T-sameregion-optimistic@ab c=25: 1000 rows, 915 errors; signer CPU mean 14.679999999999998%
+  run2 T-sameregion-optimistic@ab c=50: 1000 rows, 977 errors; signer CPU mean 7.159999999999999%
+  run2 T-sameregion-optimistic@ab c=100: 1000 rows, 976 errors; signer CPU mean 8.2%
+  run2 T-sameregion-optimistic@ab c=150: 1000 rows, 976 errors; signer CPU mean 8.120000000000001%
+  run2 T-sameregion-optimistic@ab c=200: 1000 rows, 966 errors; signer CPU mean 7.779999999999999%
+  run2 T-sameregion-optimistic@ab c=10: 1000 rows, 28 errors; signer CPU mean 23.080000000000002%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[13:44:09Z] system T-sameregion-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@abs","stamp":"T-sameregion-optimistic@abs-20261003T134212Z-try1","switch_seconds":113,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"}]}
+  run2 T-sameregion-optimistic@abs c=25: 1000 rows, 916 errors; signer CPU mean 15.059999999999999%
+  run2 T-sameregion-optimistic@abs c=50: 1000 rows, 961 errors; signer CPU mean 7.339999999999999%
+  run2 T-sameregion-optimistic@abs c=100: 1000 rows, 964 errors; signer CPU mean 7.26%
+  run2 T-sameregion-optimistic@abs c=150: 1000 rows, 963 errors; signer CPU mean 10.180000000000001%
+  run2 T-sameregion-optimistic@abs c=200: 1000 rows, 965 errors; signer CPU mean 7.58%
+  run2 T-sameregion-optimistic@abs c=10: 1000 rows, 277 errors; signer CPU mean 22.859999999999996%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[13:48:41Z] system T-sameregion-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@n48","stamp":"T-sameregion-optimistic@n48-20261003T134634Z-try1","switch_seconds":123,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run2 T-sameregion-optimistic@n48 c=25: 1000 rows, 0 errors; signer CPU mean 22.98%
+  run2 T-sameregion-optimistic@n48 c=50: 1000 rows, 555 errors; signer CPU mean 21.8%
+  run2 T-sameregion-optimistic@n48 c=100: 1000 rows, 812 errors; signer CPU mean 19.240000000000002%
+  run2 T-sameregion-optimistic@n48 c=150: 1000 rows, 926 errors; signer CPU mean 16.36%
+  run2 T-sameregion-optimistic@n48 c=200: 1000 rows, 942 errors; signer CPU mean 16.560000000000002%
+  run2 T-sameregion-optimistic@n48 c=10: 1000 rows, 0 errors; signer CPU mean 23.02%
+================ eval-stress run 3/3 (13:53:48) ================
+clock-check: coord  chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +17 ms (exec round trip 103 ms) [secondary]; NTPSynchronized=yes
+clock-check: cp     chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +12 ms (exec round trip 86 ms) [secondary]; NTPSynchronized=yes
+clock-check: lg     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +16 ms (exec round trip 84 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-1   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +14 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-2   chrony offset     0.004 ms (last offset 0.005 ms) [primary]; round-trip skew    +38 ms (exec round trip 203 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-3   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +76 ms (exec round trip 349 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-4   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +87 ms (exec round trip 384 ms) [secondary]; NTPSynchronized=yes
+clock-check: t5-5   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew   +158 ms (exec round trip 596 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-1   chrony offset     0.002 ms (last offset 0.005 ms) [primary]; round-trip skew    +18 ms (exec round trip 93 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-2   chrony offset    -0.001 ms (last offset -0.002 ms) [primary]; round-trip skew    +15 ms (exec round trip 90 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-3   chrony offset    -0.000 ms (last offset -0.000 ms) [primary]; round-trip skew    +14 ms (exec round trip 92 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-4   chrony offset     0.002 ms (last offset 0.002 ms) [primary]; round-trip skew    +14 ms (exec round trip 88 ms) [secondary]; NTPSynchronized=yes
+clock-check: ts-5   chrony offset     0.001 ms (last offset 0.001 ms) [primary]; round-trip skew    +19 ms (exec round trip 89 ms) [secondary]; NTPSynchronized=yes
+clock-check: w1     chrony offset     0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +18 ms (exec round trip 91 ms) [secondary]; NTPSynchronized=yes
+clock-check: w2     chrony offset    -0.000 ms (last offset 0.000 ms) [primary]; round-trip skew    +13 ms (exec round trip 81 ms) [secondary]; NTPSynchronized=yes
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+[13:56:19Z] system T-sameregion-optimistic@ab ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@ab","stamp":"T-sameregion-optimistic@ab-20261003T135408Z-try1","switch_seconds":126,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"request","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run3 T-sameregion-optimistic@ab c=50: 1000 rows, 912 errors; signer CPU mean 15.26%
+  run3 T-sameregion-optimistic@ab c=100: 1000 rows, 967 errors; signer CPU mean 9.26%
+  run3 T-sameregion-optimistic@ab c=150: 1000 rows, 975 errors; signer CPU mean 9.2%
+  run3 T-sameregion-optimistic@ab c=200: 1000 rows, 976 errors; signer CPU mean 8.7%
+  run3 T-sameregion-optimistic@ab c=10: 1000 rows, 166 errors; signer CPU mean 22.86%
+  run3 T-sameregion-optimistic@ab c=25: 1000 rows, 914 errors; signer CPU mean 14.2%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[14:01:10Z] system T-sameregion-optimistic@abs ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@abs","stamp":"T-sameregion-optimistic@abs-20261003T135904Z-try1","switch_seconds":122,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"priority","priority":"stable","priority_epoch":"2m0s","priority_rotation":32,"max_concurrent":1,"max_deadline":"4s"}]}
+  run3 T-sameregion-optimistic@abs c=50: 1000 rows, 951 errors; signer CPU mean 11.98%
+  run3 T-sameregion-optimistic@abs c=100: 1000 rows, 963 errors; signer CPU mean 8.620000000000001%
+  run3 T-sameregion-optimistic@abs c=150: 1000 rows, 973 errors; signer CPU mean 8.96%
+  run3 T-sameregion-optimistic@abs c=200: 1000 rows, 976 errors; signer CPU mean 8.58%
+  run3 T-sameregion-optimistic@abs c=10: 1000 rows, 36 errors; signer CPU mean 23.119999999999997%
+  run3 T-sameregion-optimistic@abs c=25: 1000 rows, 879 errors; signer CPU mean 14.98%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+ Container c7-grpc-proxy-3-1 Started 
+[14:07:26Z] system T-sameregion-optimistic@n48 ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@n48","stamp":"T-sameregion-optimistic@n48-20261003T140404Z-try1","switch_seconds":198,"switch_tries":1,"quorum_abort":"off","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run3 T-sameregion-optimistic@n48 c=50: 1000 rows, 611 errors; signer CPU mean 21.1%
+  run3 T-sameregion-optimistic@n48 c=100: 1000 rows, 792 errors; signer CPU mean 19%
+  run3 T-sameregion-optimistic@n48 c=150: 1000 rows, 957 errors; signer CPU mean 15.819999999999999%
+  run3 T-sameregion-optimistic@n48 c=200: 1000 rows, 942 errors; signer CPU mean 15.940000000000001%
+  run3 T-sameregion-optimistic@n48 c=10: 1000 rows, 0 errors; signer CPU mean 23.040000000000003%
+  run3 T-sameregion-optimistic@n48 c=25: 1000 rows, 15 errors; signer CPU mean 22.68%
+ Network c7_coord-net Creating 
+ Network c7_coord-net Creating 
+ Network c7_coord-net Created 
+ Network c7_coord-net Created 
+ Container c7-grpc-proxy-3-1 Creating 
+ Container c7-grpc-proxy-2-1 Creating 
+ Container c7-grpc-proxy-1-1 Creating 
+ Container c7-grpc-proxy-3-1 Created 
+ Container c7-grpc-proxy-1-1 Created 
+ Container c7-grpc-proxy-2-1 Created 
+ Container c7-grpc-proxy-3-1 Starting 
+ Container c7-grpc-proxy-1-1 Starting 
+ Container c7-grpc-proxy-2-1 Starting 
+ Container c7-grpc-proxy-3-1 Started 
+ Container c7-grpc-proxy-1-1 Started 
+ Container c7-grpc-proxy-2-1 Started 
+[14:17:37Z] system T-sameregion-optimistic@b ready: {"ok":true,"mode":"external","expected_mode":"external","jwt_header_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_kid":"Eu4bZ_v5UWFJayvIvh2mEg","expected_from":"signer FetchKeys","pinned_kid":"Eu4bZ_v5UWFJayvIvh2mEg","alg":"RS256","tokenreview_authenticated":"true","system":"T-sameregion-optimistic@b","stamp":"T-sameregion-optimistic@b-20261003T141237Z-try1","switch_seconds":296,"switch_tries":1,"quorum_abort":"on","signers":[{"signer_id":1,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":2,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":3,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":4,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"},{"signer_id":5,"admission":"n48","priority":"","priority_epoch":"","priority_rotation":0,"max_concurrent":1,"max_deadline":"4s"}]}
+  run3 T-sameregion-optimistic@b c=50: 1000 rows, 615 errors; signer CPU mean 20.2%
+  run3 T-sameregion-optimistic@b c=100: 1000 rows, 944 errors; signer CPU mean 11.92%
+  run3 T-sameregion-optimistic@b c=150: 1000 rows, 971 errors; signer CPU mean 10.34%
+  run3 T-sameregion-optimistic@b c=200: 1000 rows, 968 errors; signer CPU mean 10.919999999999998%
+  run3 T-sameregion-optimistic@b c=10: 1000 rows, 0 errors; signer CPU mean 22.78%
+  run3 T-sameregion-optimistic@b c=25: 1000 rows, 1 errors; signer CPU mean 20.48%
+== removing stress caps
+  ts-1 signer-1: infinity {"max_concurrent":2,"max_queue":64} 
+  ts-2 signer-2: infinity {"max_concurrent":2,"max_queue":64} 
+  ts-3 signer-3: infinity {"max_concurrent":2,"max_queue":64} 
+  ts-4 signer-4: infinity {"max_concurrent":2,"max_queue":64} 
+  ts-5 signer-5: infinity {"max_concurrent":2,"max_queue":64} 
+summary: benchmark/results/20261003T125216Z-18ac3ac-N76-stress/summary.md

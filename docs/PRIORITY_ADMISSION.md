@@ -6,6 +6,8 @@ admission) with two priority derivations, **stable identity** (the proposal, N77
 **request ID** (kept for comparison, N76); B (quorum-impossible abort, on by default); and
 the hardening of §4: one client certificate per coordinator replica with a per-client fair
 share, and the 4 s deadline cap. Collaborative admission (§2C) is **future work**.
+**Evaluated on AWS 2026-10-03 (NOTES N78, §7): A+B did not meet the pre-registered
+stress rule in either priority mode; no regression on the uncapped configuration.**
 Recorded follow-up, **not implemented**: binding p to the signing input, plus a request-ID
 replay cache (§4.3). Priority classes (§2A) are not implemented. Motivation: the Phase 7C
 stress test (NOTES N73, label **stress test**) met the pre-registered rule. At c ≥ 50 goodput
@@ -461,3 +463,26 @@ Hypotheses and the instrument for each, all added to the 5.1 runs:
     samples at the first and last measured request.
 
 Until these are measured, N73's CPU figures are reported as measured, with no explanation.
+
+## 7. Results (AWS, 2026-10-03; NOTES N78)
+
+| Test (label) | Pre-registered rule | Result |
+|---|---|---|
+| §5.3 inference test (admission slots) | supported iff goodput(4) ≥ 1.2 × goodput(2) and CPU rises | **NOT SUPPORTED**: 69.9 / 70.1 / 69.7 per s for 2 / 4 / 8 slots. Signers were CPU-saturated over the measured window (196.5 % of 200 %); N72's slot attribution is withdrawn. |
+| §5.2 7C configuration, no-regression check | goodput ± 5 %, median ± 5 % or ± 2 ms, 0 errors, 0 priority refusals | **PASS**, all 8 pairs (both placements, abs vs n48); B0 anchor in the same session. |
+| §5.1 stress test (CPU-capped signers) | every c ≥ 50: goodput ≥ 0.8 × peak and wasted ≤ 10 % | **NOT MET** for n48, b, ab and abs. abs met both criteria at c = 50 and 100 (0.89 / 0.86, wasted 3.3 / 6.0 %), not at 150 and 200. |
+| §5.4 storm | H1–H3 reported | H1 false (amplification abs 9.0 > ab 7.5; n48 3.8). H2 marginal (2.03 vs 2.34; n48 1.23). H3 holds (worst wait 254 s). |
+
+**Why A+B failed here.** At ≈ 14 requests/s per capped signer, the 250 ms window holds 2–5
+arrivals, while DAGOR's §4.2.3 update assumes thousands (§4.1). The level therefore
+overshoots to the floor and recovers slowly. Separately, θ = 0.5 classifies the capped
+c = 10 steady state as overloaded.
+
+**What would be needed** (not done, needs approval and a new label): a minimum number of
+arrivals per window, or DAGOR's 1 s / 2000-request window, and θ re-checked for
+low-capacity signers.
+
+**Open question N73/N75 (§6), answered.** (c) The CPU drop is a window artefact: over the
+measured window the capped signers used exactly their 25 % quota. (a) Throttling (≈ 92 % of
+wall time) inflates RSA wall time and N48's estimate, so N48 over-sheds. (b) could not be
+determined.

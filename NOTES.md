@@ -1386,3 +1386,68 @@ AWS yet.
   signer-issued priority ticket (an extra round trip and new protocol). Not cheap.
 - Also fixed: the `SIGNER_QUEUE_SAMPLE` config-failure case that N76 cited was missing
   from `cmd/signer` tests (the insertion had silently failed); it is now present.
+
+### N78. N76/N77 AWS evaluation: results against the pre-registered rules (2026-10-03)
+Fresh 7C cluster (15 instances, Free Plan types, 09:22–15:37Z), commit 18ac3ac (code
+f745ae2). T-5 kid `9gu_VGBe…`, T-same kid `Eu4bZ_v5…`; all 10 signer hosts run binary
+`f07f701f…`, one share each; 6 systems smoke-checked (`reports/aws/7c/bootstrap-checks.jsonl`).
+0 INVALID in all four phases. Teardown: zero tagged resources and zero any-tag instances,
+volumes and EIPs in 5 regions (`reports/aws/TEARDOWN-N76-20261003T154358Z.md`); the first
+teardown's verification hit a transient `AuthFailure`, and the re-run verified.
+- **Slots inference test** (`…N76-slots`; label **inference test (admission slots)**):
+  - Goodput at c=50 with 2 / 4 / 8 slots: 69.9 / 70.1 / 69.7 per s (1.00×).
+  - **Decision (§5.3): slot inference NOT SUPPORTED.**
+  - The §6 instrumentation shows why: over the **measured window** the uncapped signers
+    used **196.5 % of 200 %** (CPU-saturated) in every configuration. RSA wall time per
+    share rose with the slots (28 / 48 / 80 ms), i.e. extra slots only time-slice a full
+    CPU.
+  - **Correction to N72:** its "signers not CPU-saturated (130–148 %)" came from averaging
+    over a window that included warm-up and idle time. The ≈ 70/s plateau **is** signer
+    CPU, as N70 first attributed. N72's slot attribution is withdrawn.
+- **No-regression test** (`…N76-noregress`; label **7C configuration, no-regression check**):
+  - **Decision (§5.2): every pair PASSES**, both placements: abs (stable-identity priority)
+    vs n48, goodput ratio 0.984–1.014, median within tolerance, 0 errors, **0 priority or
+    fair-share refusals**.
+  - Same-session B0: 2.4 ms at c=1 and 56.2 ms at c=50. T-same 21.9 / 715 ms; T-5 ≈ 149 /
+    727 ms. Plateaus 70 and 68 per s, matching 7C.
+- **Stress test before/after** (`…N76-stress`; label **stress test (CPU-capped signers …)**,
+  300 identities):
+  - **Decision (§5.1): success rule NOT MET for n48, b, ab and abs.** A+B is "not effective
+    at these parameters" in both priority modes, reported as is and not re-tuned.
+  - n48 reproduces N73: goodput 0.76 / 0.74 / 0.58 / 0.58 × peak at c=50/100/150/200, with
+    30–45 % wasted.
+  - b: wasted falls at high load (25 / 26 / 19 %), but offered load rises 4–6× (failures
+    return faster, closed-loop clients resend).
+  - abs is the best at c=50/100 (0.89 / 0.86 × peak, 3.3 / 6.0 % wasted, both within the
+    rule) and fails at c=150/200 (0.74 / 0.58, 22 / 29 %). ab: 0.79 / 0.63 / 0.49 / 0.75.
+  - **Root cause, from the admission-level traces:** at ≈ 14 requests/s per capped signer,
+    a 250 ms window holds 2–5 arrivals.
+    - DAGOR §4.2.3 assumes ≈ 2000 per window (§4.1). With so few, removing one arrival is
+      20–50 % of the window, so the level overshoots (0 → 28928 → the 62208 floor within
+      three windows), and β·N recovers slowly.
+    - In addition, the θ = 0.5 queue-wait threshold flags the capped c=10 steady state
+      (0.9–1.3 s waits against a 2 s budget) as overloaded although N48 never shed.
+    - Hence 126 (ab) and 277 (abs) refusals per 1000 at c=10, where n48 has 0.
+  - A follow-up for approval (not done): a minimum number of arrivals per window (or
+    DAGOR's 1 s / 2000), and re-checking θ for capped signers; it would need a new label.
+- **Storm** (`…N76-storm`; 300 pods, 80 % kubelet backoff, 20 % every 250 ms):
+  - TokenRequests per issued token: n48 3.8, b 4.4, ab 7.5, abs 9.0.
+  - Polite median / max wait: n48 17 s / 30 s, b 16 s / 40 s, ab 20 s / 255 s, abs 20 s /
+    254 s. Aggressive advantage: n48 1.23, b 1.43, ab 2.34, abs 2.03. All pods issued in
+    every variant.
+  - H1 (amplification abs < ab): **false** (9.0 vs 7.5), as predicted in §2A.
+  - H2 (abs advantage closer to 1 than ab): true only marginally (2.03 vs 2.34). Both are
+    far worse than n48 (1.23): with the level swinging per window, pods retrying every
+    250 ms catch the openings that kubelet-backoff pods miss, so timing dominates priority.
+  - H3 (abs worst wait ≤ the stable bound, 64 min): holds (254 s). The 254 s matches two
+    kubelet back-offs at the 2m2s cap.
+- **N73 / N75 open question, the CPU drop: answered (instrumented in stress and storm).**
+  - **(c) Window artefact:** over the measured window the capped signers used **exactly the
+    25 % quota** (24.6–25.0 %) in every configuration and variant. The whole-window figure
+    falls (23 → 16 %) because high-load runs are short (fast failures), so fixed idle time
+    around the run weighs more.
+  - **(a) Throttling:** the units were throttled ≈ 92 % of wall time; RSA wall time
+    85–128 ms per share for ≈ 17 ms of CPU; N48's RSA estimate ≈ 75 ms, so N48's "no slot
+    before the latest start" sheds are inflated by throttling.
+  - **(b) Not determinable** from this instrumentation: queue-idle % was computed over the
+    whole journal window, not the measured window.
