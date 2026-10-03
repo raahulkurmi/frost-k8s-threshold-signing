@@ -1,0 +1,4 @@
+# Post-processing
+
+1. Raw `run*/*.jsonl` and `run*/*.cpu-signer*.txt` gzipped (signer audit/journal logs were written gzipped).
+2. **Summary regenerated after a summarizer fix (no data changed).** The run-time summary also contained a "v2 pre-registered rules" section, because this uncapped no-regression run has v2 rows; it scored "R1 … holds (c=50: 1.00)". R1–R4 were pre-registered for the capped stress + storm session only (`docs/PRIORITY_ADMISSION_V2.md` §6, commit 293a919), where R1 FAILS (`benchmark/results/20261003T174726Z-a000c9b-v2-stress-storm/summary.md`). The summarizer now prints that section only when a v2 storm is present (`TestV2RulesOnlyWithStorm`). The regenerated summary differs from the run-time one only by the removal of that section (diff: lines 80–89 removed); every other table is identical. R5 for this run is the "no regression" section: every pair PASSES.

@@ -2,7 +2,8 @@
 
 Status: **design approved; implemented (NOTES N80)** as `SIGNER_PRIORITY_CONTROLLER=v2`, the
 default under priority admission. v1 stays selectable (`v1`) so that the N78 results
-remain reproducible. **Not yet evaluated.** This is the **only** follow-up iteration after
+remain reproducible. **Evaluated 2026-10-03 (NOTES N81, §8): R1–R4 FAIL, R5 passes; v2 is
+not adopted; QUORUM_ABORT rule → default off.** This is the **only** follow-up iteration after
 the N76/N77 evaluation (NOTES N78).
 - Whatever v2 shows is reported as is, under the label **v2**, and is not re-tuned.
 - All N76/N77 results stay in the record unchanged, alongside v2's.
@@ -223,3 +224,32 @@ the local simulation (B saves shares when signers queue) stay as they are.
 
 **Interim.** The code default (on) is unchanged until this rule is applied: changing it now
 would be a decision on N78 data that the rule above was written to make.
+
+## 8. Results (AWS, 2026-10-03; NOTES N81). Rules from 293a919, applied unchanged
+
+| Rule | v2 | Limit | Result |
+|---|---|---|---|
+| R1 stress | goodput/peak 0.76 / 0.70 / 0.76 / 0.72; wasted 27 / 6.5 / 8.2 / 10.8 % (c = 50 / 100 / 150 / 200) | ≥ 0.8 and ≤ 10 % at every c ≥ 50 | **FAILS** |
+| R2 storm amplification | 8.09 | n48 4.40 + 0.5 | **FAILS** |
+| R3 aggressive advantage | 1.36 | 1.30 | **FAILS** |
+| R4 worst polite wait | 260.2 s | 2 × 31.7 s | **FAILS** |
+| R5 no regression | all 8 pairs | as v1 §5.2 | **PASS** |
+
+**Decision (§6): v2 is not adopted.** Admission stays N48 (the default). There is no v3.
+
+**QUORUM_ABORT (§7):** (i) holds, (ii) fails (260.2 s vs 1.2 × 74.6 s), (iii) holds.
+**The default becomes `QUORUM_ABORT=off`.** The code change awaits a go-ahead; it was not
+made in the evaluation session.
+
+**What v2 fixed and what it did not.**
+- Fixed:
+  - no false overload at low load;
+  - no level jumps (smooth 1 s windows of 40–143 arrivals, no clamp or thin windows in the
+    storm trace);
+  - goodput no longer collapses at high load (0.72 vs n48's 0.40 × peak at c = 200);
+  - waste ≤ 11 % from c = 100.
+- Not fixed:
+  - goodput stays below 0.8 × peak;
+  - **priority ordering keeps low-priority pods waiting while the signers sit idle** (2.7 %
+    CPU in the storm). That costs worst-case wait (260 s) and amplification (8.1 per
+    token), exactly the risk §4 named.

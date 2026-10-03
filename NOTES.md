@@ -1514,3 +1514,52 @@ results are reported as is under the label **v2**; N76/N77/N78 results stay unch
   no-regression test.
 - **Summarizer:** scores R1–R4 and the §7 QUORUM_ABORT rule (`TestV2RulesSection`); R5
   comes from the no-regression summary.
+
+### N81. v2 AWS evaluation: results against the pre-registered rules (2026-10-03)
+The single follow-up iteration, label **v2**; rules fixed in 293a919 before any v2 code or
+data; v2 code d07a8e7 (CI 37139624877 green before launch). Fresh 7C cluster (15
+instances, 17:19–21:44Z). T-5 kid `g1TN11q0…`, T-same kid `XQC677lh…`; signer binary
+`eb324efc…` on all 10 hosts; 6 systems smoke-checked; 0 INVALID. Results:
+`benchmark/results/20261003T174726Z-a000c9b-v2-stress-storm` and
+`…20261003T200008Z-a000c9b-v2-noregress`. Teardown: zero tagged and zero any-tag
+instances, volumes and EIPs in 5 regions (`reports/aws/TEARDOWN-v2-20261003T214235Z.md`).
+- **R1 (stress): FAILS.**
+  - v2 goodput/peak at c=50/100/150/200: 0.76 / 0.70 / 0.76 / 0.72; wasted 27 / 6.5 /
+    8.2 / 10.8 %.
+  - n48 (same session): 0.75 / 0.71 / 0.53 / 0.40; wasted 29 / 34 / 43 / 47 %.
+  - v2nb: 0.67 / 0.44 / 0.63 / 0.53; wasted 37 / 41 / 35 / 31 %.
+  - v2 holds goodput flat instead of collapsing, and cuts waste to ≤ 11 % from c=100, but
+    never reaches 0.8 × peak.
+  - The low-load false overload of v1 is gone: c=10/25 in run 1 had 0 / 3 errors, as n48.
+  - Damping-slow recovery is visible: in runs 2–3, c=10 followed a high-load
+    configuration and the level was still decaying at ≤ 8 buckets per window. Median
+    errors at c=10 were 38.7 % with goodput still 1.00 × peak.
+- **R2 (storm amplification ≤ n48 + 0.5): FAILS.** 8.09 against 4.40 + 0.5; v2nb 8.60.
+  Aggressive pods made 21 TokenRequests per token under v2, against 5.8 under n48.
+- **R3 (aggressive advantage ≤ 1.3): FAILS, narrowly.** 1.36 (n48 1.33, v2nb 1.73). As
+  designed, v2 removed most of v1's advantage (v1: 2.03 / 2.34). What remains is n48's
+  polling-latency advantage.
+- **R4 (worst polite wait ≤ 2 × n48): FAILS.** 260.2 s against 2 × 31.7 = 63.4 s (v2nb
+  74.6 s), the priority-ordering risk stated in the design (§4).
+  - In the v2 storm the signers used only 2.7 % CPU over the measured window: the level
+    stayed high and kept low-priority pods waiting while capacity sat idle.
+  - Signer 1's trace shows smooth 1 s windows with 40–143 arrivals and a gradually rising
+    level, with no thin or clamped windows.
+- **R5 (no regression): PASS, all 8 pairs** (v2 vs n48, both placements): ratio
+  0.992–1.018, medians within ±0.5 ms, 0 errors, 0 priority refusals. B0 in the same
+  session: 2.7 ms at c=1, 64 ms at c=50.
+- **Overall (§6): v2 is NOT adopted.** R1–R4 fail and only R5 holds. Per §0 this is
+  reported as is; there is no v3, and admission stays N48 (`SIGNER_ADMISSION=n48`, the
+  default).
+- **QUORUM_ABORT rule (§7), v2 vs v2nb:** (i) amplification 8.09 ≤ 8.60 + 0.2 **holds**;
+  (ii) worst polite wait 260.2 s ≤ 1.2 × 74.6 s **FAILS**; (iii) goodput/peak **holds**.
+  **Decision: the default becomes `QUORUM_ABORT=off`.** The code change (and the tests
+  that rely on the current default) is not made in this session, which stopped after the
+  teardown.
+- **CPU-drop instrumentation, consistent with N78:** over the measured window the capped
+  signers again used exactly the 25 % quota in every stress configuration (24.6–25.0 %),
+  were throttled ≈ 92 % of wall time, and showed RSA wall time 85–129 ms per share.
+- **Summarizer fix after the run (mechanical; `…v2-noregress/POSTPROCESSING.md`):** the
+  no-regression summary had wrongly printed the R1–R4 table (R1 "holds" on uncapped data).
+  The section now appears only with a v2 storm. That summary was regenerated; nothing
+  else changed.

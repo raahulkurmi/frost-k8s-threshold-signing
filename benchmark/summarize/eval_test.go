@@ -219,3 +219,24 @@ func TestV2RulesSection(t *testing.T) {
 		t.Log(s[strings.Index(s, "## v2 pre-registered"):])
 	}
 }
+
+// The v2 rules section appears only with a v2 storm (the pre-registered
+// session), not for the uncapped no-regression run that also has v2 rows.
+func TestV2RulesOnlyWithStorm(t *testing.T) {
+	dir := t.TempDir()
+	rd := filepath.Join(dir, "run1")
+	os.MkdirAll(rd, 0o755)
+	for _, v := range []string{"n48", "v2"} {
+		for _, c := range []int{1, 50} {
+			writeEvalCfg(t, rd, fmt.Sprintf("T-sameregion-optimistic@%s-c%d", v, c), 50, 50, 0, 0, 700, 23)
+		}
+	}
+	out := filepath.Join(dir, "summary.md")
+	if err := runSingle(dir, "t", "", out); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(out)
+	if strings.Contains(string(b), "v2 pre-registered rules") {
+		t.Fatal("v2 rules section printed for a run without a v2 storm")
+	}
+}

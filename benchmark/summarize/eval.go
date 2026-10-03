@@ -585,7 +585,10 @@ func v2RulesSection(runs, cfgs []string, med func(string, func(c cell) float64) 
 		storm[v] = map[string]float64{"amp": median(col["all/amp"]), "pmax": median(col["polite/max"]),
 			"adv": median(col["polite/p50"]) / median(col["aggressive/p50"])}
 	}
-	if gp["v2"] == nil && storm["v2"] == nil {
+	// The rules are scored only where they were pre-registered: the v2 stress +
+	// storm session (a v2 storm is present). The uncapped no-regression run
+	// (R5) has v2 rows too, but R1-R4 do not apply to it.
+	if storm["v2"] == nil {
 		return ""
 	}
 	verdict := func(ok bool) string { return map[bool]string{true: "**holds**", false: "**FAILS**"}[ok] }
