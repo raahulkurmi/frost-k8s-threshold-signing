@@ -1451,3 +1451,41 @@ teardown's verification hit a transient `AuthFailure`, and the re-run verified.
     before the latest start" sheds are inflated by throttling.
   - **(b) Not determinable** from this instrumentation: queue-idle % was computed over the
     whole journal window, not the measured window.
+
+### N79. v2 design: the single follow-up iteration (design only, not implemented)
+`docs/PRIORITY_ADMISSION_V2.md`. Scope fixed up front: v2 is the only follow-up; its
+results are reported as is under the label **v2**; N76/N77/N78 results stay unchanged.
+- **Window:** close after ≥ T_min = 1 s **and** ≥ N_min = 40 arrivals, or at T_max = 5 s.
+  - Justification: α·N_min = 2 requests per α-step, and one request ≤ 2.5 % of a window
+    (v1: up to 50 %).
+  - Measured rates: ≈ 14 req/s per capped signer gives ≈ 2.9 s windows; 70/s uncapped and
+    140–340/s under capped overload give 1 s windows.
+  - A thin window (T_max with fewer than N_min arrivals) may only move the level down.
+- **Overload signal:** θ re-derived.
+  - A queue-time threshold that ignores the capped c = 10–25 steady state (mean wait ≤ 0.65,
+    window p90 ≤ 0.87 of the 2 s budget, 0–0.1 % sheds, goodput at peak) needs θ ≥ 0.9.
+  - N48 already sheds at ≈ 0.96 × budget, so θ adds nothing. v2 uses the shed fraction
+    instead: overloaded ⇔ sheds ≥ max(2, 2 % of arrivals).
+  - Measured: 0–0.1 % at c ≤ 25 (healthy), ≈ 39 % at c = 50 (collapse); uncapped 0.
+- **Damping:** the level moves ≤ 32 buckets up and ≤ 8 down per window. Reaching the floor
+  needs ≥ 8 windows (≥ 8 s); v1 got there in 3 windows of 250 ms.
+- **Retry fairness:** the decision is constant per window (≥ 1 s) and per identity per epoch,
+  so polling faster than the window gains nothing. The remaining polling-latency advantage
+  is the one n48 also has (1.23).
+  - Prediction: advantage 1.1–1.5.
+  - Risk stated up front: priority ordering serves low-priority pods last, so the worst
+    polite wait may exceed 2 × n48 (predicted 40–90 s against a 60 s limit).
+- **Pre-registered rules (v2):** R1 stress (every c ≥ 50: goodput ≥ 0.8 × peak, wasted
+  ≤ 10 %); R2 amplification ≤ n48 + 0.5; R3 aggressive advantage ≤ 1.3; R4 worst polite
+  wait ≤ 2 × n48; R5 no-regression as v1 §5.2. Adopted as the recommendation only if R1–R5
+  all hold.
+- **B (quorum-impossible abort) default:** decision rule fixed, applied to v2 vs v2nb (v2
+  with B off).
+  - B stays on only if amplification ≤ v2nb + 0.2, worst polite wait ≤ 1.2 × v2nb, and
+    stress goodput/peak ≥ v2nb − 0.05 at every c ≥ 50; otherwise `QUORUM_ABORT=off` by
+    default.
+  - N78 evidence: b vs n48, storm 4.4 vs 3.8 per token, worst wait 40 vs 30 s; stress
+    wasted lower at c ≥ 100 but goodput not better, offered load 2–3×. The code default is
+    unchanged until the rule is applied.
+- **Session plan:** n48 / v2 / v2nb; stress + storm + no-regression (no slots test);
+  ≈ 5.7 h, ≈ $3.5.
