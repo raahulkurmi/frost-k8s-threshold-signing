@@ -1594,3 +1594,19 @@ instances, volumes and EIPs in 5 regions (`reports/aws/TEARDOWN-v2-20261003T2142
 - **PAPER_INPUTS** gains two rows: the two-iteration overload-control result as a measured
   trade-off, with the pre-registration commits, the failure of the rules and the damping
   hysteresis; and the CPU plateau with the N73 CPU-drop explanation.
+
+### N83. Code freeze
+**Freeze commit: `37f3c5e2de5e847817482bc0a5354e653338a8b2`** (N82: final defaults), CI run
+37158258500 green (make test incl. T5, vet/staticcheck/govulncheck/gitleaks, images + kind
+e2e).
+- **From this commit on, only Phase 12 audit fixes are allowed.** No new features and no
+  experiments.
+- Each change after the freeze must name the audit finding it fixes.
+- Each change keeps the evidence rules: full-tree gitleaks + T11 locally, and green CI on the
+  pushed commit.
+- **Frozen defaults:**
+  - optimistic verification plus the breaker;
+  - N48 deadline-aware admission (concurrency = CPU count, queue 64, 4 s deadline cap);
+  - `QUORUM_ABORT=off`;
+  - priority admission off (v1 and v2 selectable, evaluated, not recommended);
+  - one client certificate per coordinator replica.
