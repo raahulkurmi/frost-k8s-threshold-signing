@@ -127,10 +127,10 @@ func TestBelowThresholdFails(t *testing.T) {
 		c.Servers[id].Close()
 	}
 	var logs testutil.LogBuffer
-	// Without the quorum-impossible abort (N76) the coordinator waits for all
-	// 5 answers, so the log records exactly the 2 reachable signers' shares.
-	// TestBelowThresholdFailsWithAbort covers the default.
-	client := serveGRPC(t, c, c.NewCoordinatorWith(t, coordinator.Config{Strategy: coordinator.Strict, Deadline: 2 * time.Second, Logger: logs.Logger(), NoQuorumAbort: true}))
+	// Default path (no quorum-impossible abort, N82): the coordinator waits for
+	// all 5 answers, so the log records exactly the 2 reachable signers' shares.
+	// TestBelowThresholdFailsWithAbort covers the opt-in abort.
+	client := serveGRPC(t, c, c.NewCoordinatorWith(t, coordinator.Config{Strategy: coordinator.Strict, Deadline: 2 * time.Second, Logger: logs.Logger()}))
 	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
 	if err == nil || resp != nil {
 		t.Fatalf("resp=%v err=%v", resp, err)
@@ -152,7 +152,7 @@ func TestBelowThresholdFails(t *testing.T) {
 	t.Logf("caller: %v; coordinator log: valid_shares=2, signers 3,4,5 named", err)
 }
 
-// T3 (I5) with the quorum-impossible abort (N76, the default): the request
+// T3 (I5) with the quorum-impossible abort enabled (N76, opt-in): the request
 // fails as soon as 3 signers are known unreachable, the caller sees the same
 // generic error, and the log names each failed signer and marks the abort.
 func TestBelowThresholdFailsWithAbort(t *testing.T) {
@@ -161,7 +161,7 @@ func TestBelowThresholdFailsWithAbort(t *testing.T) {
 		c.Servers[id].Close()
 	}
 	var logs testutil.LogBuffer
-	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, logs.Logger()))
+	client := serveGRPC(t, c, c.NewCoordinatorWith(t, coordinator.Config{Strategy: coordinator.Strict, Deadline: 2 * time.Second, Logger: logs.Logger(), QuorumAbort: true}))
 	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
 	if err == nil || resp != nil {
 		t.Fatalf("resp=%v err=%v", resp, err)

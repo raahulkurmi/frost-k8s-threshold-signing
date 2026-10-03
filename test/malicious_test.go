@@ -57,9 +57,9 @@ func TestMaliciousSignerExcluded(t *testing.T) {
 		})
 		t.Run(string(st)+"/three malicious", func(t *testing.T) {
 			signer.SetMalicious(1, 2, 3)
-			// Without the quorum-impossible abort (N76) the coordinator waits for
-			// all 5: exactly the 2 honest shares are valid.
-			co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, NoQuorumAbort: true})
+			// Default path (no quorum-impossible abort, N82): the coordinator
+			// waits for all 5: exactly the 2 honest shares are valid.
+			co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st})
 			res, err := co.Sign(context.Background(), saClaims(t))
 			var te *coordinator.ThresholdError
 			if !errors.As(err, &te) || res != nil || te.Valid != 2 {
@@ -71,9 +71,9 @@ func TestMaliciousSignerExcluded(t *testing.T) {
 				}
 			}
 			t.Log(err)
-			// With the abort (default): no token, at most the 2 honest shares,
-			// and the 3 malicious signers are still attributed.
-			co = c.NewCoordinator(t, st, 5*time.Second, nil)
+			// With the abort enabled (opt-in): no token, at most the 2 honest
+			// shares, and the 3 malicious signers are still attributed.
+			co = c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, QuorumAbort: true})
 			res, err = co.Sign(context.Background(), saClaims(t))
 			if !errors.As(err, &te) || res != nil || te.Valid > 2 {
 				t.Fatalf("abort: res=%v err=%v", res, err)

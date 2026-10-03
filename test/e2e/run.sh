@@ -474,9 +474,9 @@ section "(d) strategy used by every coordinator"
 READY_LINES="$(coord_logs | grep '"msg":"coordinator ready"' || true)"
 jq -rc '{strategy, deadline, signers, kid}' <<<"$READY_LINES" | sort | uniq -c
 N_READY="$(grep -c . <<<"$READY_LINES" || true)"
-N_STRAT="$(jq -r 'select(.strategy=="'"$VERIFY_STRATEGY"'" and .deadline=="2s" and .kid=="'"$KID"'") | .strategy' <<<"$READY_LINES" | grep -c . || true)"
+N_STRAT="$(jq -r 'select(.strategy=="'"$VERIFY_STRATEGY"'" and .deadline=="2s" and .kid=="'"$KID"'" and .quorum_abort==false) | .strategy' <<<"$READY_LINES" | grep -c . || true)"
 if [[ "$N_READY" -ge 3 && "$N_READY" == "$N_STRAT" ]]; then
-  pass REQ-d "all $N_READY coordinator starts (incl. restarts) ran strategy=$VERIFY_STRATEGY, deadline=2s, kid=$KID"
+  pass REQ-d "all $N_READY coordinator starts (incl. restarts) ran strategy=$VERIFY_STRATEGY, deadline=2s, kid=$KID, quorum_abort=false (default, N82)"
 else fail REQ-d "$N_STRAT of $N_READY coordinator starts ran strategy=$VERIFY_STRATEGY"; fi
 
 section "TIMING (N64): nginx and coordinator timing lines join by request_id"

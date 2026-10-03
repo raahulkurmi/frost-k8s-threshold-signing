@@ -24,7 +24,8 @@
 //	SIGNER_QUEUE_SAMPLE optional, Go duration, off by default: log queue length
 //	               and busy slots at this interval (benchmark instrumentation, N76)
 //	SIGNER_ADMISSION optional, n48 (default) | priority: priority-consistent
-//	               admission before the N48 queue (N76). priority needs the
+//	               admission before the N48 queue (N76). EVALUATED, NOT RECOMMENDED:
+//	               neither controller met its pre-registered rules (NOTES N78, N81). priority needs the
 //	               signers' shared key: PRIORITY_KEY_FILE (priority.key from the
 //	               dealer), or with VAULT_ADDR the key at <VAULT_MOUNT>/frost-k8s/priority-key
 //	SIGNER_PRIORITY optional (priority admission only), stable (default) | request:

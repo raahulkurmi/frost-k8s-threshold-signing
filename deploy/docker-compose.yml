@@ -62,7 +62,7 @@ x-coordinator-env: &coordinator-env
     VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
     FANOUT: ${FANOUT:-all}
     HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
-    QUORUM_ABORT: ${QUORUM_ABORT:-on}
+    QUORUM_ABORT: ${QUORUM_ABORT:-off}
 
 services:
   signer-1:

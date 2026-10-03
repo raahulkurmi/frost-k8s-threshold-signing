@@ -283,3 +283,12 @@ A compromised replica then keeps only its volume share and cannot pick high-prio
 requests (docs/PRIORITY_ADMISSION.md §4). **Not bounded:** a compromised replica can
 still flood up to the per-signer rate limit, which all callers share; binding the
 priority to the signing input with a request-ID replay cache is a recorded follow-up.
+
+**Final defaults (N82).** Optimistic verification with the breaker; N48 deadline-aware
+admission (per-signer concurrency bound, queue of 64, 4 s deadline cap); the
+quorum-impossible abort **off** (`QUORUM_ABORT=on` is opt-in); priority admission **off**.
+Priority admission (controllers v1 and v2) remains selectable but is **evaluated, not
+recommended** (N78, N81). The security properties above (per-replica identities, deadline
+cap, policy, rate limit, audit) do not depend on it. With priority admission off, the
+fair-share bound of §C7 does not apply: a compromised replica's flood is bounded by the
+per-signer rate limit and N48 admission only, as before N76.

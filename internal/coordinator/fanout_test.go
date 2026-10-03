@@ -114,16 +114,17 @@ func TestHedgedBelowThresholdFails(t *testing.T) {
 		return h
 	}})
 	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict,
-		Fanout: coordinator.FanoutHedged, HedgeDelay: time.Second, NoQuorumAbort: true})
+		Fanout: coordinator.FanoutHedged, HedgeDelay: time.Second}) // default path
 	res, err := co.Sign(context.Background(), claims(t))
 	var te *coordinator.ThresholdError
 	if !errors.As(err, &te) || res != nil || te.Valid != 2 {
 		t.Fatalf("res=%v err=%v", res, err)
 	}
 	t.Log(err)
-	// With the quorum-impossible abort (N76, default): fails as soon as 3
+	// With the quorum-impossible abort enabled (N76, opt-in): fails as soon as 3
 	// signers have refused; at most 2 valid shares.
-	co = c.NewCoordinatorFanout(t, coordinator.FanoutHedged, time.Second, 5*time.Second, nil)
+	co = c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict,
+		Fanout: coordinator.FanoutHedged, HedgeDelay: time.Second, QuorumAbort: true})
 	res, err = co.Sign(context.Background(), claims(t))
 	if !errors.As(err, &te) || res != nil || te.Valid > 2 || co.Stats().QuorumAborts != 1 {
 		t.Fatalf("abort: res=%v err=%v", res, err)

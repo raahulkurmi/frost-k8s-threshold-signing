@@ -21,7 +21,7 @@ import (
 // TestQuorumImpossibleAbortsEarly (N76): when 3 of 5 signers refuse at once and
 // the other 2 are slow, the request fails as soon as the third refusal
 // arrives (t = 3 is impossible), not at the deadline, and the slow signers'
-// requests are cancelled. With NoQuorumAbort the coordinator waits for them.
+// requests are cancelled. Without it (the default since N82) the coordinator waits for them.
 func TestQuorumImpossibleAbortsEarly(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -55,7 +55,7 @@ func TestQuorumImpossibleAbortsEarly(t *testing.T) {
 				}
 				return slow(h)
 			}})
-			co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 3 * time.Second, Strategy: coordinator.Optimistic, NoQuorumAbort: tc.noAbort})
+			co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 3 * time.Second, Strategy: coordinator.Optimistic, QuorumAbort: !tc.noAbort})
 			start := time.Now()
 			_, err := co.Sign(context.Background(), claims(t))
 			el := time.Since(start)
@@ -100,7 +100,7 @@ func TestQuorumAbortStillSignsWithTwoRefusals(t *testing.T) {
 		return h
 	}})
 	for _, s := range []coordinator.Strategy{coordinator.Optimistic, coordinator.Strict} {
-		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: s})
+		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: s, QuorumAbort: true})
 		cl := claims(t)
 		res, err := co.Sign(context.Background(), cl)
 		if err != nil {
@@ -166,7 +166,7 @@ func TestQuorumAbortReducesWastedSharesSimulation(t *testing.T) {
 			})
 		}
 		c := testutil.StartCluster(t, testutil.ClusterOpts{Wrap: wrap})
-		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 3 * time.Second, Strategy: coordinator.Optimistic, NoQuorumAbort: noAbort})
+		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 3 * time.Second, Strategy: coordinator.Optimistic, QuorumAbort: !noAbort})
 		const n, par = 80, 16
 		ok := map[string]bool{}
 		var wg sync.WaitGroup
@@ -212,4 +212,31 @@ func TestQuorumAbortReducesWastedSharesSimulation(t *testing.T) {
 	if aw*4 > nw {
 		t.Fatalf("with the abort %d shares were wasted vs %d without; want at most a quarter", aw, nw)
 	}
+}
+
+// TestQuorumAbortOffByDefault (N82): with no QuorumAbort set, the coordinator
+// does not abort early; with 3 fast refusals and 2 slow signers it waits for
+// the slow ones (the pre-N76 behaviour), and records no quorum abort.
+func TestQuorumAbortOffByDefault(t *testing.T) {
+	if (coordinator.Config{}).QuorumAbort {
+		t.Fatal("QuorumAbort is on in the zero Config")
+	}
+	c := testutil.StartCluster(t, testutil.ClusterOpts{Wrap: func(id int, h http.Handler) http.Handler {
+		if id <= 3 {
+			return testutil.Overloaded()
+		}
+		return testutil.Delay(1500*time.Millisecond, h)
+	}})
+	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 3 * time.Second, Strategy: coordinator.Optimistic})
+	start := time.Now()
+	_, err := co.Sign(context.Background(), claims(t))
+	el := time.Since(start)
+	var te *coordinator.ThresholdError
+	if !errors.As(err, &te) {
+		t.Fatalf("err = %v, want ThresholdError", err)
+	}
+	if el < 1400*time.Millisecond || co.Stats().QuorumAborts != 0 {
+		t.Fatalf("default: failed after %v with %d quorum aborts; want it to wait for the slow signers and never abort", el, co.Stats().QuorumAborts)
+	}
+	t.Logf("default (no abort): failed after %v, waited for the slow signers", el.Round(time.Millisecond))
 }

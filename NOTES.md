@@ -1563,3 +1563,34 @@ instances, volumes and EIPs in 5 regions (`reports/aws/TEARDOWN-v2-20261003T2142
   no-regression summary had wrongly printed the R1–R4 table (R1 "holds" on uncapped data).
   The section now appears only with a v2 storm. That summary was regenerated; nothing
   else changed.
+
+### N82. Pre-registered decision applied; final defaults
+- **`QUORUM_ABORT` defaults to off** (coordinator `Config.QuorumAbort`, opt-in;
+  `QUORUM_ABORT=on`), per the v2 §7 rule: condition (ii) failed (worst polite wait 260.2 s
+  > 1.2 × 74.6 s, N81). The abort is kept as an option, with its unit tests and local
+  simulation.
+- **Tests, no assertion loosened:**
+  - every test that assumed abort-by-default now sets `QuorumAbort: true` explicitly, with
+    its assertions unchanged: the abort-mode cases of `TestThreeMaliciousFails`,
+    `TestBelowThresholdSigners`, `TestHedgedBelowThresholdFails`,
+    `TestBelowThresholdFailsWithAbort`, T5 `three malicious`,
+    `TestQuorumAbortStillSignsWithTwoRefusals`, `TestPriorityRefusalNeverTripsBreaker`, and
+    the abort runs of `TestQuorumImpossibleAbortsEarly` and the simulation;
+  - the former `NoQuorumAbort: true` cases are now the default path, with assertions
+    unchanged;
+  - new `TestQuorumAbortOffByDefault`;
+  - the e2e REQ-d check now also requires `quorum_abort=false` on every coordinator start.
+- **Compose files and the 7C driver** default to `QUORUM_ABORT=off`; the eval variants
+  (`b`, `ab`, `abs`, `v2`) still set it on explicitly.
+- **Priority admission stays off** (`SIGNER_ADMISSION=n48`). Controllers v1 and v2 remain
+  selectable and are documented as "evaluated, not recommended" (README defaults table,
+  `cmd/signer` docs, both design documents, THREAT_MODEL; N78, N81).
+- **Final defaults** (README "Defaults", THREAT_MODEL §7 C7):
+  - optimistic verification plus the breaker (N65);
+  - N48 deadline-aware admission (concurrency = CPU count, queue 64, 4 s deadline cap);
+  - quorum-impossible abort off;
+  - priority admission off;
+  - one client certificate per coordinator replica.
+- **PAPER_INPUTS** gains two rows: the two-iteration overload-control result as a measured
+  trade-off, with the pre-registration commits, the failure of the rules and the damping
+  hysteresis; and the CPU plateau with the N73 CPU-drop explanation.

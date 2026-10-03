@@ -1,4 +1,8 @@
-# Priority-consistent admission, v2 (design for review, not implemented)
+# Priority-consistent admission, v2
+
+> **Evaluated, not recommended (NOTES N81).** R1–R4 failed, R5 passed; not adopted, no v3.
+> Selectable with `SIGNER_ADMISSION=priority SIGNER_PRIORITY_CONTROLLER=v2`; the default is
+> `n48`. The §7 decision is applied: `QUORUM_ABORT` defaults to off (N82).
 
 Status: **design approved; implemented (NOTES N80)** as `SIGNER_PRIORITY_CONTROLLER=v2`, the
 default under priority admission. v1 stays selectable (`v1`) so that the N78 results

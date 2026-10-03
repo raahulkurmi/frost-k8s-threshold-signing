@@ -38,7 +38,7 @@ func TestPriorityRefusalNeverTripsBreaker(t *testing.T) {
 			}
 			return h
 		}})
-		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Optimistic,
+		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Optimistic, QuorumAbort: true,
 			Breaker: coordinator.BreakerConfig{FallbackAfter: 2, FallbackWindow: time.Minute}})
 		ok, failed := 0, 0
 		for i := 0; i < 8; i++ {

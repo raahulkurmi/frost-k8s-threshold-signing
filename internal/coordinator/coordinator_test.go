@@ -122,9 +122,9 @@ func TestThreeMaliciousFails(t *testing.T) {
 		return h
 	}})
 	for _, st := range strategies {
-		// Without the quorum-impossible abort (N76) the coordinator waits for
-		// every signer: exactly the 2 honest shares are valid.
-		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, NoQuorumAbort: true})
+		// Default path (no quorum-impossible abort, N82): the coordinator waits
+		// for every signer: exactly the 2 honest shares are valid.
+		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st})
 		res, err := co.Sign(context.Background(), claims(t))
 		var te *coordinator.ThresholdError
 		if !errors.As(err, &te) || res != nil {
@@ -135,10 +135,11 @@ func TestThreeMaliciousFails(t *testing.T) {
 		}
 		t.Logf("%s: %v", st, err)
 	}
-	// With the abort (default) it stops once 3 shares are known bad: no token,
-	// the 3 corrupt signers attributed, at most the 2 honest shares counted.
+	// With the abort enabled (QuorumAbort, opt-in) it stops once 3 shares are
+	// known bad: no token, the 3 corrupt signers attributed, at most the 2
+	// honest shares counted.
 	for _, st := range strategies {
-		co := c.NewCoordinator(t, st, 5*time.Second, nil)
+		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, QuorumAbort: true})
 		res, err := co.Sign(context.Background(), claims(t))
 		var te *coordinator.ThresholdError
 		if !errors.As(err, &te) || res != nil || te.Valid > 2 {
@@ -164,16 +165,16 @@ func TestBelowThresholdSigners(t *testing.T) {
 		}
 		return h
 	}})
-	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict, NoQuorumAbort: true})
+	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict}) // default path
 	res, err := co.Sign(context.Background(), claims(t))
 	var te *coordinator.ThresholdError
 	if !errors.As(err, &te) || res != nil || te.Valid != 2 || len(te.Failures) != 3 {
 		t.Fatalf("res=%v err=%v", res, err)
 	}
 	t.Log(err)
-	// With the quorum-impossible abort (N76, default): the 3 down signers are
-	// attributed and the request fails at once, with at most 2 valid shares.
-	co = c.NewCoordinator(t, coordinator.Strict, 5*time.Second, nil)
+	// With the quorum-impossible abort enabled (N76, opt-in): the 3 down signers
+	// are attributed and the request fails at once, with at most 2 valid shares.
+	co = c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict, QuorumAbort: true})
 	res, err = co.Sign(context.Background(), claims(t))
 	if !errors.As(err, &te) || res != nil || te.Valid > 2 || len(te.Failures) != 3 || co.Stats().QuorumAborts != 1 {
 		t.Fatalf("abort: res=%v err=%v aborts=%d", res, err, co.Stats().QuorumAborts)

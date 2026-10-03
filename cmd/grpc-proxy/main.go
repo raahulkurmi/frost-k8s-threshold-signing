@@ -30,9 +30,9 @@
 //	FANOUT             optional, all (default) | hedged: contact t+1 signers
 //	                   first and the rest after HEDGE_DELAY or on a failure (N46)
 //	HEDGE_DELAY        optional, Go duration, default 50ms (hedged only)
-//	QUORUM_ABORT       optional, on (default) | off: fail a request as soon as
-//	                   t shares are impossible and cancel the rest (N76); off
-//	                   only for the benchmark's "before" variant
+//	QUORUM_ABORT       optional, off (default) | on: fail a request as soon as
+//	                   t shares are impossible and cancel the rest (N76).
+//	                   Evaluated, off by default (N81: higher retry-storm wait)
 package main
 
 import (
@@ -70,7 +70,7 @@ func main() {
 
 type settings struct {
 	CoordID     int
-	NoAbort     bool
+	Abort       bool
 	Meta        *keymeta.Meta
 	MaxToken    int64
 	Endpoints   []coordinator.Endpoint
@@ -159,9 +159,9 @@ func load(getenv func(string) string) (*settings, error) {
 		return nil, fmt.Errorf("COORDINATOR_ID %q must be an integer in [1,%d]", idStr, tlsconf.MaxCoordinators)
 	}
 	switch v := getenv("QUORUM_ABORT"); v {
-	case "", "on":
-	case "off":
-		s.NoAbort = true
+	case "", "off":
+	case "on":
+		s.Abort = true
 	default:
 		return nil, fmt.Errorf("QUORUM_ABORT %q must be on or off", v)
 	}
@@ -268,7 +268,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	coord, err := coordinator.New(coordinator.Config{Meta: s.Meta, Endpoints: s.Endpoints, Deadline: s.Deadline, Strategy: s.Strategy,
-		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Breaker: s.Breaker, Logger: logger, NoQuorumAbort: s.NoAbort})
+		Fanout: s.Fanout, HedgeDelay: s.HedgeDelay, Breaker: s.Breaker, Logger: logger, QuorumAbort: s.Abort})
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	for i, ep := range s.Endpoints {
 		ids[i] = ep.ID
 	}
-	logger.Info("coordinator ready", "coordinator_id", s.CoordID, "quorum_abort", !s.NoAbort, "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
+	logger.Info("coordinator ready", "coordinator_id", s.CoordID, "quorum_abort", s.Abort, "kid", s.Meta.KID, "threshold", s.Meta.Threshold, "parties", s.Meta.Parties,
 		"signers", ids, "listen", lis.Addr().String(), "deadline", s.Deadline.String(), "strategy", s.Strategy,
 		"fanout", s.Fanout, "hedge_delay", s.HedgeDelay.String(),
 		"breaker_suspect_cooldown", bc.SuspectCooldown.String(), "breaker_fallback_after", bc.FallbackAfter,

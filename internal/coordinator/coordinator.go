@@ -99,11 +99,13 @@ type Config struct {
 	HedgeDelay time.Duration
 	// Breaker bounds the extra work of misbehaving signers (optimistic only).
 	Breaker BreakerConfig
-	// NoQuorumAbort disables the quorum-impossible abort (NOTES N76): by
-	// default a request fails as soon as fewer than t signers can still
-	// answer, cancelling the outstanding signer requests so queued signers
-	// drop them before computing. Only the benchmark's "before" variant sets it.
-	NoQuorumAbort bool
+	// QuorumAbort enables the quorum-impossible abort (NOTES N76): a request
+	// fails as soon as fewer than t signers can still answer, cancelling the
+	// outstanding signer requests so queued signers drop them before
+	// computing. Off by default: by the pre-registered rule of
+	// docs/PRIORITY_ADMISSION_V2.md §7 it raised retry-storm wait and
+	// amplification (NOTES N81). Kept as an option.
+	QuorumAbort bool
 }
 
 // Coordinator is safe for concurrent use.
@@ -119,7 +121,7 @@ type Coordinator struct {
 	rr        atomic.Uint64 // rotates the hedged initial subset
 	brk       *breaker
 	now       func() time.Time // time source for the breaker (tests)
-	noAbort   bool
+	abort     bool
 
 	shareVerifications, failedCombines, suspectMarks, fallbackActivations, quorumAborts atomic.Int64
 }
@@ -233,7 +235,7 @@ func New(cfg Config) (*Coordinator, error) {
 		return nil, err
 	}
 	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr,
-		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now, noAbort: cfg.NoQuorumAbort}, nil
+		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now, abort: cfg.QuorumAbort}, nil
 }
 
 // BreakerConfig returns the effective breaker configuration (defaults applied).
@@ -462,12 +464,12 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error) 
 		return s, ids, err
 	}
 
-	// N76: once fewer than t configured signers can still answer (distinct
-	// signers failed > n - t), no token is possible: stop waiting. Returning
+	// N76 (QuorumAbort only): once fewer than t configured signers can still
+	// answer (distinct signers failed > n - t), no token is possible: stop waiting. Returning
 	// cancels the outstanding signer requests (defer cancel), and a signer that
 	// has not started RSA drops a cancelled request without computing (N46/N48).
 	impossible := func() bool {
-		if c.noAbort {
+		if !c.abort {
 			return false
 		}
 		bad := map[int]bool{}

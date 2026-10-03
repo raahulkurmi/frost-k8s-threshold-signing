@@ -40,7 +40,7 @@ services:
       VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
       FANOUT: ${FANOUT:-all}
       HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
-      QUORUM_ABORT: ${QUORUM_ABORT:-on}
+      QUORUM_ABORT: ${QUORUM_ABORT:-off}
     volumes:
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
@@ -71,7 +71,7 @@ services:
       VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
       FANOUT: ${FANOUT:-all}
       HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
-      QUORUM_ABORT: ${QUORUM_ABORT:-on}
+      QUORUM_ABORT: ${QUORUM_ABORT:-off}
     volumes:
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro
@@ -102,7 +102,7 @@ services:
       VERIFY_STRATEGY: ${VERIFY_STRATEGY:-optimistic}
       FANOUT: ${FANOUT:-all}
       HEDGE_DELAY: ${HEDGE_DELAY:-50ms}
-      QUORUM_ABORT: ${QUORUM_ABORT:-on}
+      QUORUM_ABORT: ${QUORUM_ABORT:-off}
     volumes:
       - ../secrets/keys/public-meta.json:/etc/frost/public-meta.json:ro
       - ./policy.json:/etc/frost/policy.json:ro

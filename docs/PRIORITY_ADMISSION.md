@@ -1,5 +1,10 @@
 # Priority-consistent admission for the signers
 
+> **Evaluated, not recommended (NOTES N78, N81).** Selectable with `SIGNER_ADMISSION=priority`
+> (`SIGNER_PRIORITY_CONTROLLER=v1` is this document's controller, `v2` is
+> `docs/PRIORITY_ADMISSION_V2.md`). The default is `n48`. The quorum-impossible abort (§2B)
+> is off by default (`QUORUM_ABORT=on` to enable), per the v2 rule §7 (N81).
+
 Status: **design approved; implemented (NOTES N76, N77), off by default
 (`SIGNER_ADMISSION=n48`); not yet evaluated on AWS (§5).** Implemented: A (priority
 admission) with two priority derivations, **stable identity** (the proposal, N77) and

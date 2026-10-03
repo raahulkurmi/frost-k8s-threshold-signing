@@ -116,6 +116,16 @@ pending).
 - This repository is an **open-source research prototype**.
 - **Any commercial use requires independent legal review.**
 
+## Defaults (final, NOTES N82)
+
+| Setting | Default | Notes |
+|---|---|---|
+| Verification | `VERIFY_STRATEGY=optimistic` plus the breaker | combine t shares and verify the final signature; suspects and a strict fallback after repeated failed combines (N65) |
+| Signer admission | `SIGNER_ADMISSION=n48` | deadline-aware bounded admission: `SIGNER_MAX_CONCURRENT` = CPU count, `SIGNER_MAX_QUEUE` = 64, deadline header capped at `SIGNER_MAX_DEADLINE` = 4 s (N48, N76) |
+| Quorum-impossible abort | `QUORUM_ABORT=off` | opt-in (`on`). Evaluated: it saves signer work under queueing, but by its pre-registered rule it raised retry-storm wait and amplification (N78, N81) |
+| Priority admission | off (`SIGNER_ADMISSION=n48`) | `priority` with controller `v1` or `v2` is selectable but **evaluated, not recommended**: neither met its pre-registered rules ([N78](NOTES.md), [N81](NOTES.md); `docs/PRIORITY_ADMISSION.md`, `docs/PRIORITY_ADMISSION_V2.md`) |
+| Coordinator identity | one client certificate per replica (`coordinator-<k>`, `COORDINATOR_ID`) | signers accept only that canonical form (N76) |
+
 ## Operations notes
 
 - **Signers need reliable time sync.** Each signer rejects claims whose `iat` is more

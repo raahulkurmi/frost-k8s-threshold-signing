@@ -84,7 +84,7 @@ wait_backend_ready() { # WANT_STRATEGY (empty for B1): all 3 replicas logged rea
   return 1
 }
 # ---- N76/N77 evaluation variants: a T system may carry @<variant> ----
-#   (none) abort on, n48 admission    n48  abort off, n48 (today)    b  abort on, n48
+#   (none) the defaults: abort off, n48 admission (N82)    n48  abort off, n48    b  abort on, n48
 #   abs    abort on, priority, stable identity (the proposal, N77)
 #   ab     abort on, priority, request-ID priority (comparison, N76)
 #   slots<k>  abort off, n48, SIGNER_MAX_CONCURRENT=k
@@ -92,7 +92,7 @@ wait_backend_ready() { # WANT_STRATEGY (empty for B1): all 3 replicas logged rea
 #   controller v2, abort on / off (N79, docs/PRIORITY_ADMISSION_V2.md)
 variant_cfg() { # VARIANT -> "QUORUM_ABORT ADMISSION MAXCONC PRIORITY CONTROLLER"
   case "$1" in
-    "") echo "on n48 - - -" ;; n48) echo "off n48 - - -" ;; b) echo "on n48 - - -" ;;
+    "") echo "off n48 - - -" ;; n48) echo "off n48 - - -" ;; b) echo "on n48 - - -" ;;
     ab) echo "on priority - request v1" ;; abs) echo "on priority - stable v1" ;;
     v2) echo "on priority - stable v2" ;; v2nb) echo "off priority - stable v2" ;;
     slots[1-9]*) echo "off n48 ${1#slots} - -" ;;
