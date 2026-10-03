@@ -449,7 +449,6 @@ type stormPod struct {
 // short interval), per variant. Median of runs.
 func stormSection(runs, cfgs []string) string {
 	var rows []string
-	type agg struct{ v []float64 }
 	for _, l := range cfgs {
 		if !isStorm(runs, l) {
 			continue
