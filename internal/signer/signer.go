@@ -133,6 +133,9 @@ func New(cfg Config) (*Server, error) {
 	srv.rsaEWMA.Store(int64(initialRSAEstimate))
 	if cfg.PriorityKey != nil {
 		ac := cfg.Admission.withDefaults()
+		if ac.Controller != "v1" && ac.Controller != "v2" {
+			return nil, fmt.Errorf("signer: priority controller %q (want v1 or v2)", ac.Controller)
+		}
 		if ac.Mode != PriorityStable && ac.Mode != PriorityRequest {
 			return nil, fmt.Errorf("signer: priority mode %q (want stable or request)", ac.Mode)
 		}

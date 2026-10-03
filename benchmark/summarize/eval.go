@@ -103,6 +103,10 @@ func variantOrder(v string) string {
 		return "2"
 	case "abs":
 		return "25"
+	case "v2":
+		return "27"
+	case "v2nb":
+		return "28"
 	}
 	if k, err := strconv.Atoi(strings.TrimPrefix(v, "slots")); err == nil {
 		return fmt.Sprintf("3%03d", k)
@@ -162,7 +166,7 @@ func evalSection(runs, cfgs []string, med func(string, func(c cell) float64) flo
 			verdicts[k.v] = map[bool]string{true: "**MET**", false: "**NOT MET**"}[success]
 		}
 		b.WriteString("\n")
-		for _, v := range []string{"n48", "b", "ab", "abs"} {
+		for _, v := range []string{"n48", "b", "ab", "abs", "v2", "v2nb"} {
 			if x, ok := verdicts[v]; ok {
 				fmt.Fprintf(&b, "- Success rule (every c ≥ 50: goodput ≥ 0.8 × peak and wasted ≤ 10 %%) for **%s**: %s\n", v, x)
 			}
@@ -193,7 +197,7 @@ func evalSection(runs, cfgs []string, med func(string, func(c cell) float64) flo
 	}
 	for i := range rows {
 		r := &rows[i]
-		if maxConc(groups[key{r.sys, r.variant}]) > 50 || (r.variant != "ab" && r.variant != "abs") {
+		if maxConc(groups[key{r.sys, r.variant}]) > 50 || (r.variant != "ab" && r.variant != "abs" && r.variant != "v2") {
 			continue
 		}
 		n := base[fmt.Sprintf("%s/%d", r.sys, r.conc)]
@@ -425,7 +429,9 @@ func openQuestionSection(runs, cfgs []string) string {
 	return "\n## Open question (N73): signer CPU below the quota (instrumentation, docs/PRIORITY_ADMISSION.md §6)\n\nPer configuration, median over signers and runs. Signer CPU from 1 Hz samples of systemd `CPUUsageNSec` (% of one vCPU): over the whole sampled window, and over the **measured window only** (first to last measured request, hypothesis c). Throttled = cgroup `cpu.stat` `throttled_usec` as % of wall time (hypothesis a), with the per-share RSA time and the signer's RSA estimate (N48 uses the estimate). Queue samples (10 Hz): % with no request waiting and no slot busy (idle), and % with requests waiting (hypothesis b). Reported as measured; no explanation is drawn here.\n\n| configuration | signer CPU % (whole) | signer CPU % (measured window) | throttled % | RSA ms (median) | RSA estimate ms (median) | queue idle % | queue waiting % |\n|---|---:|---:|---:|---:|---:|---:|---:|\n" + strings.Join(rows, "\n") + "\n"
 }
 
-func isAB(v string) bool { return v == "n48" || v == "b" || v == "ab" || v == "abs" }
+func isAB(v string) bool {
+	return v == "n48" || v == "b" || v == "ab" || v == "abs" || v == "v2" || v == "v2nb"
+}
 
 // isStorm reports whether configuration l is a storm run (per-pod results).
 func isStorm(runs []string, l string) bool {
@@ -458,58 +464,7 @@ func stormSection(runs, cfgs []string) string {
 			continue
 		}
 		_, v := splitVariant(m[1])
-		col := map[string][]float64{}
-		add := func(k string, x float64) { col[k] = append(col[k], x) }
-		n := 0
-		for _, rd := range runs {
-			base := filepath.Join(rd, l)
-			lines := readLines(base + ".pods.jsonl")
-			if len(lines) == 0 {
-				continue
-			}
-			n++
-			per := map[string]*struct {
-				pods, issued, attempts int
-				waits                  []float64
-			}{"polite": {}, "aggressive": {}, "all": {}}
-			for _, ln := range lines {
-				var p stormPod
-				if json.Unmarshal([]byte(ln), &p) != nil {
-					continue
-				}
-				for _, c := range []string{p.Class, "all"} {
-					x := per[c]
-					if x == nil {
-						continue
-					}
-					x.pods++
-					x.attempts += p.Attempts
-					if p.Issued {
-						x.issued++
-						x.waits = append(x.waits, p.WaitMs/1000)
-					}
-				}
-			}
-			for c, x := range per {
-				if x.pods == 0 {
-					continue
-				}
-				add(c+"/issued%", 100*float64(x.issued)/float64(x.pods))
-				if x.issued > 0 {
-					add(c+"/amp", float64(x.attempts)/float64(x.issued))
-					sort.Float64s(x.waits)
-					add(c+"/p50", pct(x.waits, 50))
-					add(c+"/p99", pct(x.waits, 99))
-					add(c+"/max", x.waits[len(x.waits)-1])
-				}
-			}
-			if s, ok := stressOne(base); ok && s.requests > 0 && per["all"].issued > 0 {
-				add("shares/issued", float64(s.computed)/float64(per["all"].issued))
-				if s.computed > 0 {
-					add("wasted%", 100*float64(s.wastedFailed)/float64(s.computed))
-				}
-			}
-		}
+		col, n := stormCols(runs, l)
 		if n == 0 {
 			continue
 		}
@@ -534,4 +489,153 @@ func stormSection(runs, cfgs []string) string {
 		"**Pre-registered (docs/PRIORITY_ADMISSION.md §5.4), reported, not pass/fail:** H1 amplification(abs) < amplification(ab); H2 aggressive advantage(abs) closer to 1 than (ab); H3 abs: no issued pod waited longer than the stable bound (ceil(L·R/2^16) + 1 epochs, ≤ 64 min at E = 2 min, R = 32), pods not issued within the give-up are listed by the issued % column.\n\n" +
 		"| variant | pods | runs | issued % | amplification all / polite / aggressive | issued % polite / aggressive | wait s polite p50 / p99 / max | wait s aggressive p50 / p99 / max | aggressive advantage | computed shares per issued token | wasted on failed % |\n|---|---:|---:|---:|---|---|---|---|---:|---:|---:|\n" +
 		strings.Join(rows, "\n") + "\n"
+}
+
+// stormCols computes the storm metrics of configuration l, one value per run.
+func stormCols(runs []string, l string) (map[string][]float64, int) {
+	col := map[string][]float64{}
+	add := func(k string, x float64) { col[k] = append(col[k], x) }
+	n := 0
+	for _, rd := range runs {
+		base := filepath.Join(rd, l)
+		lines := readLines(base + ".pods.jsonl")
+		if len(lines) == 0 {
+			continue
+		}
+		n++
+		per := map[string]*struct {
+			pods, issued, attempts int
+			waits                  []float64
+		}{"polite": {}, "aggressive": {}, "all": {}}
+		for _, ln := range lines {
+			var p stormPod
+			if json.Unmarshal([]byte(ln), &p) != nil {
+				continue
+			}
+			for _, c := range []string{p.Class, "all"} {
+				x := per[c]
+				if x == nil {
+					continue
+				}
+				x.pods++
+				x.attempts += p.Attempts
+				if p.Issued {
+					x.issued++
+					x.waits = append(x.waits, p.WaitMs/1000)
+				}
+			}
+		}
+		for c, x := range per {
+			if x.pods == 0 {
+				continue
+			}
+			add(c+"/issued%", 100*float64(x.issued)/float64(x.pods))
+			if x.issued > 0 {
+				add(c+"/amp", float64(x.attempts)/float64(x.issued))
+				sort.Float64s(x.waits)
+				add(c+"/p50", pct(x.waits, 50))
+				add(c+"/p99", pct(x.waits, 99))
+				add(c+"/max", x.waits[len(x.waits)-1])
+			}
+		}
+		if s, ok := stressOne(base); ok && s.requests > 0 && per["all"].issued > 0 {
+			add("shares/issued", float64(s.computed)/float64(per["all"].issued))
+			if s.computed > 0 {
+				add("wasted%", 100*float64(s.wastedFailed)/float64(s.computed))
+			}
+		}
+	}
+	return col, n
+}
+
+// v2RulesSection scores the pre-registered v2 rules (docs/PRIORITY_ADMISSION_V2.md
+// §6, §7) from the same session's stress and storm configurations.
+func v2RulesSection(runs, cfgs []string, med func(string, func(c cell) float64) float64) string {
+	rows := evalRows(runs, cfgs, med)
+	gp := map[string]map[int]float64{} // variant -> c -> goodput/peak
+	wasted := map[string]map[int]float64{}
+	peak := map[string]float64{}
+	for _, r := range rows {
+		if r.sys != "T-sameregion-optimistic" {
+			continue
+		}
+		peak[r.variant] = math.Max(peak[r.variant], r.gp)
+	}
+	for _, r := range rows {
+		if r.sys != "T-sameregion-optimistic" || peak[r.variant] == 0 {
+			continue
+		}
+		if gp[r.variant] == nil {
+			gp[r.variant], wasted[r.variant] = map[int]float64{}, map[int]float64{}
+		}
+		gp[r.variant][r.conc] = r.gp / peak[r.variant]
+		wasted[r.variant][r.conc] = r.wasted
+	}
+	storm := map[string]map[string]float64{}
+	for _, l := range cfgs {
+		m := singleRe.FindStringSubmatch(l)
+		if m == nil || !isStorm(runs, l) {
+			continue
+		}
+		_, v := splitVariant(m[1])
+		col, n := stormCols(runs, l)
+		if n == 0 {
+			continue
+		}
+		storm[v] = map[string]float64{"amp": median(col["all/amp"]), "pmax": median(col["polite/max"]),
+			"adv": median(col["polite/p50"]) / median(col["aggressive/p50"])}
+	}
+	if gp["v2"] == nil && storm["v2"] == nil {
+		return ""
+	}
+	verdict := func(ok bool) string { return map[bool]string{true: "**holds**", false: "**FAILS**"}[ok] }
+	var b strings.Builder
+	b.WriteString("\n## v2 pre-registered rules (docs/PRIORITY_ADMISSION_V2.md §6, §7; label v2)\n\nScored from this session only (n48, v2, v2nb measured together). R5 (no regression) is scored in the separate no-regression summary.\n\n| rule | v2 value | limit | result |\n|---|---|---|---|\n")
+	all := true
+	if g := gp["v2"]; g != nil {
+		ok, vals := true, []string{}
+		cs := []int{}
+		for c := range g {
+			if c >= 50 {
+				cs = append(cs, c)
+			}
+		}
+		sort.Ints(cs)
+		for _, c := range cs {
+			vals = append(vals, fmt.Sprintf("c=%d: %.2f / %s %%", c, g[c], f1(wasted["v2"][c])))
+			if !(g[c] >= 0.8 && wasted["v2"][c] <= 10) {
+				ok = false
+			}
+		}
+		all = all && ok
+		fmt.Fprintf(&b, "| R1 stress: every c ≥ 50 goodput/peak ≥ 0.8 and wasted ≤ 10 %% | %s | 0.80 / 10 %% | %s |\n", strings.Join(vals, "; "), verdict(ok))
+	}
+	if sv, sn := storm["v2"], storm["n48"]; sv != nil && sn != nil {
+		r2, r3, r4 := sv["amp"] <= sn["amp"]+0.5, sv["adv"] <= 1.3, sv["pmax"] <= 2*sn["pmax"]
+		all = all && r2 && r3 && r4
+		fmt.Fprintf(&b, "| R2 storm amplification ≤ n48 + 0.5 | %.2f | %.2f + 0.5 = %.2f | %s |\n", sv["amp"], sn["amp"], sn["amp"]+0.5, verdict(r2))
+		fmt.Fprintf(&b, "| R3 storm aggressive advantage ≤ 1.3 | %.2f | 1.30 | %s |\n", sv["adv"], verdict(r3))
+		fmt.Fprintf(&b, "| R4 storm worst polite wait ≤ 2 × n48 | %.1f s | 2 × %.1f = %.1f s | %s |\n", sv["pmax"], sn["pmax"], 2*sn["pmax"], verdict(r4))
+	} else {
+		all = false
+	}
+	fmt.Fprintf(&b, "\n**R1–R4: %s** (v2 is recommended only if R1–R5 all hold).\n", map[bool]string{true: "all hold", false: "NOT all hold"}[all])
+	// B default rule (§7): v2 vs v2nb
+	if sv, snb := storm["v2"], storm["v2nb"]; sv != nil && snb != nil && gp["v2"] != nil && gp["v2nb"] != nil {
+		i, ii := sv["amp"] <= snb["amp"]+0.2, sv["pmax"] <= 1.2*snb["pmax"]
+		iii := true
+		for c, g := range gp["v2"] {
+			if c >= 50 && g < gp["v2nb"][c]-0.05 {
+				iii = false
+			}
+		}
+		fmt.Fprintf(&b, "\n### QUORUM_ABORT default (§7): v2 (abort on) vs v2nb (abort off)\n\n| condition | v2 | v2nb | result |\n|---|---:|---:|---|\n| (i) amplification ≤ v2nb + 0.2 | %.2f | %.2f | %s |\n| (ii) worst polite wait ≤ 1.2 × v2nb | %.1f s | %.1f s | %s |\n| (iii) goodput/peak ≥ v2nb − 0.05 at every c ≥ 50 | see stress table | | %s |\n",
+			sv["amp"], snb["amp"], verdict(i), sv["pmax"], snb["pmax"], verdict(ii), verdict(iii))
+		if i && ii && iii {
+			b.WriteString("\n**Decision (§7): QUORUM_ABORT stays on by default.**\n")
+		} else {
+			b.WriteString("\n**Decision (§7): the default becomes QUORUM_ABORT=off** (B stays available).\n")
+		}
+	}
+	return b.String()
 }

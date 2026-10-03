@@ -22,7 +22,7 @@ import (
 )
 
 // frozen keeps the level fixed for the test: windows never close.
-var frozen = AdmissionConfig{Window: time.Hour, WindowArrivals: 1 << 30}
+var frozen = AdmissionConfig{Controller: "v1", Window: time.Hour, WindowArrivals: 1 << 30}
 
 func frozenMode(m PriorityMode) AdmissionConfig { c := frozen; c.Mode = m; return c }
 
@@ -358,12 +358,12 @@ func TestPriorityRefusalHTTPAndAudit(t *testing.T) {
 	}
 }
 
-// The level adapts as DAGOR §4.2.3: per window with N arrivals of which N_adm
+// Controller v1 (N76/N77, reproduces N78). The level adapts as DAGOR §4.2.3: per window with N arrivals of which N_adm
 // passed the level, an overloaded window (N48 shed, or long waits) sets the
 // next window's expected admissions to (1 − α)·N_adm, any other window to
 // N_adm + β·N; the level never passes the 5 % floor.
 func TestAdmissionLevelAdapts(t *testing.T) {
-	a := NewAdmissionForTest(testKey(6), AdmissionConfig{Window: 100 * time.Millisecond, WindowArrivals: 1 << 30})
+	a := NewAdmissionForTest(testKey(6), AdmissionConfig{Controller: "v1", Window: 100 * time.Millisecond, WindowArrivals: 1 << 30})
 	t0 := time.Unix(1_790_000_000, 0)
 	// window w: 100 arrivals at priorities i*655 (one per distinct bucket),
 	// at t0 + 100w ms + 1 µs·i; returns how many passed the level.
@@ -413,7 +413,7 @@ func TestAdmissionLevelAdapts(t *testing.T) {
 // capped at FairSlack x (previous window's admissions / clients); a light
 // client is not affected.
 func TestFairShareCapsAFloodingClient(t *testing.T) {
-	a := NewAdmissionForTest(testKey(7), AdmissionConfig{Window: 100 * time.Millisecond, WindowArrivals: 1 << 30})
+	a := NewAdmissionForTest(testKey(7), AdmissionConfig{Controller: "v1", Window: 100 * time.Millisecond, WindowArrivals: 1 << 30})
 	t0 := time.Unix(1_790_000_000, 0)
 	a.Decide(t0, 65535, "coordinator-1", time.Second)
 	a.SetFraction(0.5)
@@ -505,5 +505,153 @@ func TestDeadlineHeaderIsCapped(t *testing.T) {
 	srv.Handler().ServeHTTP(rec, req)
 	if el := time.Since(start); rec.Code != http.StatusServiceUnavailable || el > time.Second {
 		t.Fatalf("60 s deadline with a 300 ms cap: HTTP %d after %v, want 503 within ~300 ms", rec.Code, el)
+	}
+}
+
+// ---- controller v2 (N79/N80, docs/PRIORITY_ADMISSION_V2.md)
+
+func v2Admission() *AdmissionForTest { return NewAdmissionForTest(testKey(12), AdmissionConfig{}) } // defaults = v2
+
+// feed sends n arrivals at priorities spread over the space, spaced dt apart,
+// starting at t; it returns the next time and how many passed the level.
+func feed(a *AdmissionForTest, t time.Time, n int, dt time.Duration) (time.Time, int) {
+	ok := 0
+	for i := 0; i < n; i++ {
+		if pass, why := a.Decide(t, uint16(i*65535/max(n-1, 1)), "coordinator-1", 2*time.Second); pass {
+			ok++
+		} else if why != "priority" {
+			panic(why)
+		}
+		t = t.Add(dt)
+	}
+	return t, ok
+}
+
+// §1: a window closes only after >= 1 s AND >= 40 arrivals, or at 5 s.
+func TestV2WindowNeedsTimeAndArrivals(t *testing.T) {
+	a := v2Admission()
+	t0 := time.Unix(1_790_000_000, 0)
+	a.Decide(t0, 65535, "coordinator-1", 2*time.Second) // opens the window
+	// 200 arrivals in 0.5 s with sheds: not yet 1 s -> no level change
+	for i := 0; i < 30; i++ {
+		a.ObserveShed()
+	}
+	feed(a, t0.Add(time.Millisecond), 200, 2500*time.Microsecond)
+	if f := a.Fraction(); f != 1 {
+		t.Fatalf("level moved before 1 s: fraction %.3f", f)
+	}
+	// at 1.2 s with >= 40 arrivals the window closes and (overloaded) the level rises
+	feed(a, t0.Add(1200*time.Millisecond), 1, 0)
+	if f := a.Fraction(); f >= 1 {
+		t.Fatalf("overloaded window did not raise the level (fraction %.3f)", f)
+	}
+	// low rate: 10 arrivals spread over 4 s with sheds do not close a window ...
+	b := v2Admission()
+	b.Decide(t0, 65535, "coordinator-1", 2*time.Second)
+	for i := 0; i < 5; i++ {
+		b.ObserveShed()
+	}
+	feed(b, t0.Add(time.Millisecond), 10, 400*time.Millisecond)
+	if f := b.Fraction(); f != 1 {
+		t.Fatalf("thin window closed early: fraction %.3f", f)
+	}
+	// ... at 5 s it closes, but a thin window may not raise the level
+	feed(b, t0.Add(5100*time.Millisecond), 1, 0)
+	if f := b.Fraction(); f != 1 {
+		t.Fatalf("thin (10-arrival) overloaded window raised the level: fraction %.3f", f)
+	}
+}
+
+// §2: overload is the N48 shed fraction (>= max(2, 2 %)); long waits alone are not overload.
+func TestV2OverloadIsShedFraction(t *testing.T) {
+	t0 := time.Unix(1_790_000_000, 0)
+	run := func(sheds int, wait time.Duration) float64 {
+		a := v2Admission()
+		a.Decide(t0, 65535, "coordinator-1", 2*time.Second)
+		for i := 0; i < sheds; i++ {
+			a.ObserveShed()
+		}
+		for i := 0; i < 50; i++ {
+			a.ObserveWait(wait)
+		}
+		feed(a, t0.Add(time.Millisecond), 100, 5*time.Millisecond) // 100 arrivals in 0.5 s
+		feed(a, t0.Add(1100*time.Millisecond), 1, 0)               // closes the window
+		return a.Fraction()
+	}
+	// capped c=10-25 steady state: 0-0.1 % sheds, waits 0.9-1.3 s (up to 1.75 s): not overload
+	if f := run(0, 1750*time.Millisecond); f != 1 {
+		t.Fatalf("waits of 1.75 s without sheds were treated as overload (fraction %.3f)", f)
+	}
+	if f := run(1, time.Second); f != 1 {
+		t.Fatalf("one shed in 101 arrivals was treated as overload (fraction %.3f)", f)
+	}
+	// c=50 collapse: ~39 % sheds -> overload
+	if f := run(39, time.Second); f >= 1 {
+		t.Fatalf("39 %% sheds not treated as overload (fraction %.3f)", f)
+	}
+	// threshold: max(2, ceil(2 % of 101)) = 3
+	if f := run(2, 0); f != 1 {
+		t.Fatal("2 sheds in 101 arrivals (< 3) treated as overload")
+	}
+	if f := run(3, 0); f >= 1 {
+		t.Fatal("3 sheds in 101 arrivals (>= 3) not treated as overload")
+	}
+}
+
+// §3: damping. One window moves the level at most 32 buckets up and 8 down;
+// reaching the 5 % floor from 0 takes >= 8 overloaded windows.
+func TestV2Damping(t *testing.T) {
+	a := v2Admission()
+	t0 := time.Unix(1_790_000_000, 0)
+	a.Decide(t0, 65535, "coordinator-1", 2*time.Second)
+	tt := t0.Add(time.Millisecond)
+	prev, windows := a.Fraction(), 0
+	for a.Fraction() > 0.051 && windows < 40 {
+		for i := 0; i < 100; i++ { // every window heavily overloaded
+			a.ObserveShed()
+		}
+		tt, _ = feed(a, tt, 100, 11*time.Millisecond) // 100 arrivals over 1.1 s
+		windows++
+		if d := (prev - a.Fraction()) * 256; d > 32.0001 {
+			t.Fatalf("window %d moved the level up %.0f buckets (max 32)", windows, d)
+		}
+		prev = a.Fraction()
+	}
+	if windows < 8 {
+		t.Fatalf("reached the floor in %d windows, want >= 8", windows)
+	}
+	floor := a.Fraction()
+	// calm windows: down by at most 8 buckets each
+	for w := 0; w < 3; w++ {
+		tt, _ = feed(a, tt, 100, 11*time.Millisecond)
+		if d := (a.Fraction() - prev) * 256; d > 8.0001 {
+			t.Fatalf("calm window lowered the level %.0f buckets (max 8)", d)
+		}
+		prev = a.Fraction()
+	}
+	t.Logf("v2: floor %.3f reached after %d overloaded windows (32 buckets max each); calm windows recover <= 8 buckets each (now %.3f)", floor, windows, a.Fraction())
+}
+
+// v2 is the default controller; v1 stays selectable.
+func TestControllerSelection(t *testing.T) {
+	fx := testutil.Key(t)
+	pol, _ := policy.New(testutil.PolicyConfig())
+	al, err := audit.Open(filepath.Join(t.TempDir(), "audit.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { al.Close() })
+	for _, c := range []string{"", "v1", "v2"} {
+		s, err := New(Config{ID: 1, Meta: fx.Meta, Share: fx.Shares[0], Policy: pol, Audit: al, PriorityKey: testKey(1), Admission: AdmissionConfig{Controller: c}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := map[string]string{"": "v2", "v1": "v1", "v2": "v2"}[c]
+		if got := s.PriorityConfig().Controller; got != want {
+			t.Fatalf("controller %q -> %q, want %q", c, got, want)
+		}
+	}
+	if _, err := New(Config{ID: 1, Meta: fx.Meta, Share: fx.Shares[0], Policy: pol, Audit: al, PriorityKey: testKey(1), Admission: AdmissionConfig{Controller: "v3"}}); err == nil {
+		t.Fatal("controller v3 accepted")
 	}
 }

@@ -8,6 +8,7 @@
 #                                             system (rotated), sizes SIZES; cooldown per rep
 #   RES=<dir> benchmark/k8s7c/run.sh lever|stress   lever check / stress test (N70)
 #   RES=<dir> benchmark/k8s7c/run.sh eval-stress|eval-noregress|eval-slots|eval-storm
+#   RES=<dir> benchmark/k8s7c/run.sh eval-v2|eval-v2-noregress   v2 (N79): stress + storm; no-regression
 #                                             N76 evaluation (docs/PRIORITY_ADMISSION.md §5)
 #   RES=<dir> benchmark/k8s7c/run.sh summary  regenerate summary.md from the raw files
 # RES defaults to a new benchmark/results/<UTC>-<sha>-7C directory (reuse it for all phases).
@@ -360,6 +361,30 @@ phase_eval_storm() {
   stress_caps off
   signer_config T-sameregion-optimistic n48 - >/dev/null
 }
+# v2 (N79, docs/PRIORITY_ADMISSION_V2.md §5), the single follow-up iteration: stress
+# then storm in ONE results directory (the B-default rule compares v2 with v2nb across
+# both), variants n48 / v2 / v2nb; no-regression separately.
+phase_eval_v2() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_CPU=1 SIGNER_AUDIT=1 SIGNER_SAMPLES=1 QUEUE_SAMPLE="${QUEUE_SAMPLE:-100ms}" IDENTITIES="${IDENTITIES:-300}"
+  storm_setup "$IDENTITIES" || die "service accounts for $IDENTITIES identities"
+  echo "== v2: STRESS TEST (CPU-capped signers, SIGNER_MAX_CONCURRENT=1): applying caps"
+  stress_caps on
+  eval_loop "T-sameregion-optimistic@n48 T-sameregion-optimistic@v2 T-sameregion-optimistic@v2nb" "${STRESS_CONCS:-10 25 50 100 150 200}" eval-v2-stress
+  echo "== v2: STORM"
+  STORM=1 eval_loop "T-sameregion-optimistic@n48 T-sameregion-optimistic@v2 T-sameregion-optimistic@v2nb" "${STORM_PODS:-300}" eval-v2-storm
+  echo "== removing stress caps"
+  stress_caps off
+  unset QUEUE_SAMPLE; signer_config T-sameregion-optimistic n48 - >/dev/null
+}
+phase_eval_v2_noregress() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_AUDIT=1 IDENTITIES="${IDENTITIES:-300}"
+  storm_setup "$IDENTITIES" || die "service accounts for $IDENTITIES identities"
+  eval_loop "B0 T-sameregion-optimistic@n48 T-sameregion-optimistic@v2 T-5region-optimistic@n48 T-5region-optimistic@v2" "$CONCS" eval-v2-noregress
+  signer_config T-sameregion-optimistic n48 - >/dev/null
+  [[ -f "$S7/topology-t5.env" ]] && signer_config T-5region-optimistic n48 - >/dev/null
+}
 # §5.3 inference test (admission slots): SIGNER_MAX_CONCURRENT 2/4/8, c=50, uncapped
 phase_eval_slots() {
   push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
@@ -402,6 +427,8 @@ case "$PHASE" in
   eval-noregress) phase_eval_noregress; phase_summary;;
   eval-slots) phase_eval_slots; phase_summary;;
   eval-storm) phase_eval_storm; phase_summary;;
+  eval-v2) phase_eval_v2; phase_summary;;
+  eval-v2-noregress) phase_eval_v2_noregress; phase_summary;;
   stress) phase_stress; phase_summary;;
   scale) phase_scale; phase_summary;;
   summary) phase_summary;;

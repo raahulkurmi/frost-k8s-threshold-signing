@@ -1,7 +1,9 @@
 # Priority-consistent admission, v2 (design for review, not implemented)
 
-Status: **DESIGN, nothing implemented.** This is the **only** follow-up iteration after the
-N76/N77 evaluation (NOTES N78).
+Status: **design approved; implemented (NOTES N80)** as `SIGNER_PRIORITY_CONTROLLER=v2`, the
+default under priority admission. v1 stays selectable (`v1`) so that the N78 results
+remain reproducible. **Not yet evaluated.** This is the **only** follow-up iteration after
+the N76/N77 evaluation (NOTES N78).
 - Whatever v2 shows is reported as is, under the label **v2**, and is not re-tuned.
 - All N76/N77 results stay in the record unchanged, alongside v2's.
 - If v2 fails its rules, the conclusion is that priority-consistent admission did not help

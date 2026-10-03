@@ -30,6 +30,8 @@
 //	SIGNER_PRIORITY optional (priority admission only), stable (default) | request:
 //	               p from the claims' stable identity (sub + pod uid) per epoch, or
 //	               from the request_id (a new draw per retry) (N77)
+//	SIGNER_PRIORITY_CONTROLLER optional, v2 (default) | v1: admission-level controller
+//	               (v2: docs/PRIORITY_ADMISSION_V2.md; v1 reproduces N76-N78)
 //	SIGNER_PRIORITY_EPOCH optional, default 2m (stable): whole seconds, >= 10s
 //	SIGNER_PRIORITY_ROTATION optional, default 32 (stable): power of two in 2..64,
 //	               at least 1/(admission floor) = 20 with the 5 % floor
@@ -198,8 +200,8 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 	default:
 		return nil, fmt.Errorf("SIGNER_ADMISSION %q must be n48 or priority", mode)
 	}
-	pm, pe, pr := getenv("SIGNER_PRIORITY"), getenv("SIGNER_PRIORITY_EPOCH"), getenv("SIGNER_PRIORITY_ROTATION")
-	if s.PrioKey == nil && (pm != "" || pe != "" || pr != "") {
+	pm, pe, pr, pc := getenv("SIGNER_PRIORITY"), getenv("SIGNER_PRIORITY_EPOCH"), getenv("SIGNER_PRIORITY_ROTATION"), getenv("SIGNER_PRIORITY_CONTROLLER")
+	if s.PrioKey == nil && (pm != "" || pe != "" || pr != "" || pc != "") {
 		return nil, errors.New("SIGNER_PRIORITY* is set but SIGNER_ADMISSION is not priority")
 	}
 	switch pm {
@@ -209,6 +211,14 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 		s.Adm.Mode = signer.PriorityRequest
 	default:
 		return nil, fmt.Errorf("SIGNER_PRIORITY %q must be stable or request", pm)
+	}
+	switch pc {
+	case "", "v2":
+		s.Adm.Controller = "v2"
+	case "v1":
+		s.Adm.Controller = "v1"
+	default:
+		return nil, fmt.Errorf("SIGNER_PRIORITY_CONTROLLER %q must be v1 or v2", pc)
 	}
 	if pe != "" {
 		if s.Adm.Epoch, err = time.ParseDuration(pe); err != nil || s.Adm.Epoch < 10*time.Second || s.Adm.Epoch%time.Second != 0 {
@@ -258,7 +268,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	logger.Info("signer ready", "signer_id", s.ID, "kid", s.Meta.KID, "threshold", s.Meta.Threshold,
 		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent(), "max_queue", srv.MaxQueue(),
 		"admission", map[bool]string{true: "priority", false: "n48"}[s.PrioKey != nil], "max_deadline", srv.MaxDeadline().String(),
-		"priority", prioMode(srv), "priority_epoch", prioEpoch(srv), "priority_rotation", prioRotation(srv))
+		"priority", prioMode(srv), "priority_epoch", prioEpoch(srv), "priority_rotation", prioRotation(srv), "priority_controller", prioController(srv))
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -296,4 +306,11 @@ func prioRotation(s *signer.Server) int {
 		return c.Rotation
 	}
 	return 0
+}
+
+func prioController(s *signer.Server) string {
+	if c := s.PriorityConfig(); c != nil {
+		return c.Controller
+	}
+	return ""
 }

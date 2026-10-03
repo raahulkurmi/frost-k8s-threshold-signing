@@ -88,11 +88,14 @@ wait_backend_ready() { # WANT_STRATEGY (empty for B1): all 3 replicas logged rea
 #   abs    abort on, priority, stable identity (the proposal, N77)
 #   ab     abort on, priority, request-ID priority (comparison, N76)
 #   slots<k>  abort off, n48, SIGNER_MAX_CONCURRENT=k
-variant_cfg() { # VARIANT -> "QUORUM_ABORT ADMISSION MAXCONC PRIORITY"
+#   ab/abs use controller v1 (as measured in N78); v2 / v2nb: stable priority with
+#   controller v2, abort on / off (N79, docs/PRIORITY_ADMISSION_V2.md)
+variant_cfg() { # VARIANT -> "QUORUM_ABORT ADMISSION MAXCONC PRIORITY CONTROLLER"
   case "$1" in
-    "") echo "on n48 - -" ;; n48) echo "off n48 - -" ;; b) echo "on n48 - -" ;;
-    ab) echo "on priority - request" ;; abs) echo "on priority - stable" ;;
-    slots[1-9]*) echo "off n48 ${1#slots} -" ;;
+    "") echo "on n48 - - -" ;; n48) echo "off n48 - - -" ;; b) echo "on n48 - - -" ;;
+    ab) echo "on priority - request v1" ;; abs) echo "on priority - stable v1" ;;
+    v2) echo "on priority - stable v2" ;; v2nb) echo "off priority - stable v2" ;;
+    slots[1-9]*) echo "off n48 ${1#slots} - -" ;;
     *) die "unknown variant @$1" ;;
   esac
 }
@@ -100,12 +103,12 @@ variant_cfg() { # VARIANT -> "QUORUM_ABORT ADMISSION MAXCONC PRIORITY"
 # and SIGNER_MAX_CONCURRENT (MAXCONC, or 1 while stress caps are on, else the
 # default) and QUEUE_SAMPLE; restarted only if changed; verified from its ready line.
 signer_config() {
-  local sys="$1" adm="$2" mc="$3" pm="${4:--}" pair id h tmp pids="" p rc=0 want_mc want_pm
+  local sys="$1" adm="$2" mc="$3" pm="${4:--}" pc="${5:--}" pair id h tmp pids="" p rc=0 want_mc want_pm want_pc
   [[ "$mc" == - && -n "${STRESS_ACTIVE:-}" ]] && mc=1
   tmp="$(mktemp -d)"
   for pair in $(t_signer_hosts "$sys"); do
     id="${pair%%:*}" h="${pair#*:}"
-    ( cpipe "$h" sudo bash -s -- "$id" "$adm" "$mc" "${QUEUE_SAMPLE:--}" "$pm" < "$REPO/deploy/aws/7c/signer-config.sh" > "$tmp/$id" ) &
+    ( cpipe "$h" sudo bash -s -- "$id" "$adm" "$mc" "${QUEUE_SAMPLE:--}" "$pm" "$pc" < "$REPO/deploy/aws/7c/signer-config.sh" > "$tmp/$id" ) &
     pids="$pids $!"
   done
   for p in $pids; do wait "$p" || rc=1; done
@@ -114,19 +117,20 @@ signer_config() {
     id="${pair%%:*}"
     want_mc="$mc"; [[ "$want_mc" == - ]] && want_mc=2   # t3.micro: NumCPU = 2
     want_pm="$pm"; [[ "$want_pm" == - ]] && { [[ "$adm" == priority ]] && want_pm=stable || want_pm=""; }
-    tail -1 "$tmp/$id" | jq -e --arg a "$adm" --argjson m "$want_mc" --arg p "$want_pm" 'select(.admission == $a and .max_concurrent == $m and (.priority // "") == $p)' >/dev/null \
-      || { cat "$tmp/$id"; rm -rf "$tmp"; die "signer $id of $sys is not running admission=$adm max_concurrent=$want_mc priority=$want_pm"; }
+    want_pc="$pc"; [[ "$want_pc" == - ]] && { [[ "$adm" == priority ]] && want_pc=v2 || want_pc=""; }
+    tail -1 "$tmp/$id" | jq -e --arg a "$adm" --argjson m "$want_mc" --arg p "$want_pm" --arg c "$want_pc" 'select(.admission == $a and .max_concurrent == $m and (.priority // "") == $p and (.priority_controller // "") == $c)' >/dev/null \
+      || { cat "$tmp/$id"; rm -rf "$tmp"; die "signer $id of $sys is not running admission=$adm max_concurrent=$want_mc priority=$want_pm controller=$want_pc"; }
   done
-  jq -sc 'map({signer_id, admission, priority, priority_epoch, priority_rotation, max_concurrent, max_deadline})' < <(for pair in $(t_signer_hosts "$sys"); do tail -1 "$tmp/${pair%%:*}"; done)
+  jq -sc 'map({signer_id, admission, priority, priority_controller, priority_epoch, priority_rotation, max_concurrent, max_deadline})' < <(for pair in $(t_signer_hosts "$sys"); do tail -1 "$tmp/${pair%%:*}"; done)
   rm -rf "$tmp"
 }
 
 # use_system SYS OUT_CHECK_JSON: SYS in B0 | B1 | T-5region-<strategy>[-<fanout>][@<variant>] | T-sameregion-...
 use_system() {
   local sys="$1" out="$2" stamp="$1-$(date -u +%Y%m%dT%H%M%SZ)" pin="" lbset="" mode=external
-  local variant="" qa=on adm=n48 mc=- pm=- sigcfg='null'
+  local variant="" qa=on adm=n48 mc=- pm=- pc=- sigcfg='null'
   if [[ "$sys" == *@* ]]; then variant="${sys##*@}"; sys="${sys%@*}"; fi
-  read -r qa adm mc pm <<<"$(variant_cfg "$variant")"
+  read -r qa adm mc pm pc <<<"$(variant_cfg "$variant")"
   coord_down
   case "$sys" in
     B0|B0-anchor) mode=in-tree; coord_egress ;;
@@ -140,7 +144,7 @@ use_system() {
       local rest="${sys#T-5region-}" sec=secrets-t5; lbset=t5
       [[ "$sys" == T-sameregion-* ]] && { rest="${sys#T-sameregion-}"; sec=secrets-tsame; lbset=tsame; }
       local st="${rest%%-*}" fo="${rest#*-}"; [[ "$fo" == "$rest" ]] && fo=all
-      sigcfg="$(signer_config "$sys" "$adm" "$mc" "$pm")"
+      sigcfg="$(signer_config "$sys" "$adm" "$mc" "$pm" "$pc")"
       coord_compose coordinator-node.t.yml COORD_SECRETS=$sec VERIFY_STRATEGY=$st FANOUT=$fo QUORUM_ABORT=$qa -- up -d --force-recreate >/dev/null
       # shellcheck disable=SC2046
       coord_egress $(t_endpoints $sec)

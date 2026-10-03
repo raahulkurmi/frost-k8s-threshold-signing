@@ -107,7 +107,7 @@ func TestLoadAdmissionModes(t *testing.T) {
 	if err != nil || len(s.PrioKey) != prioritykey.Size || s.MaxDL.String() != "3s" {
 		t.Fatalf("priority: err=%v key=%d maxdl=%v", err, len(s.PrioKey), s.MaxDL)
 	}
-	if s.Adm.Mode != signer.PriorityStable || s.Adm.Epoch != 0 || s.Adm.Rotation != 0 {
+	if s.Adm.Mode != signer.PriorityStable || s.Adm.Epoch != 0 || s.Adm.Rotation != 0 || s.Adm.Controller != "v2" {
 		t.Fatalf("priority default: %+v, want stable with the built-in epoch and rotation", s.Adm)
 	}
 	e["SIGNER_PRIORITY"], e["SIGNER_PRIORITY_EPOCH"], e["SIGNER_PRIORITY_ROTATION"] = "request", "30s", "64"
@@ -129,9 +129,12 @@ func TestAdmissionConfigFailsClosed(t *testing.T) {
 		"priority key missing": {func(e envMap) {
 			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"] = "priority", "/nonexistent/priority.key"
 		}, "no such file"},
-		"key file in n48 mode":            {func(e envMap) { e["PRIORITY_KEY_FILE"] = writePriorityKey(t, fx.Meta.KID) }, "SIGNER_ADMISSION is not priority"},
-		"unknown mode":                    {func(e envMap) { e["SIGNER_ADMISSION"] = "dagor" }, "must be n48 or priority"},
-		"bad max deadline":                {func(e envMap) { e["SIGNER_MAX_DEADLINE"] = "-1s" }, "SIGNER_MAX_DEADLINE"},
+		"key file in n48 mode": {func(e envMap) { e["PRIORITY_KEY_FILE"] = writePriorityKey(t, fx.Meta.KID) }, "SIGNER_ADMISSION is not priority"},
+		"unknown mode":         {func(e envMap) { e["SIGNER_ADMISSION"] = "dagor" }, "must be n48 or priority"},
+		"bad max deadline":     {func(e envMap) { e["SIGNER_MAX_DEADLINE"] = "-1s" }, "SIGNER_MAX_DEADLINE"},
+		"bad controller": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"], e["SIGNER_PRIORITY_CONTROLLER"] = "priority", writePriorityKey(t, fx.Meta.KID), "v3"
+		}, "SIGNER_PRIORITY_CONTROLLER"},
 		"queue sample too short":          {func(e envMap) { e["SIGNER_QUEUE_SAMPLE"] = "1ms" }, "SIGNER_QUEUE_SAMPLE"},
 		"priority mode without admission": {func(e envMap) { e["SIGNER_PRIORITY"] = "stable" }, "SIGNER_ADMISSION is not priority"},
 		"bad priority mode": {func(e envMap) {

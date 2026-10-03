@@ -161,3 +161,61 @@ func TestEvalSection(t *testing.T) {
 		t.Log(s)
 	}
 }
+
+// v2 rules (docs/PRIORITY_ADMISSION_V2.md §6, §7) scored from one session.
+func TestV2RulesSection(t *testing.T) {
+	dir := t.TempDir()
+	rd := filepath.Join(dir, "run1")
+	os.MkdirAll(rd, 0o755)
+	st := "T-sameregion-optimistic"
+	// stress: v2 keeps 90 % ok with no waste at c>=50; v2nb the same; n48 collapses
+	for _, c := range []int{10, 50, 100} {
+		writeEvalCfg(t, rd, fmt.Sprintf("%s@n48-c%d", st, c), 100, map[bool]int{true: 40, false: 100}[c >= 50], 2, 0, 700, 23)
+		writeEvalCfg(t, rd, fmt.Sprintf("%s@v2-c%d", st, c), 100, map[bool]int{true: 90, false: 100}[c >= 50], 0, 5, 700, 23)
+		writeEvalCfg(t, rd, fmt.Sprintf("%s@v2nb-c%d", st, c), 100, map[bool]int{true: 90, false: 100}[c >= 50], 0, 5, 700, 23)
+	}
+	// storm: n48 amp 3.0, polite max 30 s; v2 amp 3.4, polite max 50 s, advantage 40/32 = 1.25;
+	// v2nb amp 3.0 (so B rule (i) fails: 3.4 > 3.0 + 0.2)
+	pods := func(polAtt, aggAtt int, polWait, polMax, aggWait float64) []string {
+		var p []string
+		for i := 0; i < 8; i++ {
+			w := polWait
+			if i == 7 {
+				w = polMax
+			}
+			p = append(p, fmt.Sprintf(`{"pod":%d,"class":"polite","attempts":%d,"issued":true,"wait_ms":%.0f}`, i, polAtt, w*1000))
+		}
+		for i := 0; i < 2; i++ {
+			p = append(p, fmt.Sprintf(`{"pod":%d,"class":"aggressive","attempts":%d,"issued":true,"wait_ms":%.0f}`, 8+i, aggAtt, aggWait*1000))
+		}
+		return p
+	}
+	for v, pp := range map[string][]string{"n48": pods(3, 3, 20, 30, 18), "v2": pods(3, 5, 40, 50, 32), "v2nb": pods(3, 3, 40, 45, 32)} {
+		lab := fmt.Sprintf("%s@%s-c300", st, v)
+		writeEvalCfg(t, rd, lab, 10, 10, 0, 0, 700, 23)
+		os.WriteFile(filepath.Join(rd, lab+".pods.jsonl"), []byte(strings.Join(pp, "\n")+"\n"), 0o644)
+	}
+	out := filepath.Join(dir, "summary.md")
+	if err := runSingle(dir, "t", "", out); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(out)
+	s := string(b)
+	for _, want := range []string{
+		"| R1 stress: every c ≥ 50 goodput/peak ≥ 0.8 and wasted ≤ 10 % | c=50: 0.90 / 0.0 %; c=100: 0.90 / 0.0 % | 0.80 / 10 % | **holds** |",
+		// v2 amp = (8*3 + 2*5)/10 = 3.40 <= 3.0 + 0.5
+		"| R2 storm amplification ≤ n48 + 0.5 | 3.40 | 3.00 + 0.5 = 3.50 | **holds** |",
+		"| R3 storm aggressive advantage ≤ 1.3 | 1.25 | 1.30 | **holds** |",
+		"| R4 storm worst polite wait ≤ 2 × n48 | 50.0 s | 2 × 30.0 = 60.0 s | **holds** |",
+		"**R1–R4: all hold**",
+		"| (i) amplification ≤ v2nb + 0.2 | 3.40 | 3.00 | **FAILS** |",
+		"**Decision (§7): the default becomes QUORUM_ABORT=off**",
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("summary missing %q", want)
+		}
+	}
+	if t.Failed() {
+		t.Log(s[strings.Index(s, "## v2 pre-registered"):])
+	}
+}

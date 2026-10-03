@@ -41,6 +41,14 @@ package signer
 // remaining deadline at arrival. The level never exceeds the bucket that
 // still admits the top MinFraction of the priority space.
 //
+// Controller v2 (N79/N80, docs/PRIORITY_ADMISSION_V2.md; the default): a window
+// closes after >= MinWindow AND >= MinArrivals, or at MaxWindow ("thin" if it
+// has fewer than MinArrivals: the level may then only go down); overload is the
+// N48 shed fraction, sheds >= max(2, ShedFraction x arrivals) (no queue-time
+// threshold); the level moves at most MaxUp buckets up and MaxDown down per
+// window. Controller v1 (N76/N77, kept for reproducibility of N78) is the
+// 250 ms / 200-arrival window with the Theta queue-wait signal and no damping.
+//
 // Per-client fair share (N76 hardening): while the level is above 0 and more
 // than one client was seen in the previous window, a client (mTLS SAN
 // coordinator-<k>) is refused once it has had FairSlack × (previous window's
@@ -69,6 +77,12 @@ const (
 // fixed in docs/PRIORITY_ADMISSION.md before any evaluation run.
 type AdmissionConfig struct {
 	Mode           PriorityMode  // default stable
+	Controller     string        // v2 (default) | v1 (N76/N77, reproduces N78)
+	MinWindow      time.Duration // v2: a window lasts at least this long; default 1s
+	MaxWindow      time.Duration // v2: and at most this long; default 5s
+	MinArrivals    int           // v2: and closes before MaxWindow only with this many arrivals; default 40
+	ShedFraction   float64       // v2: overloaded iff N48 sheds >= max(2, ShedFraction x arrivals); default 0.02
+	MaxUp, MaxDown int           // v2: level change bound per window in buckets; default 32, 8
 	Epoch          time.Duration // stable: priority epoch E; default 2m
 	Rotation       int           // stable: epochs per full rotation R (power of two, 2..64, step ≤ the floor's band); default 32
 	Window         time.Duration // default 250ms
@@ -110,6 +124,27 @@ func (c AdmissionConfig) withDefaults() AdmissionConfig {
 	}
 	if c.FairSlack == 0 {
 		c.FairSlack = 1.25
+	}
+	if c.Controller == "" {
+		c.Controller = "v2"
+	}
+	if c.MinWindow == 0 {
+		c.MinWindow = time.Second
+	}
+	if c.MaxWindow == 0 {
+		c.MaxWindow = 5 * time.Second
+	}
+	if c.MinArrivals == 0 {
+		c.MinArrivals = 40
+	}
+	if c.ShedFraction == 0 {
+		c.ShedFraction = 0.02
+	}
+	if c.MaxUp == 0 {
+		c.MaxUp = 32
+	}
+	if c.MaxDown == 0 {
+		c.MaxDown = 8
 	}
 	return c
 }
@@ -299,6 +334,10 @@ func (a *admission) roll(now time.Time) {
 		a.winStart = now
 		return
 	}
+	if a.cfg.Controller == "v2" {
+		a.rollV2(now)
+		return
+	}
 	el := now.Sub(a.winStart)
 	if el < a.cfg.Window && a.arrivals < a.cfg.WindowArrivals {
 		return
@@ -355,4 +394,52 @@ func (a *admission) setFraction(f float64) {
 	a.mu.Lock()
 	a.lb = int(math.Round((1 - f) * buckets))
 	a.mu.Unlock()
+}
+
+// rollV2 is controller v2 (docs/PRIORITY_ADMISSION_V2.md §1–§3). Callers hold mu.
+func (a *admission) rollV2(now time.Time) {
+	el := now.Sub(a.winStart)
+	if !(el >= a.cfg.MaxWindow || (el >= a.cfg.MinWindow && a.arrivals >= a.cfg.MinArrivals)) {
+		return
+	}
+	thin := a.arrivals < a.cfg.MinArrivals
+	need := math.Max(2, math.Ceil(a.cfg.ShedFraction*float64(a.arrivals)))
+	overloaded := float64(a.sheds) >= need
+	old := a.lb
+	prefix := float64(a.nadm)
+	clamped := ""
+	if overloaded && !thin {
+		exp := (1 - a.cfg.Alpha) * float64(a.nadm)
+		for prefix > exp && a.lb < a.maxLB {
+			if a.lb-old >= a.cfg.MaxUp {
+				clamped = "up"
+				break
+			}
+			prefix -= float64(a.hist[a.lb])
+			a.lb++
+		}
+	} else if !overloaded {
+		exp := float64(a.nadm) + a.cfg.Beta*float64(a.arrivals)
+		for prefix < exp && a.lb > 0 {
+			if old-a.lb >= a.cfg.MaxDown {
+				clamped = "down"
+				break
+			}
+			a.lb--
+			prefix += float64(a.hist[a.lb])
+		}
+	}
+	if a.log != nil && (a.lb != old || a.lb > 0) {
+		a.log.Info("admission level", "signer_id", a.id, "controller", "v2", "level", a.lb*256, "admitted_fraction", a.fractionLocked(),
+			"overloaded", overloaded, "thin", thin, "clamped", clamped, "arrivals", a.arrivals, "admitted_by_level", a.nadm,
+			"n48_sheds", a.sheds, "priority_refused", a.refPrio, "fair_share_refused", a.refFair, "clients", len(a.clients),
+			"window_ms", float64(el.Microseconds())/1000)
+	}
+	a.prevAdm, a.prevCl = a.total, len(a.clients)
+	a.winStart = now
+	a.hist = [buckets]int{}
+	a.arrivals, a.nadm, a.sheds, a.waitN, a.waitSum, a.refPrio, a.refFair, a.total = 0, 0, 0, 0, 0, 0, 0, 0
+	a.budgets = a.budgets[:0]
+	a.admitted = map[string]int{}
+	a.clients = map[string]bool{}
 }

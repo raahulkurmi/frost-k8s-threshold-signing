@@ -1489,3 +1489,28 @@ results are reported as is under the label **v2**; N76/N77/N78 results stay unch
     unchanged until the rule is applied.
 - **Session plan:** n48 / v2 / v2nb; stress + storm + no-regression (no slots test);
   ≈ 5.7 h, ≈ $3.5.
+
+### N80. v2 implemented as designed (N79); v1 kept selectable
+- **Signer** (`SIGNER_PRIORITY_CONTROLLER=v2`, the default under priority admission; `v1`
+  reproduces N76–N78):
+  - window ≥ 1 s **and** ≥ 40 arrivals, or 5 s;
+  - a thin window can only lower the level;
+  - overloaded ⇔ N48 sheds ≥ max(2, 2 % of arrivals); no queue-time signal;
+  - level change ≤ 32 buckets up and ≤ 8 down per window (`clamped` is logged);
+  - the stable priority, the DAGOR §4.2.3 step, the floor and the fair share are unchanged.
+- **Tests:**
+  - `TestV2WindowNeedsTimeAndArrivals`;
+  - `TestV2OverloadIsShedFraction`: 1.75 s waits without sheds are not overload; 39 % sheds
+    are; threshold 3 of 101;
+  - `TestV2Damping`: no window moves more than 32 buckets up or 8 down; under steady heavy
+    overload the floor took 32 windows, because the α-step binds before the clamp;
+  - `TestControllerSelection`.
+  - The v1 tests are pinned to `Controller: "v1"`, assertions unchanged.
+- **Driver:** variants `v2` (abort on) and `v2nb` (abort off), both stable priority with
+  controller v2; ab/abs are pinned to v1. Every switch verifies `priority_controller` on
+  each signer.
+- **Phases:** `run.sh eval-v2` runs stress, then storm, in one results directory, so the
+  B-default rule compares v2 with v2nb from the same session; `eval-v2-noregress` runs the
+  no-regression test.
+- **Summarizer:** scores R1–R4 and the §7 QUORUM_ABORT rule (`TestV2RulesSection`); R5
+  comes from the no-regression summary.
