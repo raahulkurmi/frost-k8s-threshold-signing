@@ -4,7 +4,8 @@ package main
 // Configuration labels carry the variant after '@' (<system>@<variant>-c<N>):
 //   n48    today: N48 admission, no quorum-impossible abort
 //   b      quorum-impossible abort only
-//   ab     abort + priority-consistent admission
+//   ab     abort + priority-consistent admission, request-ID priority (N76, comparison)
+//   abs    abort + priority-consistent admission, stable-identity priority (N77, the proposal)
 //   slots<k>  N48, no abort, SIGNER_MAX_CONCURRENT=k (admission-slots inference test)
 // Every rule below was fixed in docs/PRIORITY_ADMISSION.md before any run.
 
@@ -40,7 +41,7 @@ func evalRows(runs, cfgs []string, med func(string, func(c cell) float64) float6
 	var rows []evalRow
 	for _, l := range cfgs {
 		m := singleRe.FindStringSubmatch(l)
-		if m == nil || !strings.Contains(m[1], "@") {
+		if m == nil || !strings.Contains(m[1], "@") || isStorm(runs, l) {
 			continue
 		}
 		base, v := splitVariant(m[1])
@@ -100,6 +101,8 @@ func variantOrder(v string) string {
 		return "1"
 	case "ab":
 		return "2"
+	case "abs":
+		return "25"
 	}
 	if k, err := strconv.Atoi(strings.TrimPrefix(v, "slots")); err == nil {
 		return fmt.Sprintf("3%03d", k)
@@ -127,17 +130,17 @@ func evalSection(runs, cfgs []string, med func(string, func(c cell) float64) flo
 	}
 	stress := false
 	for _, k := range order {
-		if (k.v == "n48" || k.v == "b" || k.v == "ab") && groups[k][0].hasAudit && maxConc(groups[k]) >= 100 {
+		if isAB(k.v) && groups[k][0].hasAudit && maxConc(groups[k]) >= 100 {
 			stress = true
 		}
 	}
 	if stress {
 		b.WriteString("\n## N76 evaluation: stress test before/after (label: stress test (CPU-capped signers CPUQuota=25%, SIGNER_MAX_CONCURRENT=1))\n\n")
-		b.WriteString("Variants: **n48** = today (N48 admission, no quorum-impossible abort); **b** = quorum-impossible abort only; **ab** = abort + priority-consistent admission. Median of runs; peak = the variant's own highest goodput. Sheds by reason (all signers, median per run): priority / fair share (N76 stage) and queue full / no slot in time / slot too late (N48). **Rules fixed before the run (docs/PRIORITY_ADMISSION.md §5.1):** collapse (DAGOR rule, N70) = goodput < 0.8 × peak and ≥ 20 % of computed shares wasted; **success** for a variant = at every c ≥ 50, goodput ≥ 0.8 × peak **and** wasted-on-failed ≤ 10 %.\n\n")
+		b.WriteString("Variants: **n48** = today (N48 admission, no quorum-impossible abort); **b** = quorum-impossible abort only; **ab** = abort + priority admission with request-ID priority (N76, comparison); **abs** = abort + priority admission with stable-identity priority (N77, the proposal). Median of runs; peak = the variant's own highest goodput. Sheds by reason (all signers, median per run): priority / fair share (N76 stage) and queue full / no slot in time / slot too late (N48). **Rules fixed before the run (docs/PRIORITY_ADMISSION.md §5.1):** collapse (DAGOR rule, N70) = goodput < 0.8 × peak and ≥ 20 % of computed shares wasted; **success** for a variant = at every c ≥ 50, goodput ≥ 0.8 × peak **and** wasted-on-failed ≤ 10 %.\n\n")
 		b.WriteString("| variant | c | runs | offered /s | goodput /s | goodput / peak | errors % | computed shares per request | wasted on failed % | surplus % | sheds: priority / fair share / queue full / no slot / too late | signer CPU % | collapse (N70 rule) |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|\n")
 		verdicts := map[string]string{}
 		for _, k := range order {
-			if !(k.v == "n48" || k.v == "b" || k.v == "ab") || !groups[k][0].hasAudit || maxConc(groups[k]) < 100 {
+			if !isAB(k.v) || !groups[k][0].hasAudit || maxConc(groups[k]) < 100 {
 				continue
 			}
 			g := groups[k]
@@ -159,42 +162,50 @@ func evalSection(runs, cfgs []string, med func(string, func(c cell) float64) flo
 			verdicts[k.v] = map[bool]string{true: "**MET**", false: "**NOT MET**"}[success]
 		}
 		b.WriteString("\n")
-		for _, v := range []string{"n48", "b", "ab"} {
+		for _, v := range []string{"n48", "b", "ab", "abs"} {
 			if x, ok := verdicts[v]; ok {
 				fmt.Fprintf(&b, "- Success rule (every c ≥ 50: goodput ≥ 0.8 × peak and wasted ≤ 10 %%) for **%s**: %s\n", v, x)
 			}
 		}
-		if x, ok := verdicts["ab"]; ok {
+		for _, v := range []string{"abs", "ab"} {
+			x, ok := verdicts[v]
+			if !ok {
+				continue
+			}
+			name := map[string]string{"abs": "A+B with stable-identity priority (the proposal)", "ab": "A+B with request-ID priority (comparison)"}[v]
 			if strings.Contains(x, "NOT") {
-				b.WriteString("\n**Decision (§5.1): A+B is not effective at these parameters** (reported as is; not re-tuned under this label).\n")
+				fmt.Fprintf(&b, "\n**Decision (§5.1): %s is not effective at these parameters** (reported as is; not re-tuned under this label).\n", name)
 			} else {
-				b.WriteString("\n**Decision (§5.1): A+B meets the pre-registered success rule.**\n")
+				fmt.Fprintf(&b, "\n**Decision (§5.1): %s meets the pre-registered success rule.**\n", name)
 			}
 		}
 	}
 	// ---- no regression: X@n48 vs X@ab without CPU caps (c <= 50)
 	type pair struct{ n48, ab *evalRow }
-	pairs := map[string]map[int]*pair{}
+	pairs := map[string]map[int]*pair{} // key: system + " " + variant (ab or abs)
 	var psys []string
+	base := map[string]*evalRow{} // system/c -> n48 row
 	for i := range rows {
 		r := &rows[i]
-		if maxConc(groups[key{r.sys, r.variant}]) > 50 || (r.variant != "n48" && r.variant != "ab") {
+		if r.variant == "n48" && maxConc(groups[key{r.sys, r.variant}]) <= 50 {
+			base[fmt.Sprintf("%s/%d", r.sys, r.conc)] = r
+		}
+	}
+	for i := range rows {
+		r := &rows[i]
+		if maxConc(groups[key{r.sys, r.variant}]) > 50 || (r.variant != "ab" && r.variant != "abs") {
 			continue
 		}
-		if pairs[r.sys] == nil {
-			pairs[r.sys] = map[int]*pair{}
-			psys = append(psys, r.sys)
+		n := base[fmt.Sprintf("%s/%d", r.sys, r.conc)]
+		if n == nil {
+			continue
 		}
-		p := pairs[r.sys][r.conc]
-		if p == nil {
-			p = &pair{}
-			pairs[r.sys][r.conc] = p
+		k := r.sys + " (" + r.variant + ")"
+		if pairs[k] == nil {
+			pairs[k] = map[int]*pair{}
+			psys = append(psys, k)
 		}
-		if r.variant == "n48" {
-			p.n48 = r
-		} else {
-			p.ab = r
-		}
+		pairs[k][r.conc] = &pair{n48: n, ab: r}
 	}
 	var nr strings.Builder
 	allPass, any := true, false
@@ -228,7 +239,7 @@ func evalSection(runs, cfgs []string, med func(string, func(c cell) float64) flo
 		}
 	}
 	if any {
-		b.WriteString("\n## N76 evaluation: no regression (label: 7C configuration, no-regression check)\n\nUncapped signers, N48 defaults. **Rule fixed before the run (§5.2):** A+B (ab) vs today (n48) in the same session: goodput within ± 5 %, median latency within ± 5 % or ± 2 ms (whichever is larger), 0 errors, **0 priority refusals** (signer audit, all signers).\n\n| system | c | goodput n48 /s | goodput ab /s | ratio | median n48 ms | median ab ms | Δ median ms | errors % n48 / ab | priority + fair-share refusals (ab) | rule |\n|---|---:|---:|---:|---:|---:|---:|---|---|---:|---|\n")
+		b.WriteString("\n## N76 evaluation: no regression (label: 7C configuration, no-regression check)\n\nUncapped signers, N48 defaults. **Rule fixed before the run (§5.2):** A+B (abs, the proposal; ab if measured) vs today (n48) in the same session: goodput within ± 5 %, median latency within ± 5 % or ± 2 ms (whichever is larger), 0 errors, **0 priority refusals** (signer audit, all signers).\n\n| system (variant) | c | goodput n48 /s | goodput A+B /s | ratio | median n48 ms | median A+B ms | Δ median ms | errors % n48 / A+B | priority + fair-share refusals (A+B) | rule |\n|---|---:|---:|---:|---:|---:|---:|---|---|---:|---|\n")
 		b.WriteString(nr.String())
 		fmt.Fprintf(&b, "\n**Decision (§5.2): no regression %s.**\n", map[bool]string{true: "— every pair PASSES", false: "rule NOT MET (see FAIL rows)"}[allPass])
 	}
@@ -412,4 +423,116 @@ func openQuestionSection(runs, cfgs []string) string {
 		return ""
 	}
 	return "\n## Open question (N73): signer CPU below the quota (instrumentation, docs/PRIORITY_ADMISSION.md §6)\n\nPer configuration, median over signers and runs. Signer CPU from 1 Hz samples of systemd `CPUUsageNSec` (% of one vCPU): over the whole sampled window, and over the **measured window only** (first to last measured request, hypothesis c). Throttled = cgroup `cpu.stat` `throttled_usec` as % of wall time (hypothesis a), with the per-share RSA time and the signer's RSA estimate (N48 uses the estimate). Queue samples (10 Hz): % with no request waiting and no slot busy (idle), and % with requests waiting (hypothesis b). Reported as measured; no explanation is drawn here.\n\n| configuration | signer CPU % (whole) | signer CPU % (measured window) | throttled % | RSA ms (median) | RSA estimate ms (median) | queue idle % | queue waiting % |\n|---|---:|---:|---:|---:|---:|---:|---:|\n" + strings.Join(rows, "\n") + "\n"
+}
+
+func isAB(v string) bool { return v == "n48" || v == "b" || v == "ab" || v == "abs" }
+
+// isStorm reports whether configuration l is a storm run (per-pod results).
+func isStorm(runs []string, l string) bool {
+	for _, rd := range runs {
+		if exists(filepath.Join(rd, l+".pods.jsonl")) {
+			return true
+		}
+	}
+	return false
+}
+
+type stormPod struct {
+	Class    string  `json:"class"`
+	Attempts int     `json:"attempts"`
+	Issued   bool    `json:"issued"`
+	WaitMs   float64 `json:"wait_ms"`
+}
+
+// stormSection (N77): retry amplification and per-pod wait under a storm of
+// pods that retry until issued (polite = kubelet backoff, aggressive = fixed
+// short interval), per variant. Median of runs.
+func stormSection(runs, cfgs []string) string {
+	var rows []string
+	type agg struct{ v []float64 }
+	for _, l := range cfgs {
+		if !isStorm(runs, l) {
+			continue
+		}
+		m := singleRe.FindStringSubmatch(l)
+		if m == nil {
+			continue
+		}
+		_, v := splitVariant(m[1])
+		col := map[string][]float64{}
+		add := func(k string, x float64) { col[k] = append(col[k], x) }
+		n := 0
+		for _, rd := range runs {
+			base := filepath.Join(rd, l)
+			lines := readLines(base + ".pods.jsonl")
+			if len(lines) == 0 {
+				continue
+			}
+			n++
+			per := map[string]*struct {
+				pods, issued, attempts int
+				waits                  []float64
+			}{"polite": {}, "aggressive": {}, "all": {}}
+			for _, ln := range lines {
+				var p stormPod
+				if json.Unmarshal([]byte(ln), &p) != nil {
+					continue
+				}
+				for _, c := range []string{p.Class, "all"} {
+					x := per[c]
+					if x == nil {
+						continue
+					}
+					x.pods++
+					x.attempts += p.Attempts
+					if p.Issued {
+						x.issued++
+						x.waits = append(x.waits, p.WaitMs/1000)
+					}
+				}
+			}
+			for c, x := range per {
+				if x.pods == 0 {
+					continue
+				}
+				add(c+"/issued%", 100*float64(x.issued)/float64(x.pods))
+				if x.issued > 0 {
+					add(c+"/amp", float64(x.attempts)/float64(x.issued))
+					sort.Float64s(x.waits)
+					add(c+"/p50", pct(x.waits, 50))
+					add(c+"/p99", pct(x.waits, 99))
+					add(c+"/max", x.waits[len(x.waits)-1])
+				}
+			}
+			if s, ok := stressOne(base); ok && s.requests > 0 && per["all"].issued > 0 {
+				add("shares/issued", float64(s.computed)/float64(per["all"].issued))
+				if s.computed > 0 {
+					add("wasted%", 100*float64(s.wastedFailed)/float64(s.computed))
+				}
+			}
+		}
+		if n == 0 {
+			continue
+		}
+		g := func(k string) string { return f1(median(col[k])) }
+		adv := "–"
+		if pp, pa := median(col["polite/p50"]), median(col["aggressive/p50"]); pa > 0 && !math.IsNaN(pp) {
+			adv = fmt.Sprintf("%.2f", pp/pa)
+		}
+		rows = append(rows, fmt.Sprintf("| %s | %s | %d | %s | %s / %s / %s | %s / %s | %s / %s / %s | %s / %s / %s | %s | %s | %s |", v, m[2], n,
+			g("all/issued%"), g("all/amp"), g("polite/amp"), g("aggressive/amp"), g("polite/issued%"), g("aggressive/issued%"),
+			g("polite/p50"), g("polite/p99"), g("polite/max"), g("aggressive/p50"), g("aggressive/p99"), g("aggressive/max"), adv,
+			g("shares/issued"), g("wasted%")))
+	}
+	if len(rows) == 0 {
+		return ""
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		return variantOrder(strings.Fields(rows[i])[1]) < variantOrder(strings.Fields(rows[j])[1])
+	})
+	return "\n## N77 evaluation: storm (retry amplification; label: stress test (CPU-capped signers CPUQuota=25%, SIGNER_MAX_CONCURRENT=1), storm)\n\n" +
+		"B simulated pods start at once, one service account each (stable identity = sub); **polite** pods retry with the kubelet's backoff (500 ms doubling to 2m2s), **aggressive** pods every 250 ms; each until issued or give-up. Median of runs. **Amplification** = TokenRequests per issued token. **Aggressive advantage** = median wait polite / median wait aggressive (1 = retrying faster does not help). " +
+		"**Pre-registered (docs/PRIORITY_ADMISSION.md §5.4), reported, not pass/fail:** H1 amplification(abs) < amplification(ab); H2 aggressive advantage(abs) closer to 1 than (ab); H3 abs: no issued pod waited longer than the stable bound (ceil(L·R/2^16) + 1 epochs, ≤ 64 min at E = 2 min, R = 32), pods not issued within the give-up are listed by the issued % column.\n\n" +
+		"| variant | pods | runs | issued % | amplification all / polite / aggressive | issued % polite / aggressive | wait s polite p50 / p99 / max | wait s aggressive p50 / p99 / max | aggressive advantage | computed shares per issued token | wasted on failed % |\n|---|---:|---:|---:|---|---|---|---|---:|---:|---:|\n" +
+		strings.Join(rows, "\n") + "\n"
 }

@@ -512,13 +512,13 @@ if [[ "$TOPOLOGY" == single ]]; then
   SIGNER_ADMISSION=priority PRIORITY_KEY_FILE=/run/frost/priority.key "${COMPOSE[@]}" up -d --no-deps signer-1 signer-2 signer-3 signer-4 signer-5 >/dev/null 2>&1
   PRIO_READY=0
   for _ in $(seq 1 100); do
-    PRIO_READY="$("${COMPOSE[@]}" logs --no-color --no-log-prefix signer-1 signer-2 signer-3 signer-4 signer-5 2>/dev/null | grep '"msg":"signer ready"' | jq -r 'select(.admission=="priority") | .signer_id' | sort -u | grep -c . || true)"
+    PRIO_READY="$("${COMPOSE[@]}" logs --no-color --no-log-prefix signer-1 signer-2 signer-3 signer-4 signer-5 2>/dev/null | grep '"msg":"signer ready"' | jq -r 'select(.admission=="priority" and .priority=="stable" and .priority_rotation==32) | .signer_id' | sort -u | grep -c . || true)"
     [[ "$PRIO_READY" -ge 5 ]] && break; sleep 0.2
   done
   PT="" ; for _ in $(seq 1 100); do PT="$(K create token default --duration=10m 2>/dev/null)" && break; sleep 0.2; done
   PR="$( [[ -n "$PT" ]] && tokenreview "$PT" | jq -r .status.authenticated )"
   if [[ "$PRIO_READY" -ge 5 && "$PR" == true && "$(jwt_header "$PT" | jq -r .kid)" == "$KID" ]]; then
-    pass N76-PRIO "5 signers ready with admission=priority (shared priority.key mounted); token issued, kid $KID, TokenReview authenticated"
+    pass N76-PRIO "5 signers ready with admission=priority, stable-identity priority (N77), rotation 32 (shared priority.key mounted); token issued, kid $KID, TokenReview authenticated"
   else fail N76-PRIO "priority-mode signers ready: $PRIO_READY/5, token review: ${PR:-none}"; fi
 fi
 

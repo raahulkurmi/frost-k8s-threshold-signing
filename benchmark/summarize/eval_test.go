@@ -74,12 +74,31 @@ func TestEvalSection(t *testing.T) {
 			okAB = 90
 		}
 		writeEvalCfg(t, rd, fmt.Sprintf("%s@ab-c%d", st, c), 100, okAB, 0, 30, 700, 23)
+		writeEvalCfg(t, rd, fmt.Sprintf("%s@abs-c%d", st, c), 100, map[bool]int{true: 70, false: 100}[c >= 50], 0, 30, 700, 23)
 	}
+	// storm (N77): ab: 10 pods, 8 polite (3 attempts each, wait 6 s) + 2 aggressive (10 attempts, wait 1 s);
+	// abs: 8 polite (2 attempts, 4 s) + 2 aggressive (8 attempts, 4 s), one polite pod not issued.
+	writeStorm := func(lab string, pods []string) {
+		writeEvalCfg(t, rd, lab, 10, 10, 0, 0, 700, 23)
+		os.WriteFile(filepath.Join(rd, lab+".pods.jsonl"), []byte(strings.Join(pods, "\n")+"\n"), 0o644)
+	}
+	var ab, abs []string
+	for i := 0; i < 8; i++ {
+		ab = append(ab, `{"pod":1,"class":"polite","attempts":3,"issued":true,"wait_ms":6000}`)
+		issued := i != 7
+		abs = append(abs, fmt.Sprintf(`{"pod":1,"class":"polite","attempts":2,"issued":%v,"wait_ms":4000}`, issued))
+	}
+	for i := 0; i < 2; i++ {
+		ab = append(ab, `{"pod":1,"class":"aggressive","attempts":10,"issued":true,"wait_ms":1000}`)
+		abs = append(abs, `{"pod":1,"class":"aggressive","attempts":8,"issued":true,"wait_ms":4000}`)
+	}
+	writeStorm(st+"@ab-c300", ab)
+	writeStorm(st+"@abs-c300", abs)
 	// no regression: equal at c=1; at c=10 ab has a priority refusal -> FAIL.
 	writeEvalCfg(t, rd, "T-5region-optimistic@n48-c1", 50, 50, 0, 0, 150, 10)
-	writeEvalCfg(t, rd, "T-5region-optimistic@ab-c1", 50, 50, 0, 0, 151, 10)
+	writeEvalCfg(t, rd, "T-5region-optimistic@abs-c1", 50, 50, 0, 0, 151, 10)
 	writeEvalCfg(t, rd, "T-5region-optimistic@n48-c10", 50, 50, 0, 0, 150, 10)
-	writeEvalCfg(t, rd, "T-5region-optimistic@ab-c10", 50, 50, 0, 1, 150, 10)
+	writeEvalCfg(t, rd, "T-5region-optimistic@abs-c10", 50, 50, 0, 1, 150, 10)
 	// slots: 4 slots -> requests 75 ms apart instead of 100 (≈ 1.3x goodput), more signer CPU.
 	writeEvalCfgSpaced(t, rd, st+"@slots2-c50", 200, 200, 0, 0, 700, 130, 100)
 	writeEvalCfgSpaced(t, rd, st+"@slots4-c50", 200, 200, 0, 0, 700, 180, 75)
@@ -118,8 +137,15 @@ func TestEvalSection(t *testing.T) {
 		// n48 c=50: wasted = 60*2 / (40*5 + 60*2) = 37.5 %; collapse per N70 rule
 		"| n48 | 50 | 1 |", "| 37.5 |", "| **yes** |",
 		"for **n48**: **NOT MET**", "for **ab**: **MET**",
-		"**Decision (§5.1): A+B meets the pre-registered success rule.**",
-		"| T-5region-optimistic | 1 |", "PASS |", "**FAIL** |",
+		"**Decision (§5.1): A+B with request-ID priority (comparison) meets the pre-registered success rule.**",
+		// abs at c>=50: 70 % ok -> 0.70 of peak -> not met
+		"for **abs**: **NOT MET**",
+		"**Decision (§5.1): A+B with stable-identity priority (the proposal) is not effective at these parameters**",
+		"| T-5region-optimistic (abs) | 1 |", "PASS |", "**FAIL** |",
+		// storm ab: 44 attempts / 10 issued = 4.4; polite 3.0, aggressive 10.0; advantage 6/1 = 6.00
+		"| ab | 300 | 1 | 100.0 | 4.4 / 3.0 / 10.0 | 100.0 / 100.0 | 6.0 / 6.0 / 6.0 | 1.0 / 1.0 / 1.0 | 6.00 |",
+		// storm abs: 32 attempts / 9 issued = 3.6; polite 16/7 = 2.3; issued 87.5 % polite; advantage 1.00
+		"| abs | 300 | 1 | 90.0 | 3.6 / 2.3 / 8.0 | 87.5 / 100.0 | 4.0 / 4.0 / 4.0 | 4.0 / 4.0 / 4.0 | 1.00 |",
 		"rule NOT MET (see FAIL rows)",
 		"inference test (admission slots)",
 		"slot inference SUPPORTED",

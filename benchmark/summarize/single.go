@@ -213,6 +213,7 @@ func runSingle(dir, title, note, outPath string) error {
 	b.WriteString(stressSection(runs, cfgs, agg))
 	b.WriteString(evalSection(runs, cfgs, agg))
 	b.WriteString(openQuestionSection(runs, cfgs))
+	b.WriteString(stormSection(runs, cfgs))
 
 	// N49 check for every T variant.
 	fmt.Fprintf(&b, "\n## N49 check (T variants; thresholds fixed before the run)\n\nN49-1 goodput(c=50) ≥ 0.8 × goodput(c=10); N49-2 error rate at c=10 ≤ 1%%; N49-3 failed p95 at c=50 ≤ 2200 ms and successful p95 at c=50 ≤ 2000 ms. Values are medians of runs; a criterion with no data is FAIL.\n\n| T variant | goodput c10 | goodput c50 | ratio | N49-1 | err%% c10 | N49-2 | failed p95 c50 | ok p95 c50 | N49-3 |\n|---|---:|---:|---:|---|---:|---|---:|---:|---|\n")

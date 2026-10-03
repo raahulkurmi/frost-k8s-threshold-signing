@@ -1331,3 +1331,58 @@ AWS yet.
   - The summarizer applies the §5 rules as written (`TestEvalSection`).
   - `signer-config.sh` and `signer-sampler.sh` were exercised against real systemd, with a
     dummy unit in the tk8s VM (unit removed afterwards).
+
+### N77. DAGOR verified; stable-identity priority (the proposal); storm test; collaborative admission deferred
+- **DAGOR checked against the PDF** (arXiv 1806.04075v3) by the author; "from memory"
+  markers removed; `docs/PRIORITY_ADMISSION.md` cites sections:
+  - §3.1 subsequent overload, (1 − p)^K;
+  - §4.1 queuing-time detection, window 1 s or 2000 requests, 20 ms threshold vs a 500 ms
+    timeout;
+  - §4.2.2 hourly hash of the user ID, and session priority rejected because re-login
+    re-draws it;
+  - §4.2.3 histogram with N_exp = (1 − α)·N_adm when overloaded, N_adm + β·N otherwise,
+    α = 5 %, β = 1 %. These change the expected **number** of admitted requests, not a
+    level percentage;
+  - §4.2.4 piggybacked admission level.
+- **Controller now follows §4.2.3 as written** (it was N76's fraction approximation):
+  - a 256-bucket histogram of arrival priorities per window; the level moves until the
+    mass above it is ≤ (1 − α)·N_adm (overloaded) or ≥ N_adm + β·N (otherwise); 5 % floor;
+  - `TestAdmissionLevelAdapts`: 100 → 95 → 96 → 91 → 92 admitted per window of 100;
+  - the refusal header level for a 5 % admitted fraction is now 62208 (bucket multiple),
+    previously 62259.
+- **Stable-identity priority** (`SIGNER_PRIORITY=stable`, the default under priority
+  admission; request-ID kept as `request`).
+  - identity = sub ‖ pod uid (`policy.Decision.PodUID`, new) or sub;
+    p = (H(K_prio, identity) + (⌊iat/E⌋ mod R)·2^16/R) mod 2^16; E = 2 min, R = 32.
+  - Retries keep their priority within an epoch (`TestStablePriorityKeptAcrossRetries`).
+  - The rotation gives a hard bound on refused epochs, ⌈L·R/2^16⌉, **only if** the
+    admitted band is at least one step. **Found by the worst-case test:** with R = 8, step
+    8192 is larger than the 5 %-floor band (3328), and 1787 of 3000 identities were never
+    admitted. Hence R = 32 (≥ 1/floor), and the signer refuses settings that violate it.
+  - Worst-case wait at E = 2 min: 64 min at the floor, 34 min at 50 % admission, 10 min at
+    88 % (`TestStableWorstCaseWait`: the observed worst equals the bound).
+- **Retry amplification is measured, not assumed.** The kubelet retries on its own
+  backoff (500 ms doubling to 2m2s, `pkg/util/goroutinemap/exponentialbackoff` at
+  v1.36.5) in either mode.
+  - Prediction, written before any run: stable priority removes the advantage of
+    aggressive retriers, but may *raise* TokenRequests per issued token for kubelet-like
+    clients, because a refused pod keeps retrying until the band reaches it.
+  - The storm phase (`run.sh eval-storm`, `tokenbench -storm-pods`) measures both: 300
+    pods, one service account each, 80 % kubelet backoff, 20 % retrying every 250 ms.
+  - The summarizer reports amplification per class, the aggressive advantage, wait
+    percentiles, and H1–H3 (§5.4).
+- **Stress and no-regression tests use 300 identities** (`tokenbench -sa-count`); with a
+  single service account, abs would be all-or-nothing per epoch. The no-regression test
+  pairs n48 with abs, both placements.
+- **Security (§4.7).**
+  - The coordinator cannot predict a subject's priority without K_prio.
+  - Policy constrains `sub`, but not the pod uid.
+  - New relative to request IDs: an identity seen admitted stays admitted for the epoch
+    and can be reused. It is bounded by the per-replica fair share (≈ 42 % for 3 replicas)
+    and the rate limit, and gives no token capability beyond C2(b).
+  - Follow-up: a per-identity admission cap.
+- **Collaborative admission (DAGOR §4.2.4): future work.** The coordinator cannot compare
+  a request with a signer's level without computing p, i.e. without K_prio (grinding) or a
+  signer-issued priority ticket (an extra round trip and new protocol). Not cheap.
+- Also fixed: the `SIGNER_QUEUE_SAMPLE` config-failure case that N76 cited was missing
+  from `cmd/signer` tests (the insertion had silently failed); it is now present.

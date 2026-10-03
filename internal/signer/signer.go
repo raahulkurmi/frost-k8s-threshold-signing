@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -131,7 +132,17 @@ func New(cfg Config) (*Server, error) {
 	}
 	srv.rsaEWMA.Store(int64(initialRSAEstimate))
 	if cfg.PriorityKey != nil {
-		srv.prio = newAdmission(cfg.ID, cfg.PriorityKey, cfg.Admission, cfg.Logger)
+		ac := cfg.Admission.withDefaults()
+		if ac.Mode != PriorityStable && ac.Mode != PriorityRequest {
+			return nil, fmt.Errorf("signer: priority mode %q (want stable or request)", ac.Mode)
+		}
+		if !ValidRotation(ac.Rotation) || ac.Epoch < 10*time.Second || ac.Epoch%time.Second != 0 {
+			return nil, errors.New("signer: priority rotation must be a power of two in 2..64 and epoch whole seconds >= 10s")
+		}
+		if ac.Mode == PriorityStable && !StableRotationOK(ac.Rotation, ac.MinFraction) {
+			return nil, fmt.Errorf("signer: priority rotation %d steps over the admitted band at the %.0f%% floor (need rotation >= %.0f)", ac.Rotation, 100*ac.MinFraction, math.Ceil(1/ac.MinFraction))
+		}
+		srv.prio = newAdmission(cfg.ID, cfg.PriorityKey, ac, cfg.Logger)
 	}
 	return srv, nil
 }
@@ -232,6 +243,15 @@ func (s *Server) Waiting() int64 { return s.waiting.Load() }
 
 // RSAOps returns how many RSA share computations this signer has performed.
 func (s *Server) RSAOps() int64 { return s.rsaOps.Load() }
+
+// PriorityConfig returns the effective priority-admission config, or nil (N48 only).
+func (s *Server) PriorityConfig() *AdmissionConfig {
+	if s.prio == nil {
+		return nil
+	}
+	c := s.prio.cfg
+	return &c
+}
 
 // MaxDeadline returns the cap on the caller's deadline header (N76).
 func (s *Server) MaxDeadline() time.Duration { return s.cfg.MaxDeadline }
@@ -376,7 +396,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
 		if dl, ok := ctx.Deadline(); ok {
 			budget = time.Until(dl)
 		}
-		p := Priority(s.cfg.PriorityKey, decision.IssuedAt, req.RequestID)
+		p := s.prio.priority(decision.IssuedAt, req.RequestID, decision.Subject, decision.PodUID)
 		if d := s.prio.decide(time.Now(), p, client, budget); !d.ok {
 			var prej *Rejection
 			if d.kind == "fair_share" {

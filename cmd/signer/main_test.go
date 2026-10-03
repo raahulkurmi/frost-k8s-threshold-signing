@@ -11,6 +11,7 @@ import (
 
 	"frost-k8s-threshold-signing/internal/keyshare"
 	"frost-k8s-threshold-signing/internal/prioritykey"
+	"frost-k8s-threshold-signing/internal/signer"
 	"frost-k8s-threshold-signing/internal/testutil"
 )
 
@@ -106,6 +107,13 @@ func TestLoadAdmissionModes(t *testing.T) {
 	if err != nil || len(s.PrioKey) != prioritykey.Size || s.MaxDL.String() != "3s" {
 		t.Fatalf("priority: err=%v key=%d maxdl=%v", err, len(s.PrioKey), s.MaxDL)
 	}
+	if s.Adm.Mode != signer.PriorityStable || s.Adm.Epoch != 0 || s.Adm.Rotation != 0 {
+		t.Fatalf("priority default: %+v, want stable with the built-in epoch and rotation", s.Adm)
+	}
+	e["SIGNER_PRIORITY"], e["SIGNER_PRIORITY_EPOCH"], e["SIGNER_PRIORITY_ROTATION"] = "request", "30s", "64"
+	if s, err = load(context.Background(), e.get); err != nil || s.Adm.Mode != signer.PriorityRequest || s.Adm.Epoch.String() != "30s" || s.Adm.Rotation != 64 {
+		t.Fatalf("explicit: err=%v adm=%+v", err, s.Adm)
+	}
 }
 
 func TestAdmissionConfigFailsClosed(t *testing.T) {
@@ -121,9 +129,23 @@ func TestAdmissionConfigFailsClosed(t *testing.T) {
 		"priority key missing": {func(e envMap) {
 			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"] = "priority", "/nonexistent/priority.key"
 		}, "no such file"},
-		"key file in n48 mode": {func(e envMap) { e["PRIORITY_KEY_FILE"] = writePriorityKey(t, fx.Meta.KID) }, "SIGNER_ADMISSION is not priority"},
-		"unknown mode":         {func(e envMap) { e["SIGNER_ADMISSION"] = "dagor" }, "must be n48 or priority"},
-		"bad max deadline":     {func(e envMap) { e["SIGNER_MAX_DEADLINE"] = "-1s" }, "SIGNER_MAX_DEADLINE"},
+		"key file in n48 mode":            {func(e envMap) { e["PRIORITY_KEY_FILE"] = writePriorityKey(t, fx.Meta.KID) }, "SIGNER_ADMISSION is not priority"},
+		"unknown mode":                    {func(e envMap) { e["SIGNER_ADMISSION"] = "dagor" }, "must be n48 or priority"},
+		"bad max deadline":                {func(e envMap) { e["SIGNER_MAX_DEADLINE"] = "-1s" }, "SIGNER_MAX_DEADLINE"},
+		"queue sample too short":          {func(e envMap) { e["SIGNER_QUEUE_SAMPLE"] = "1ms" }, "SIGNER_QUEUE_SAMPLE"},
+		"priority mode without admission": {func(e envMap) { e["SIGNER_PRIORITY"] = "stable" }, "SIGNER_ADMISSION is not priority"},
+		"bad priority mode": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"], e["SIGNER_PRIORITY"] = "priority", writePriorityKey(t, fx.Meta.KID), "session"
+		}, "must be stable or request"},
+		"epoch too short": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"], e["SIGNER_PRIORITY_EPOCH"] = "priority", writePriorityKey(t, fx.Meta.KID), "5s"
+		}, "SIGNER_PRIORITY_EPOCH"},
+		"rotation steps over the floor band": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"], e["SIGNER_PRIORITY_ROTATION"] = "priority", writePriorityKey(t, fx.Meta.KID), "8"
+		}, "SIGNER_PRIORITY_ROTATION"},
+		"rotation not a power of two": {func(e envMap) {
+			e["SIGNER_ADMISSION"], e["PRIORITY_KEY_FILE"], e["SIGNER_PRIORITY_ROTATION"] = "priority", writePriorityKey(t, fx.Meta.KID), "6"
+		}, "SIGNER_PRIORITY_ROTATION"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

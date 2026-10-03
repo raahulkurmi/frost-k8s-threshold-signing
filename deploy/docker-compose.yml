@@ -19,7 +19,8 @@
 # lb-net and signer-net are `internal` bridges with inhibit_ipv4: no egress,
 # and the Docker host itself has no address on them, so it cannot connect.
 # NO port of any service is published to the host.
-# Priority admission (N76): SIGNER_ADMISSION=priority PRIORITY_KEY_FILE=/run/frost/priority.key.
+# Priority admission (N76): SIGNER_ADMISSION=priority PRIORITY_KEY_FILE=/run/frost/priority.key
+# [SIGNER_PRIORITY=stable (default) | request] (N77).
 
 x-net-opts: &net-opts
   driver: bridge
@@ -70,6 +71,7 @@ services:
       SIGNER_ID: "1"
       SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
       PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
+      SIGNER_PRIORITY: ${SIGNER_PRIORITY:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -96,6 +98,7 @@ services:
       SIGNER_ID: "2"
       SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
       PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
+      SIGNER_PRIORITY: ${SIGNER_PRIORITY:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -122,6 +125,7 @@ services:
       SIGNER_ID: "3"
       SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
       PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
+      SIGNER_PRIORITY: ${SIGNER_PRIORITY:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -148,6 +152,7 @@ services:
       SIGNER_ID: "4"
       SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
       PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
+      SIGNER_PRIORITY: ${SIGNER_PRIORITY:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json
@@ -174,6 +179,7 @@ services:
       SIGNER_ID: "5"
       SIGNER_ADMISSION: ${SIGNER_ADMISSION:-n48}
       PRIORITY_KEY_FILE: ${PRIORITY_KEY_FILE:-}
+      SIGNER_PRIORITY: ${SIGNER_PRIORITY:-}
       META_FILE: /etc/frost/public-meta.json
       SHARE_FILE: /run/frost/share.json
       POLICY_FILE: /etc/frost/policy.json

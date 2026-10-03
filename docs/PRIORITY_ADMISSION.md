@@ -1,9 +1,11 @@
 # Priority-consistent admission for the signers
 
-Status: **design approved; implemented (NOTES N76), off by default
+Status: **design approved; implemented (NOTES N76, N77), off by default
 (`SIGNER_ADMISSION=n48`); not yet evaluated on AWS (§5).** Implemented: A (priority
-admission), B (quorum-impossible abort, on by default), and the hardening of §4: one client
-certificate per coordinator replica with a per-client fair share, and the 4 s deadline cap.
+admission) with two priority derivations, **stable identity** (the proposal, N77) and
+**request ID** (kept for comparison, N76); B (quorum-impossible abort, on by default); and
+the hardening of §4: one client certificate per coordinator replica with a per-client fair
+share, and the 4 s deadline cap. Collaborative admission (§2C) is **future work**.
 Recorded follow-up, **not implemented**: binding p to the signing input, plus a request-ID
 replay cache (§4.3). Priority classes (§2A) are not implemented. Motivation: the Phase 7C
 stress test (NOTES N73, label **stress test**) met the pre-registered rule. At c ≥ 50 goodput
@@ -11,18 +13,29 @@ was 0.50–0.76 × peak, and 32–44 % of computed shares went to requests that 
 each signer sheds on its own.
 
 Reference: H. Zhou, M. Chen, Q. Lin, Y. Wang, X. She, S. Liu, R. Gu, B. C. Ooi, J. Yang,
-"Overload Control for Scaling WeChat Microservices" (DAGOR), ACM SoCC 2018. **Every DAGOR
-detail in this document (the list below, the α = 5 % / β = 1 % steps and the queuing-time
-threshold) is from memory, not verified: check it against the PDF before quoting it.**
-- overload is detected by the average queuing time of requests, not CPU;
-- a request's priority is a business priority plus a user priority; the user priority is a
-  hash of the user ID, and the hash function changes periodically;
-- each server keeps an admission level and moves it with a histogram of recent
-  priorities: shed a little more when overloaded, admit a little more otherwise;
-- every service uses the same priority for a request, so a request admitted at one
-  service is likely admitted at the next ("subsequent overload");
-- collaborative admission: a server piggybacks its level on responses so upstream can drop
-  early.
+"Overload Control for Scaling WeChat Microservices" (DAGOR), ACM SoCC 2018, arXiv
+1806.04075v3. The DAGOR facts used here, checked against that version by the author
+(section numbers from the same PDF):
+- **§3.1, subsequent overload.** A task that invokes an overloaded service K times
+  succeeds only if every invocation does, so random shedding with per-invocation success
+  probability (1 − p) gives (1 − p)^K. The paper's example: 50 % × 50 % = 25 %.
+- **§4.1, overload detection by average request queuing time, not CPU.** The window is
+  1 second or 2000 requests, whichever comes first, and the threshold is 20 ms against
+  WeChat's 500 ms default task timeout.
+- **§4.2.2, user priority.** It is a hash of the user ID, and each entry service changes
+  the hash function every hour. Session-based priority (a hash of the session ID) was
+  rejected: re-login gives a user a fresh priority, users learn to re-login to escape
+  shedding, and that adds load during overload.
+- **§4.2.3, adaptive admission.** A histogram of request priorities per window. At the end
+  of a window with N incoming requests, N_adm of them admitted:
+  - overloaded: the expected number admitted next window is N_exp = (1 − α)·N_adm;
+  - otherwise: N_exp = N_adm + β·N;
+  - the level is then set from the histogram's prefix sums. WeChat uses α = 5 %, β = 1 %.
+  - So α and β change the expected **number** of admitted requests per window (α of the
+    admitted, β of the incoming), not a level percentage.
+- **§4.2.4, collaborative admission.** A downstream server piggybacks its current
+  admission level on every response; the upstream drops locally the requests that the
+  downstream would refuse.
 
 ## 1. The problem in this system
 
@@ -64,8 +77,57 @@ Three parts. A and B are the proposal; C is an optional extension.
     more (§4).
   - Because the coordinator cannot compute p, it cannot choose request IDs with a high
     priority offline.
-- **The epoch** changes the order every hour. As in DAGOR's periodic hash change (from
-  memory, verify against the PDF), no request ID keeps its priority.
+- **The epoch** changes the order every hour, as in DAGOR's hourly hash change (§4.2.2).
+  No request ID keeps its priority.
+- **This is the request-ID derivation (N76), kept for comparison.** It has the flaw DAGOR
+  §4.2.2 describes for session priority: every retry (a new Sign call, a new request_id)
+  is a new draw. The **stable-identity derivation** below (N77) is the proposal.
+
+**Stable-identity priority (N77, the proposal; `SIGNER_PRIORITY=stable`, the default).**
+
+    identity = sub ‖ 0x00 ‖ kubernetes.io.pod.uid      (sub alone if the token is not pod-bound)
+    p        = (H(K_prio, "stable/v1" ‖ identity) + (e mod R) · 2^16/R) mod 2^16,   e = ⌊iat / E⌋
+
+- **Inputs.** `sub` and the pod uid come from the validated claims
+  (`policy.Decision.PodUID`). E = `SIGNER_PRIORITY_EPOCH` (default 2 min), R =
+  `SIGNER_PRIORITY_ROTATION` (default 32). The epoch comes from `iat`, as before, so
+  signers agree at boundaries (`TestEpochBoundarySignersAgree`, both derivations).
+- **Retries keep their priority.** A kubelet retry has the same identity, and within one
+  epoch the same p (`TestStablePriorityKeptAcrossRetries`: 40 identities × 5 attempts,
+  decisions constant).
+- **Rotation instead of a re-draw.** The base H(identity) never changes. Every epoch, all
+  identities move by the same step 2^16/R, so the admitted band sweeps across the identity
+  space and no pod is stuck below the level.
+- **Hard worst-case wait.** At a fixed level L, an identity is refused for at most
+  ⌈L·R/2^16⌉ consecutive epochs. This holds **only if** the admitted band 2^16 − L is at
+  least one step 2^16/R; otherwise an identity can step over the band every epoch.
+  - The level never exceeds the 5 % floor, so R must be ≥ 20, hence R = 32. The signer
+    refuses other settings (`StableRotationOK`).
+  - With R = 8, 1787 of 3000 test identities were never admitted over a full rotation.
+- **Bounds at E = 2 min, R = 32** (`TestStableWorstCaseWait`: worst observed equals the
+  bound, every identity admitted):
+
+  | Level (admits top) | Refused epochs, worst | Wait, worst |
+  |---|---:|---:|
+  | 5 % (the floor) | 31 | ≤ 64 min |
+  | 25 % | 24 | ≤ 50 min |
+  | 50 % | 16 | ≤ 34 min |
+  | 88 % | 4 | ≤ 10 min |
+
+  - This is the cost of keeping retries stable for 2 minutes with a 5 % floor. The wait
+    scales as (1 − f)·R·E: a shorter epoch or a higher floor shortens it.
+- **What it changes for retries.** The kubelet retries on its own backoff (500 ms doubling
+  to 2m2s, `exponentialbackoff` at v1.36.5) whatever the priority mode. So a stable
+  priority does **not** make the kubelet send fewer requests; a refused pod keeps retrying
+  until the band reaches it.
+  - What it removes is the reward for retrying faster. Under request-ID priority, an
+    aggressive client (retrying every 250 ms) gets more draws per minute and so more
+    tokens. Under stable priority it does not.
+  - Prediction: request-ID priority has *lower* TokenRequests per issued token for polite
+    (kubelet) clients, and a large advantage for aggressive ones; stable priority has
+    higher polite amplification and no aggressive advantage.
+  - The storm test (§5.4) measures exactly this. Whether it reduces load overall is an
+    open question it answers.
 - **How signers derive the epoch (addition 1).** It comes from the token's `iat` claim,
   **not** from the signer's clock. Every signer receives the same signing input, and the
   policy has already validated `iat` (within ±60 s of the signer clock, N44) before the
@@ -104,29 +166,36 @@ Three parts. A and B are the proposal; C is an optional extension.
   combined as (class, p), like DAGOR's (business, user) pair. It is off by default because
   the coordinator chooses payloads within policy (§4).
 
-**Admission level.** Each signer keeps an admitted fraction f ∈ [f_min, 1] and admits a
-request iff p ≥ L = (1 − f) · 2^16.
-- p is uniform because it comes from an HMAC, so a histogram over the 16-bit space is
-  unnecessary: f maps directly to L.
-- DAGOR needs the histogram because business priorities are not uniform. If priority
-  classes are enabled, use a 256-bucket histogram of (class, p) per window, as DAGOR does.
+**Admission level (DAGOR §4.2.3, implemented as written).** Each signer admits a request
+iff p ≥ L, with L a multiple of 256 (a 256-bucket histogram of arrival priorities per
+window).
+- A histogram is needed: under stable priority, retries of the same identities repeat the
+  same values, so arrival priorities are **not** uniform.
+- The level never exceeds the bucket that still admits the top 5 % of the priority space
+  (the floor).
 
 **Overload signal, per window.** A window is W = 250 ms or 200 arrivals, whichever comes
-first. It is short because deadlines are 2 s; DAGOR used seconds.
+first. DAGOR §4.1 uses 1 s or 2000 requests; ours is shorter because our deadlines are 2 s
+and our rates are ~10–70 requests/s per signer.
 - overloaded ⇔ (N48 sheds in the window > 0) **or** (mean queue wait of requests that got a
   slot > θ · median remaining deadline budget at arrival), with θ = 0.5.
-- The wait threshold is tied to the deadline, not fixed like DAGOR's. In the **uncapped**
+- The wait threshold is tied to the deadline, not fixed like DAGOR's 20 ms (§4.1, 4 % of
+  its 500 ms timeout). In the **uncapped**
   7C configuration at c = 50, signer queue waits were ≈ 650 ms against a 2 s deadline, with
   0 errors (N69, N72). A fixed 20 ms threshold would shed there and turn a slow success
   into a failure. With θ = 0.5 the threshold is ≈ 1 s (margin ≈ 1.5×); the no-regression
   test (§5.2) checks this.
 
-**Adjustment, per window.**
-- If overloaded: f ← max(f_min, f · (1 − α)).
-- Otherwise: f ← min(1, f + β).
-- Start values: α = 0.05 and β = 0.01, as DAGOR does (shed fast, admit slowly), and
-  f_min = 0.05.
-- f and L are logged per window (`admission level` line) so the evaluation can plot them.
+**Adjustment, per window (DAGOR §4.2.3).** With N arrivals in the window, N_adm of them at
+or above the level:
+- If overloaded: N_exp = (1 − α)·N_adm. Raise L bucket by bucket until the histogram mass
+  at or above L is ≤ N_exp (never above the floor).
+- Otherwise: N_exp = N_adm + β·N. Lower L until the mass at or above L is ≥ N_exp.
+- α = 5 %, β = 1 % (WeChat's values, §4.2.3). These change the expected **number** of
+  admitted requests per window, not a level percentage.
+- `TestAdmissionLevelAdapts`: 100 → 95 (overloaded) → 96 (calm) → 91 (long waits) → 92
+  (short waits) admitted per window of 100.
+- L and the admitted fraction are logged per window (`admission level` line).
 
 **Why this fixes the waste.** Let signer i have level L_i, and let L_(k) be the k-th
 smallest level.
@@ -170,13 +239,22 @@ remaining = contacted − failures < t − valid), return the error immediately.
   signers reach RSA.
 - B is independent of A and useful alone. It is evaluated separately (§5.1).
 
-### C. Optional: collaborative admission (DAGOR's piggyback), not proposed now
+### C. Collaborative admission (DAGOR §4.2.4): future work, not implemented
 
-DAGOR lets upstream drop requests using the downstream level. Here the coordinator cannot
-compute p, because it has no K_prio. Giving it K_prio would allow grinding (§4). What the
-coordinator can do without K_prio: when ≥ 3 signers report `X-Frost-Admission-Level` > 0
-within the last second, answer quickly for kube-apiserver retries. That is an availability
-optimisation with no effect on share waste, so it is left out.
+In DAGOR the upstream compares each request's priority with the downstream's piggybacked
+level and drops it locally. Here the upstream is the coordinator, and it **cannot compute
+p**: p is keyed with K_prio, which the coordinator must not hold (§4.2). The signers already
+return their level (`X-Frost-Admission-Level` on every refusal), but the coordinator has
+nothing to compare it with.
+
+Making it work needs either of two things, and neither is cheap:
+- **K_prio on the coordinator.** That reintroduces offline grinding of priorities (§4).
+- **A signer-issued priority ticket.** The coordinator would first ask one signer to
+  compute p and return it with a MAC that all signers verify. That is an extra round trip
+  per request, and it is new protocol and new code.
+
+B (§2B) already gives the cheap part of the benefit: the coordinator stops as soon as a
+token is impossible.
 
 **Out of scope (noted):** fan-out all computes ≈ 5 shares for 3 used, ≈ 39 % surplus even
 at c = 10 (N73). Hedging does not remove it under queueing, because the hedge fires (N72).
@@ -193,7 +271,7 @@ not part of this design.
 | **Breaker (suspicion, fallback)** | Unaffected by design. Suspicion strikes are only for returned-but-invalid shares (`strike` at the "excluded invalid signature share" sites). Fallback counts only failed optimistic combines (`failedCombine`). A 503 of any kind is neither, and a test must pin this: a priority 503 never strikes and never counts toward fallback. |
 | **Hedged fan-out** | A priority rejection makes the coordinator hedge at once ("signer failed"), as today. Hedging to a signer with the same level cannot help (same p); B's quorum-impossible abort stops that. |
 | **Rate limit (policy, 200/s burst 400 per signer)** | Unchanged and checked first. It is **one limiter per signer for all clients**, not per client (`internal/signer/signer.go`, `rate.NewLimiter`). |
-| **kube-apiserver / kubelet retries** | A retried TokenRequest gets a new request_id and so a fresh priority. Under sustained overload a pod's token is delayed, not refused forever, as with DAGOR's periodic rehash. |
+| **kube-apiserver / kubelet retries** | Stable priority (the proposal): a retry keeps the pod's priority within an epoch; the rotation bounds the wait (§2A, ≤ 64 min at the 5 % floor). Request-ID priority (comparison): every retry is a new draw; at admitted fraction f, (1 − f)^k chance of k refusals in a row. |
 
 ## 4. Security: can a compromised coordinator abuse priorities?
 
@@ -246,7 +324,38 @@ chooses request IDs, payloads within policy, deadlines (the signer accepts 1–6
    - The bound is again the rate limit and the fair share (iii).
    - Response: rotate K_prio with a new ceremony artefact; it needs no re-dealing of shares.
    - Safety is unaffected: priorities never change *what* is signed, only *when*.
-7. **No new signing path.** A priority check can only refuse. It never admits a request that
+7. **Stable-identity priority (N77): can a compromised coordinator pick high-priority
+   subjects?**
+   - **Offline, no.** p = H(K_prio, identity) + rotation, and it lacks K_prio, so a
+     subject's priority is unpredictable to it, as with request IDs.
+   - **What policy restricts.** `sub` must be a well-formed
+     `system:serviceaccount:<ns>:<name>` that agrees with the `kubernetes.io` claims, and is
+     outside the deny lists. Audiences, lifetime and the ±60 s `iat` window are enforced.
+     The pod uid is **not** checked against the cluster (signers cannot see it), so the
+     coordinator can choose arbitrary pod uids and thus arbitrarily many identities.
+   - **What is weaker than under request IDs: identities can be reused.**
+     - The coordinator sees which honest requests were admitted (it receives the shares).
+       Under stable priority an admitted identity stays admitted for the rest of the epoch
+       (≤ 2 min).
+     - So a compromised replica can copy an admitted honest request's claims (or a pod
+       uid it found by probing) and send many requests with that identity in the same
+       epoch. All of them are admitted at every signer.
+     - Under request-ID priority a found request_id can be reused in the same way, because
+       there is no replay cache yet (§4.3 follow-up). So the difference is how easy it is,
+       not whether it is possible.
+     - The tokens obtained are for subjects the policy already allows. The coordinator can
+       obtain those anyway while in control (C2(b), online oracle), so no new *token
+       capability* is gained. What it gains is an **admission share**.
+   - **Bound.**
+     - The per-replica **fair share** (§4.5(iii)): under overload, one replica gets at most
+       ⌈1.25 × admissions / clients⌉ per window, ≈ 42 % for 3 replicas, whatever
+       priorities it uses.
+     - The per-signer rate limit (200/s), shared by all callers.
+     - With a single coordinator replica there is no honest traffic to protect, and the
+       bound is moot.
+   - **Follow-up (recorded, not implemented):** a per-identity admission cap per window
+     would remove the reuse amplification.
+8. **No new signing path.** A priority check can only refuse. It never admits a request that
    policy, rate limit or N48 would refuse, and it adds no fallback signing mode.
 
 ## 5. Evaluation plan (pre-registered before any run)
@@ -255,9 +364,10 @@ All runs on a freshly provisioned 7C cluster with the same scripts. This require
 re-provisioning, ≈ 1.5 h bring-up at ≈ $0.57/h, with the usual 7C safety rules.
 
 Variants:
-- **N48** is today's system.
-- **B** is the quorum-impossible abort alone.
-- **A+B** is the proposal.
+- **n48** is today's system.
+- **b** is the quorum-impossible abort alone.
+- **abs** is A+B with stable-identity priority: **the proposal** (N77).
+- **ab** is A+B with request-ID priority: for comparison (N76).
 
 Run order: per run, all variants interleaved and rotated, with a verified switch (kid, mode,
 TokenReview) and the variant recorded (signer config hash, coordinator flag) before every
@@ -266,21 +376,24 @@ configuration. INVALID + one re-run (N60); chrony-primary clock check before eve
 ### 5.1 Stress test (label **stress test (CPU-capped signers CPUQuota=25%, SIGNER_MAX_CONCURRENT=1)**)
 - **Setup:** exactly the N73 configuration. T-same-region optimistic, fan-out all, c =
   10/25/50/100/150/200, 3 runs, N=1000 after 100 warm-up, signer CPU and audit capture.
-  Variants N48, B, A+B.
+  Variants n48, b, ab, abs. Every variant's requests cycle over **300 service accounts**
+  (`tokenbench -sa-count 300`: request i uses `storm/pod-<i mod 300>`). Otherwise all
+  requests would share one identity, and abs would admit all or nothing per epoch. Identity
+  does not affect n48, b or ab, so the comparison with N73 holds. The no-regression test
+  (§5.2) uses the same 300 identities.
 - **Per variant and c:** goodput, goodput / peak (peak = that variant's max), errors, computed
   shares per request, wasted-on-failed %, surplus %, sheds by reason (priority vs N48 kinds),
   signer CPU, cgroup `cpu.stat` throttling (§6), and the per-window f/L trace of each signer.
-- **Success rule for A+B (fixed now):** at every c ≥ 50, goodput ≥ 0.8 × peak **and**
-  wasted-on-failed ≤ 10 %, median of 3 runs.
-  - Stated separately: whether B alone meets it.
+- **Success rule (fixed now)**, applied to each of abs, ab and b: at every c ≥ 50, goodput
+  ≥ 0.8 × peak **and** wasted-on-failed ≤ 10 %, median of 3 runs.
   - If A+B fails the rule, the design is reported as not effective at these parameters; it
     is not re-tuned and re-run under the same label.
 
 ### 5.2 No regression (label **7C configuration, no-regression check**)
 - **Setup:** uncapped signers, N48 defaults (`max_concurrent` = 2, `max_queue` = 64).
-  T-same-region and T-5-region, optimistic, c = 1/10/20/50, 3 runs. Variants N48 and A+B.
-  B0 in the same session as the anchor.
-- **Rule (fixed now):** for A+B vs N48 in the same session:
+  T-same-region and T-5-region (both included, as asked), optimistic, c = 1/10/20/50,
+  3 runs. Variants n48 and abs (the proposal). B0 in the same session as the anchor.
+- **Rule (fixed now):** for abs vs n48 in the same session:
   - goodput within ± 5 %;
   - median latency within ± 5 % or ± 2 ms, whichever is larger;
   - 0 errors;
@@ -300,6 +413,28 @@ per share, not CPU. It is independent of A/B and runs on N48 only.
   goodput at 2 slots and signer CPU at 4 slots > CPU at 2 slots. It is **not supported**
   otherwise. Either result is reported under this label. This test does not change any
   default; a default change would be a separate decision.
+
+### 5.4 Storm: retry amplification and worst-case wait (N77; label **stress test (CPU-capped signers …), storm**)
+- **Setup:** the stress-test caps, T-same-region optimistic, fan-out all; variants n48, b,
+  ab, abs; 3 runs.
+  - B = 300 simulated pods start at once, one service account each, so each has its own
+    identity (sub); the pod-uid path is unit-tested.
+  - 80 % are **polite**: they retry with the kubelet's backoff (500 ms, doubling, cap
+    2m2s). 20 % are **aggressive**: they retry every 250 ms.
+  - Each pod retries until issued, or gives up after 20 min (`tokenbench -storm-pods`).
+- **Measured per variant:**
+  - **amplification** = TokenRequests per issued token, overall, polite and aggressive;
+  - issued %;
+  - wait (first attempt → issued) p50 / p99 / max per class;
+  - **aggressive advantage** = median polite wait / median aggressive wait;
+  - computed shares per issued token, and wasted %.
+- **Pre-registered hypotheses (reported, not pass/fail):**
+  - H1: amplification(abs) < amplification(ab).
+  - H2: the aggressive advantage under abs is closer to 1 than under ab.
+  - H3: no issued pod under abs waited longer than the stable bound (§2A, ≤ 64 min).
+  - Pods not issued within the 20 min give-up are reported, not dropped.
+- **Prediction (§2A, written before the run):** H1 likely **false** for polite clients,
+  because kubelet backoff is independent of priority; H2 likely true.
 
 ## 6. Open question carried into the evaluation: the signer-CPU drop (N73)
 

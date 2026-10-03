@@ -62,7 +62,8 @@ type Decision struct {
 	Namespace      string
 	ServiceAccount string
 	Audiences      []string
-	IssuedAt       int64 // the validated iat claim (admission priority epoch, N76)
+	IssuedAt       int64  // the validated iat claim (admission priority epoch, N76)
+	PodUID         string // kubernetes.io.pod.uid of a pod-bound token, "" otherwise (stable priority identity, N77)
 }
 
 // MinTokenSeconds is kube-apiserver's lower bound for max_token_expiration_seconds
@@ -307,7 +308,8 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := checkK8sClaims(obj["kubernetes.io"], ns, name); err != nil {
+	podUID, err := checkK8sClaims(obj["kubernetes.io"], ns, name)
+	if err != nil {
 		return nil, err
 	}
 	if p.denyNS[ns] {
@@ -316,39 +318,52 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
 	if p.denySA[ns+":"+name] {
 		return nil, violation("deny", "service account %s:%s is denied", ns, name)
 	}
-	return &Decision{Subject: *sub, Namespace: ns, ServiceAccount: name, Audiences: auds, IssuedAt: iat}, nil
+	return &Decision{Subject: *sub, Namespace: ns, ServiceAccount: name, Audiences: auds, IssuedAt: iat, PodUID: podUID}, nil
 }
 
 // checkK8sClaims requires kubernetes.io.namespace and .serviceaccount.name to
-// agree with sub, using the same strict decoding.
-func checkK8sClaims(raw json.RawMessage, ns, name string) error {
+// agree with sub, using the same strict decoding. It returns the bound pod's
+// uid (kubernetes.io.pod.uid) when the token is pod-bound, else "".
+func checkK8sClaims(raw json.RawMessage, ns, name string) (string, error) {
 	if raw == nil {
-		return violation("sub", "kubernetes.io claims are missing")
+		return "", violation("sub", "kubernetes.io claims are missing")
 	}
 	k8s, err := strictObject(raw)
 	if err != nil {
-		return violation("claims", "kubernetes.io: %v", err)
+		return "", violation("claims", "kubernetes.io: %v", err)
 	}
 	gotNS, err := str(k8s, "namespace")
 	if err != nil {
-		return err
+		return "", err
 	}
 	saRaw, ok := k8s["serviceaccount"]
 	if !ok {
-		return violation("sub", "kubernetes.io.serviceaccount is missing")
+		return "", violation("sub", "kubernetes.io.serviceaccount is missing")
 	}
 	sa, err := strictObject(saRaw)
 	if err != nil {
-		return violation("claims", "kubernetes.io.serviceaccount: %v", err)
+		return "", violation("claims", "kubernetes.io.serviceaccount: %v", err)
 	}
 	gotName, err := str(sa, "name")
 	if err != nil {
-		return err
+		return "", err
 	}
 	if gotNS == nil || gotName == nil || *gotNS != ns || *gotName != name {
-		return violation("sub", "sub %s:%s disagrees with kubernetes.io claims (%s/%s)", ns, name, strOrMissing(gotNS), strOrMissing(gotName))
+		return "", violation("sub", "sub %s:%s disagrees with kubernetes.io claims (%s/%s)", ns, name, strOrMissing(gotNS), strOrMissing(gotName))
 	}
-	return nil
+	podUID := ""
+	if podRaw, ok := k8s["pod"]; ok {
+		pod, err := strictObject(podRaw)
+		if err != nil {
+			return "", violation("claims", "kubernetes.io.pod: %v", err)
+		}
+		if u, err := str(pod, "uid"); err != nil {
+			return "", err
+		} else if u != nil {
+			podUID = *u
+		}
+	}
+	return podUID, nil
 }
 
 func strOrMissing(s *string) string {

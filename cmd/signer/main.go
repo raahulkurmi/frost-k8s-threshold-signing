@@ -27,6 +27,12 @@
 //	               admission before the N48 queue (N76). priority needs the
 //	               signers' shared key: PRIORITY_KEY_FILE (priority.key from the
 //	               dealer), or with VAULT_ADDR the key at <VAULT_MOUNT>/frost-k8s/priority-key
+//	SIGNER_PRIORITY optional (priority admission only), stable (default) | request:
+//	               p from the claims' stable identity (sub + pod uid) per epoch, or
+//	               from the request_id (a new draw per retry) (N77)
+//	SIGNER_PRIORITY_EPOCH optional, default 2m (stable): whole seconds, >= 10s
+//	SIGNER_PRIORITY_ROTATION optional, default 32 (stable): power of two in 2..64,
+//	               at least 1/(admission floor) = 20 with the 5 % floor
 package main
 
 import (
@@ -73,6 +79,7 @@ type settings struct {
 	MaxDL    time.Duration
 	QSample  time.Duration
 	PrioKey  []byte
+	Adm      signer.AdmissionConfig
 	Cert     string
 	Key      string
 	CA       string
@@ -191,6 +198,28 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 	default:
 		return nil, fmt.Errorf("SIGNER_ADMISSION %q must be n48 or priority", mode)
 	}
+	pm, pe, pr := getenv("SIGNER_PRIORITY"), getenv("SIGNER_PRIORITY_EPOCH"), getenv("SIGNER_PRIORITY_ROTATION")
+	if s.PrioKey == nil && (pm != "" || pe != "" || pr != "") {
+		return nil, errors.New("SIGNER_PRIORITY* is set but SIGNER_ADMISSION is not priority")
+	}
+	switch pm {
+	case "", "stable":
+		s.Adm.Mode = signer.PriorityStable
+	case "request":
+		s.Adm.Mode = signer.PriorityRequest
+	default:
+		return nil, fmt.Errorf("SIGNER_PRIORITY %q must be stable or request", pm)
+	}
+	if pe != "" {
+		if s.Adm.Epoch, err = time.ParseDuration(pe); err != nil || s.Adm.Epoch < 10*time.Second || s.Adm.Epoch%time.Second != 0 {
+			return nil, fmt.Errorf("SIGNER_PRIORITY_EPOCH %q must be whole seconds >= 10s", pe)
+		}
+	}
+	if pr != "" {
+		if s.Adm.Rotation, err = strconv.Atoi(pr); err != nil || !signer.StableRotationOK(s.Adm.Rotation, 0.05) {
+			return nil, fmt.Errorf("SIGNER_PRIORITY_ROTATION %q must be a power of two in 32..64 (at least 1/floor with the 5%% floor)", pr)
+		}
+	}
 	s.Listen = getenv("LISTEN_ADDR")
 	if s.Listen == "" {
 		s.Listen = ":8443"
@@ -213,7 +242,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	}
 	defer auditLog.Close()
 	srv, err := signer.New(signer.Config{ID: s.ID, Meta: s.Meta, Share: s.Share, Policy: s.Policy, Audit: auditLog, Logger: logger, MaxConcurrent: s.MaxConc, MaxQueue: s.MaxQueue,
-		MaxDeadline: s.MaxDL, PriorityKey: s.PrioKey})
+		MaxDeadline: s.MaxDL, PriorityKey: s.PrioKey, Admission: s.Adm})
 	if err != nil {
 		return err
 	}
@@ -228,7 +257,8 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	}
 	logger.Info("signer ready", "signer_id", s.ID, "kid", s.Meta.KID, "threshold", s.Meta.Threshold,
 		"parties", s.Meta.Parties, "listen", s.Listen, "max_token_seconds", s.Policy.MaxTokenSeconds(), "max_concurrent", srv.MaxConcurrent(), "max_queue", srv.MaxQueue(),
-		"admission", map[bool]string{true: "priority", false: "n48"}[s.PrioKey != nil], "max_deadline", srv.MaxDeadline().String())
+		"admission", map[bool]string{true: "priority", false: "n48"}[s.PrioKey != nil], "max_deadline", srv.MaxDeadline().String(),
+		"priority", prioMode(srv), "priority_epoch", prioEpoch(srv), "priority_rotation", prioRotation(srv))
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -245,4 +275,25 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		defer cancel()
 		return hs.Shutdown(shutdownCtx)
 	}
+}
+
+func prioMode(s *signer.Server) string {
+	if c := s.PriorityConfig(); c != nil {
+		return string(c.Mode)
+	}
+	return ""
+}
+
+func prioEpoch(s *signer.Server) string {
+	if c := s.PriorityConfig(); c != nil && c.Mode == signer.PriorityStable {
+		return c.Epoch.String()
+	}
+	return ""
+}
+
+func prioRotation(s *signer.Server) int {
+	if c := s.PriorityConfig(); c != nil && c.Mode == signer.PriorityStable {
+		return c.Rotation
+	}
+	return 0
 }

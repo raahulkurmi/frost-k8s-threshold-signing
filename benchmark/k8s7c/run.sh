@@ -7,7 +7,7 @@
 #   RES=<dir> benchmark/k8s7c/run.sh scale    pod scale-up interleaved: for each rep, every
 #                                             system (rotated), sizes SIZES; cooldown per rep
 #   RES=<dir> benchmark/k8s7c/run.sh lever|stress   lever check / stress test (N70)
-#   RES=<dir> benchmark/k8s7c/run.sh eval-stress|eval-noregress|eval-slots
+#   RES=<dir> benchmark/k8s7c/run.sh eval-stress|eval-noregress|eval-slots|eval-storm
 #                                             N76 evaluation (docs/PRIORITY_ADMISSION.md §5)
 #   RES=<dir> benchmark/k8s7c/run.sh summary  regenerate summary.md from the raw files
 # RES defaults to a new benchmark/results/<UTC>-<sha>-7C directory (reuse it for all phases).
@@ -73,7 +73,12 @@ measure() { # SYS C RUN -> 0 iff clean
     local sp sid; for sp in $(t_signer_hosts "$sys"); do sid="${sp%%:*}"
       cpipe "${sp#*:}" sudo bash -s -- start "$sid" < "$REPO/deploy/aws/7c/signer-sampler.sh" || return 1; done
   fi
-  rdetach lg tb "~/tokenbench -kubeconfig ~/.kube/config -n $N -warmup $WARMUP -c $c -label $lab -out /tmp/$lab.csv" || return 1
+  if [[ -n "${STORM:-}" ]]; then   # N77 storm: c = number of simulated pods, each retrying until issued
+    rdetach lg tb "~/tokenbench -kubeconfig ~/.kube/config -storm-pods $c -storm-namespace storm -storm-sa-prefix pod- -storm-aggressive ${STORM_AGGRESSIVE:-0.2} -storm-giveup ${STORM_GIVEUP:-20m} -label $lab -out /tmp/$lab.csv -pods-out /tmp/$lab.pods.jsonl" || return 1
+  else
+    local ids=""; [[ -n "${IDENTITIES:-}" ]] && ids="-namespace storm -sa pod- -sa-count $IDENTITIES"
+    rdetach lg tb "~/tokenbench -kubeconfig ~/.kube/config -n $N -warmup $WARMUP -c $c $ids -label $lab -out /tmp/$lab.csv" || return 1
+  fi
   rc="$(rwait lg tb 3600)" || return 1
   [[ "$rc" == 0 ]] || { echo "tokenbench exit $rc: $(on lg tail -2 /tmp/tb.log 2>/dev/null | tr '\n' ' ')" >> "$ERRF.events"; return 1; }
   if is_t "$sys"; then
@@ -113,7 +118,8 @@ measure() { # SYS C RUN -> 0 iff clean
   fi
   l_cp="$(con cp cat /proc/loadavg)" && l_co="$(con coord cat /proc/loadavg)" && l_lg="$(con lg cat /proc/loadavg)" || return 1
   cpull lg "/tmp/$lab.csv" "$dir/$lab.csv" || return 1
-  con lg rm -f "/tmp/$lab.csv" || return 1
+  if [[ -n "${STORM:-}" ]]; then cpull lg "/tmp/$lab.pods.jsonl" "$dir/$lab.pods.jsonl" || return 1; fi
+  con lg rm -f "/tmp/$lab.csv" "/tmp/$lab.pods.jsonl" || return 1
   jq -cn --arg lab "$lab" --argjson cp "$(cpu_json "$b_cp" "$a_cp" "$l_cp")" --argjson co "$(cpu_json "$b_co" "$a_co" "$l_co")" --argjson lg "$(cpu_json "$b_lg" "$a_lg" "$l_lg")" \
     --arg l5 "$(awk '{print $2}' <<<"$l_cp")" \
     '{label: $lab, cpu_busy_pct: $cp.cpu_busy_pct, cpu_steal_pct: $cp.cpu_steal_pct, load1: $cp.load1, load5: ($l5|tonumber), cpu_host: "control plane",
@@ -313,10 +319,11 @@ eval_loop() {
 # §5.1 stress test before/after: today (n48) vs abort only (b) vs abort + priority (ab)
 phase_eval_stress() {
   push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
-  export SIGNER_CPU=1 SIGNER_AUDIT=1 SIGNER_SAMPLES=1 QUEUE_SAMPLE="${QUEUE_SAMPLE:-100ms}"
-  echo "== STRESS TEST (CPU-capped signers, SIGNER_MAX_CONCURRENT=1), N76 before/after: applying caps"
+  export SIGNER_CPU=1 SIGNER_AUDIT=1 SIGNER_SAMPLES=1 QUEUE_SAMPLE="${QUEUE_SAMPLE:-100ms}" IDENTITIES="${IDENTITIES:-300}"
+  storm_setup "$IDENTITIES" || die "service accounts for $IDENTITIES identities"   # request i -> pod-(i mod 300), every variant
+  echo "== STRESS TEST (CPU-capped signers, SIGNER_MAX_CONCURRENT=1), N76/N77 before/after: applying caps"
   stress_caps on
-  eval_loop "T-sameregion-optimistic@n48 T-sameregion-optimistic@b T-sameregion-optimistic@ab" "${STRESS_CONCS:-10 25 50 100 150 200}" eval-stress
+  eval_loop "T-sameregion-optimistic@n48 T-sameregion-optimistic@b T-sameregion-optimistic@ab T-sameregion-optimistic@abs" "${STRESS_CONCS:-10 25 50 100 150 200}" eval-stress
   echo "== removing stress caps"
   stress_caps off
   unset QUEUE_SAMPLE; signer_config T-sameregion-optimistic n48 - >/dev/null
@@ -324,10 +331,34 @@ phase_eval_stress() {
 # §5.2 no regression: uncapped, n48 vs ab, both placements, B0 anchor
 phase_eval_noregress() {
   push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
-  export SIGNER_AUDIT=1
-  eval_loop "${NOREGRESS_SYSTEMS:-B0 T-sameregion-optimistic@n48 T-sameregion-optimistic@ab T-5region-optimistic@n48 T-5region-optimistic@ab}" "$CONCS" eval-noregress
+  export SIGNER_AUDIT=1 IDENTITIES="${IDENTITIES:-300}"
+  storm_setup "$IDENTITIES" || die "service accounts for $IDENTITIES identities"
+  eval_loop "${NOREGRESS_SYSTEMS:-B0 T-sameregion-optimistic@n48 T-sameregion-optimistic@abs T-5region-optimistic@n48 T-5region-optimistic@abs}" "$CONCS" eval-noregress
   signer_config T-sameregion-optimistic n48 - >/dev/null
   [[ -f "$S7/topology-t5.env" ]] && signer_config T-5region-optimistic n48 - >/dev/null
+}
+# N77 storm (retry amplification): CPU-capped signers as in the stress test; STORM_PODS
+# simulated pods start at once, one service account each (identity = sub), 20 %
+# retrying every 250 ms, the rest with the kubelet's backoff; until issued or give-up.
+storm_setup() { # B: namespace storm with service accounts pod-0 .. pod-<B-1>
+  local b="$1" n
+  { printf 'apiVersion: v1\nkind: Namespace\nmetadata: {name: storm}\n'
+    for ((i = 0; i < b; i++)); do printf -- '---\napiVersion: v1\nkind: ServiceAccount\nmetadata: {name: pod-%d, namespace: storm}\n' "$i"; done
+  } | cpipe cp kubectl apply -f - >/dev/null || return 1
+  n="$(con cp bash -c "kubectl -n storm get sa --no-headers | grep -c '^pod-'")" || return 1
+  echo "storm: $n of $b service accounts ready"; [[ "$n" -ge "$b" ]]
+}
+phase_eval_storm() {
+  push coord benchmark/multihost/rtt_sampler.py /tmp/rtt_sampler.py
+  export SIGNER_CPU=1 SIGNER_AUDIT=1 STORM=1
+  local b="${STORM_PODS:-300}"
+  storm_setup "$b" || die "storm setup failed"
+  echo "== STORM (CPU-capped signers, SIGNER_MAX_CONCURRENT=1): applying caps"
+  stress_caps on
+  eval_loop "T-sameregion-optimistic@n48 T-sameregion-optimistic@b T-sameregion-optimistic@ab T-sameregion-optimistic@abs" "$b" eval-storm
+  echo "== removing stress caps"
+  stress_caps off
+  signer_config T-sameregion-optimistic n48 - >/dev/null
 }
 # §5.3 inference test (admission slots): SIGNER_MAX_CONCURRENT 2/4/8, c=50, uncapped
 phase_eval_slots() {
@@ -370,6 +401,7 @@ case "$PHASE" in
   eval-stress) phase_eval_stress; phase_summary;;
   eval-noregress) phase_eval_noregress; phase_summary;;
   eval-slots) phase_eval_slots; phase_summary;;
+  eval-storm) phase_eval_storm; phase_summary;;
   stress) phase_stress; phase_summary;;
   scale) phase_scale; phase_summary;;
   summary) phase_summary;;
