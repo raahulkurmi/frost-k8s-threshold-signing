@@ -419,34 +419,36 @@ Every fix commit names its finding (N83 freeze rule), and NOTES N84 lists them.
 | G-4 | high | **FIXED** | 01272b2 | the SG log **was recoverable** (operator-side `deploy/aws/state/sg-rules.txt`, 69 lines) and is committed per session as `sg-rules.txt`; its 2026-09-26 lines are byte-identical to the already committed `reports/aws/sg-rules.txt`; it confirms INDEPENDENCE §7C (8441 only from 15.252.57.131/32, the coordinator IP in the manifests) |
 | G-5 | high | **FIXED** | d23d0f4 | README opening no longer says "independent signers" |
 | G-6 | high | **FIXED** | d23d0f4 | disclosed in NOTES N84, REVIEW_RESPONSE R12, PAPER_INPUTS, INDEPENDENCE; the original FAIL is kept |
-| B-1 | med | OPEN | – | – |
-| C-3 | med | OPEN | – | – |
+| B-1 | med | **FIXED** (round 2) | fc69a58 | `docs/INVARIANTS.md` (each invariant: enforcing code, tests, mutation evidence); linked from README and THREAT_MODEL |
+| C-3 | med | **FIXED** (round 2) | cba14ca | M5a → `TestResponseSANCheckWithoutTLSPinning`, M14a → `TestCancelledRequestRefusedBeforeAdmission`, M14b → `TestCallerGoneDuringAdmissionComputesNoShare`: **all three now CAUGHT**. M3a: documented in code as unreachable defence in depth (endpoint ids unique, each endpoint launched once); still survives by construction; no code removed |
 | C-7 | med | **FIXED** | 9f85a8c | `make test` → `test-spike` (spike module, 8 tests incl. `TestLibraryHazards`, `TestTamperedShareRejected`); CI's test job runs `make test`; `make vet` and CI vet spike/ |
-| E-1 | med | **FIXED** | c82f653 | `internal/vaultclient` (no redirect off the configured scheme/host/port) used by keyshare, prioritykey and dealer; `TestNoCrossHostRedirect` (4 call paths × 2 targets), `TestSameOriginRedirectFollowed`. Negative control: with the fix reverted the redirect target received 8 requests carrying the token. *Not done (outside the approved item): an https-only rule for `VAULT_ADDR`* |
+| E-1 | med | **FIXED** | c82f653 | `internal/vaultclient` (no redirect off the configured scheme/host/port) used by keyshare, prioritykey and dealer; `TestNoCrossHostRedirect` (4 call paths × 2 targets), `TestSameOriginRedirectFollowed`. Negative control: with the fix reverted the redirect target received 8 requests carrying the token. **Round 2 (374a59d):** `VAULT_ADDR` must be `https://`; plain http only with `VAULT_DEV_ALLOW_HTTP=1` (`TestCheckAddr`, `TestSignerFailsClosed` cases, `TestVaultModeRequiresHTTPS`; negative control fails without the check) |
 | E-2 | med | **FIXED** | c4c267e | `deploy/multihost/topology-guard.sh` (≤ t−1 shares per host; Level 1 2+2+1 complies, so no exception is needed); `TestTopologyGuard` (9 topologies; negative control: 3 unsafe placements accepted without the rule); deploy.sh checks the dealer threshold after the ceremony |
 | E-3 | med | **FIXED** | d23d0f4 | README trust assumptions, THREAT_MODEL §4 and §7 table, PAPER_INPUTS §4.4 row |
 | I-1 | med | **FIXED** | d23d0f4 | `LICENSE` (Apache-2.0, canonical text sha256 cfc7749b…); NOTICE and README consistent with it and with tcrsa v0.0.5 MIT |
-| G-7 | med | OPEN | – | – |
-| G-8 | med | OPEN | – | – |
+| G-7 | med | **FIXED** (round 2) | 29868bd | CLAIMS_AUDIT row 11, REVIEW_RESPONSE R6, PAPER_INPUTS: 0.0 % median, 4 of 72,000 failed (summary.md:131, :153); NOTES N85 corrects N69 |
+| G-8 | med | **FIXED** (round 2) | 29868bd | PAPER_INPUTS, PRIORITY_ADMISSION §7: RSA ≈ 92–95 ms; throttled/wall 85–129 % (not a fraction); NOTES N85 |
 | G-9 | med | **FIXED** | d23d0f4 | README status box, evidence table, benchmark paragraph |
 | G-10 | med | **FIXED** | d23d0f4 | README "How it works" item 3 |
-| G-11 | med | OPEN | – | – |
-| G-12 | med | OPEN | – | – |
-| G-13 | med | OPEN | – | – |
-| G-14 | med | OPEN | – | – |
-| G-15 | med | OPEN | – | – |
+| G-11 | med | **FIXED** (round 2) | 29868bd | THREAT_MODEL header, §1, §6 Level 2 row, C7 rate (7C plateau), N76 'evaluated' |
+| G-12 | med | **FIXED** (round 2) | 29868bd | THREAT_MODEL §0, §1, C4: per-replica `coordinator-<k>` |
+| G-13 | med | **FIXED** (round 2) | 29868bd | CLAIMS_AUDIT row 11 (N72 withdrawn, N78 result), row 14 (Level 2); NOTES N85 |
+| G-14 | med | **FIXED** (round 2) | 29868bd | 'bimodal' explanation withdrawn in CLAIMS_AUDIT, REVIEW_RESPONSE, PAPER_INPUTS: 36 ms warm average vs 70 ms with 2 signers killed |
+| G-15 | med | **FIXED** (round 2) | 29868bd | required framing in CA 9/10, R17, PAPER_INPUTS; #141673 and #141687 listed (status 2026-10-04) |
 | G-16 | med | **FIXED** | d23d0f4 | deploy/multihost/README (Level 2 done; netem delay labelled a knob) |
 | G-17 | med | **FIXED** | d23d0f4 | correction in NOTES N84 |
 | G-18 | med | **FIXED** | 01272b2, d23d0f4 | INDEPENDENCE §7C and NOTES N84: cause of the differing hashes not determined |
-| G-19 | med | OPEN | – | – |
+| G-19 | med | **FIXED** (round 2) | 29868bd | `benchmark/derived.sh` → `derived.md` (7B coordinator CPU; lever hedge counts) from raw data; docs cite it |
 | A-1 | low | **FIXED** | (final evidence commit) | `reports/REPRO.md` replaced by the repro run on the final code (see below) |
 | C-4, C-5, C-6, C-8 | low | OPEN | – | – |
 | D-1 | low | OPEN | – | – |
 | E-4, E-5 | low | OPEN | – | – |
-| H-1, H-2, H-3 | low | OPEN | – | H-3: acceptance still expires 2026-11-30 |
+| H-1, H-2 | low | OPEN (proposal below) | – | – |
+| H-3 | low | **FIXED** (round 2) | d26a5b5 | no released grpc fix (2026-10-04); acceptance extended to 2027-01-31 with justification; `scripts/govulncheck.sh` passes |
 | J-1, J-2 | low | OPEN | – | – |
 | J-3 | low | **FIXED** (tree) | d23d0f4 | the name no longer appears in any tracked file, including these reports. It remains in the history of 0aac79c; removing it would need a history rewrite, which the audit rules forbid |
-| G-20 … G-25, G-27 … G-35 | low | OPEN | – | – |
+| G-24, G-27, G-28 | low | **FIXED** (round 2, under the claims criterion) | 29868bd | THREAT_MODEL line ref; clock-skew provenance ('logs not retained'); CI e2e lines in `reports/gates/ci-e2e-run*.txt` |
+| G-20 … G-23, G-25, G-29 … G-35 | low | OPEN (proposal below) | – | – |
 | G-26 | low | **FIXED** | (final evidence commit) | REPRO.md replaced |
 | D-2, D-3, E-6, F-1, F-2, F-3, H-4, I-2, G-36 … G-44 | info | INFO | – | – |
 
@@ -481,3 +483,59 @@ build tag `auditfuzz`, so the product gate does not build audit tooling. Seeds:
   - Its `make test` log shows `cmd/grpc-proxy`, `internal/vaultclient` and spike (`TestLibraryHazards`, `TestTamperedShareRejected`) passing.
   - Artifact: `reports/repro/run-37188822909-5fdf63d/`. `reports/REPRO.md` is now this run (A-1, G-26 fixed).
 - The commit after 5fdf63d changes only REPRO.md, the repro artifact and this section (documentation and evidence, no code). CI for it is recorded in the final report.
+
+---
+
+## Round 2 (approved 2026-10-04): claims, invariants, C-3, H-3, E-1 extension, history
+
+Fixes are in the resolution table above (marked "round 2"). Commits:
+- 29868bd: claims G-7, G-8, G-11–G-15, G-19, plus G-24, G-27, G-28 (the same exit criterion);
+- cba14ca: C-3;
+- 374a59d: E-1 https;
+- fc69a58: B-1;
+- d26a5b5: H-3 and the history decision (`reports/HISTORY_PURGE.md` §0–§0a, README note; no history rewrite; snapshot plan, not created).
+
+NOTES N85 and N86 record the corrections to earlier entries, which are not rewritten. The three aborted
+result folders stay untracked (G-44).
+
+**Mutation re-runs (round 2):**
+- M5a, M14a, M14b: SURVIVED → **CAUGHT**.
+- M3a: SURVIVED, documented as unreachable.
+
+Evidence: `mutation/rerun/*-round2.*`.
+
+### Low findings: proposal (not applied; awaiting decision)
+
+| ID | Proposal | Reason (one line) |
+|---|---|---|
+| C-4 | fix | Add a fake signer echoing a wrong `request_id`; closes surviving mutation X4 with a one-file test. |
+| C-5 | fix | Add a fake signer returning `MaxResponseBytes+1` bytes; closes X5 and the THREAT_MODEL C1 "not separately tested" gap. |
+| C-6 | fix | Bound the waits in `TestQueuedRequestCancelledByCallerComputesNoShare` so missing admission fails with an assertion, not a 30-minute hang. |
+| C-8 | fix | Add exact-edge policy cases (lifetime = max, exp == iat, nbf at ±skew, 63/64- and 253/254-char names); closes 13 live gremlins mutants. |
+| D-1 | fix | Reject quoted NumericDates in `policy.num`; strictly tighter, removes the one known (fail-closed) parser differential. |
+| E-4 | fix | Dealer refuses a group- or world-writable output directory and removes already-written shares on failure; small, local, testable. |
+| E-5 | fix (ControlPath) + accept (TOFU) | Move ssh `ControlPath` from /tmp to `~/.ssh` (cheap). Accept `accept-new`: host keys of freshly launched cloud VMs cannot be pinned without console access; documented. |
+| H-1 | fix | Pin `golang`/`alpine` base images by digest in the 4 Dockerfiles; T13 then refers to fixed bases. |
+| H-2 | accept | The 4 AWS scripts cannot be re-validated without cloud runs; adding `set -e` would change their failure behaviour untested. |
+| J-1 | fix | Correct the §1 "finds 4" sentence in HISTORY_PURGE (the new §0 already states 10) and add a `.gitleaksignore` for the 6 public-kid false positives. |
+| J-2 | accept | The paths are inside verbatim evidence outputs (teardown reports, govulncheck output); editing them is a post-hoc change; the anonymized snapshot (HISTORY_PURGE §0a) strips them. |
+| G-20 | fix | NOTES correction entry: b-variant offered load is 2.4–3.9×, not 4–6×. |
+| G-21 | fix | NOTES correction entry: median refusals at c=10 are 126 (ab) and 36 (abs), worst run 277. |
+| G-22 | fix | NOTES correction entry: N56's bound is on the aggregate, not per token. |
+| G-23 | fix | Append "(applied in N82, 37f3c5e)" to PRIORITY_ADMISSION_V2 §7/§8. |
+| G-25 | fix | CLAIMS_AUDIT row 9: note that the `claims` comment is at lines 48–51 on master (file reformatted elsewhere by 693b7b3). |
+| G-29 | fix | KEY_CEREMONY: replace the dead NOTES pointer with "key rotation is not implemented; FetchKeys serves one key". |
+| G-30 | fix | HISTORY_PURGE: `.summarize` was added in 9bb1f16 and removed in 6ebb013. |
+| G-31 | fix | NOTES correction entry: 7A scale-up ratio is 1.4–1.7×. |
+| G-32 | fix | Add a POSTPROCESSING note to the 7C results directory: token runs at 73be90f, summary regenerated at 1e77bee (summary.md not modified). |
+| G-33 | accept | The run-time summaries cannot be recovered; both regenerated summaries reproduce byte-for-byte from raw data (verified in Pass G); adopt "keep summary.run-time.md" for future runs. |
+| G-34 | accept | Same as J-2: a verbatim script-generated summary; regenerating it would change committed evidence; stripped in the snapshot. |
+| G-35 | fix | THREAT_MODEL: "3 signer VMs plus the coordinator VM, all on one Mac". |
+
+### Exit criteria after round 2
+- **Open critical/high:** 0.
+- **Required mutations caught:** 17 of 17.
+- **Variant survivors:** only M3a (documented unreachable), plus X4/X5, which are proposed above as C-4/C-5.
+- **Fuzz crashes:** 0.
+- **Every claim sentence has evidence:** **yes**. Every CONTRADICTED, STALE or UNSUPPORTED row of CLAIMS_RECHECK was corrected or given evidence (G-5…G-19, G-24, G-27, G-28, I-1).
+- **Fresh-clone repro:** see "Final CI and repro, round 2".

@@ -167,3 +167,36 @@ REVIEW_RESPONSE.md:3-4), so **points missing from R1–R18 cannot be ruled out: 
 | R16 | paper | SUPPORTED |
 | R17 | paper | framing incomplete: no "community fixes proposed, none merged"; PR #141673 (closed, unmerged) not mentioned; paraphrase "fixes by maintainers" (G-15) |
 | R18 | FIXED (partial) | SUPPORTED |
+
+## 7. Recheck after the fix loops (rounds 1 and 2)
+
+Every row above that was CONTRADICTED, STALE or UNSUPPORTED, with its new verdict:
+
+| Row | Was | Fix | Commit | Now |
+|---|---|---|---|---|
+| R-1 | CONTRADICTED ("independent") | G-5 | d23d0f4 | SUPPORTED |
+| R-4, R-24 | STALE | G-9 | d23d0f4 | SUPPORTED |
+| R-13 | CONTRADICTED (verify every share) | G-10 | d23d0f4 | SUPPORTED |
+| R-25 | rule not met | G-19, G-8 (derived.md; transposed figures fixed) | 29868bd | SUPPORTED |
+| R-28 | UNSUPPORTED (no LICENSE) | I-1 | d23d0f4 | SUPPORTED |
+| T-1 | STALE (shared identity) | G-12 | 29868bd | SUPPORTED |
+| T-8 | UNSUPPORTED | G-27: the claim now states its provenance (audit logs read at the time, NOTES N44, not retained) | 29868bd | SUPPORTED as worded (provenance explicit) |
+| T-16, T-24, T-25 | STALE | G-11 | 29868bd | SUPPORTED |
+| T-17 | wrong line | G-24 | 29868bd | SUPPORTED |
+| I-6 | CONTRADICTED by cited files | G-2, G-18 | 01272b2 | SUPPORTED (per-session files) |
+| I-7 | UNSUPPORTED | G-4 (SG log recovered and committed) | 01272b2 | SUPPORTED |
+| P-14 | CI-log only | G-28 (`reports/gates/ci-e2e-run36151825518-3d91818.txt`) | 29868bd | SUPPORTED |
+| P-19 | CONTRADICTED | G-14 | 29868bd | SUPPORTED |
+| P-21 | CONTRADICTED | G-7 | 29868bd | SUPPORTED |
+| P-23 | partly UNSUPPORTED | G-19 | 29868bd | SUPPORTED |
+| P-26 | CONTRADICTED | G-8 | 29868bd | SUPPORTED |
+| CLAIMS_AUDIT 11 | evidence did not support the text | G-7, G-13, G-14 | 29868bd | SUPPORTED |
+| CLAIMS_AUDIT 14 | STALE | G-13 | 29868bd | SUPPORTED |
+| REVIEW_RESPONSE R6 | partly CONTRADICTED | G-7, G-14 | 29868bd | SUPPORTED |
+| REVIEW_RESPONSE R10 note | inference stated as fact | worded as inference | 29868bd | SUPPORTED as worded |
+| REVIEW_RESPONSE R17 | framing incomplete | G-15 | 29868bd | SUPPORTED |
+| E-3 (new sentences) | — | README, THREAT_MODEL §4/§7, PAPER_INPUTS | d23d0f4 | SUPPORTED (`deploy/policy.json` deny lists empty; N29) |
+
+Still UNVERIFIED, and outside the repository by nature:
+- whether 6B/6C contain points beyond R1–R18 (texts never pasted);
+- the paper-text counts (R13–R15).
