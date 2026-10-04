@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -44,17 +45,32 @@ func newAdmission(t *testing.T, maxConc, maxQueue int) (*Server, string, string)
 func holdSlot(t *testing.T, srv *Server, in string) (release func(), done <-chan *Rejection) {
 	t.Helper()
 	holding, rel := make(chan struct{}), make(chan struct{})
-	var once sync.Once
-	SetTestHookBeforeRSA(func() { once.Do(func() { close(holding); <-rel }) })
+	// Only the first request parks in the hook; any other request passes
+	// straight through. (A sync.Once here made every later request wait behind
+	// the parked holder, so a signer without admission control (mutation
+	// M13a) hung the tests until the package timeout; audit C-6.)
+	var first atomic.Bool
+	SetTestHookBeforeRSA(func() {
+		if first.CompareAndSwap(false, true) {
+			close(holding)
+			<-rel
+		}
+	})
 	t.Cleanup(func() { SetTestHookBeforeRSA(nil) })
 	d := make(chan *Rejection, 1)
 	go func() {
 		_, rej := srv.SignShare(context.Background(), wire.SignShareRequest{SigningInput: in, RequestID: "holder"}, "coordinator")
 		d <- rej
 	}()
-	<-holding
+	select {
+	case <-holding:
+	case <-time.After(5 * time.Second):
+		t.Fatal("slot holder did not reach the pre-RSA hook within 5s")
+	}
 	var o sync.Once
-	return func() { o.Do(func() { close(rel) }) }, d
+	release = func() { o.Do(func() { close(rel) }) }
+	t.Cleanup(release) // never leave the holder parked, even when a test fails
+	return release, d
 }
 
 func ctxTimeout(t *testing.T, d time.Duration) context.Context {
