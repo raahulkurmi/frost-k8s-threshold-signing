@@ -155,7 +155,7 @@ Loosening `clock_skew_seconds` to ride out such events would widen the replay wi
 - **Theft of already issued tokens.** Bearer tokens remain valid until `exp` (max 7200 s
   under the deployed policy). Threshold signing does not help after issuance.
 - **Co-located signers.** The single-host deployment (all 5 signer containers on one VM)
-  and the Level 1 multi-VM deployment (four VMs on one Mac) have one hypervisor, one
+  and the Level 1 multi-VM deployment (3 signer VMs plus the coordinator VM, all on one Mac) have one hypervisor, one
   operator and one software build. Root on the physical host defeats the threshold. See §6.
 - **Common-mode software failure.** All signers run the same binary. One exploitable bug
   or a supply-chain compromise affects all of them at once.

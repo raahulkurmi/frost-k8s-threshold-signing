@@ -1725,3 +1725,29 @@ carry the corrected text.
   history-free snapshot for double-blind review are in `reports/HISTORY_PURGE.md` §0–§0a, with a
   short note in README.
 - **G-44:** the three aborted, untracked result folders stay untracked by decision.
+
+### N87. Phase 12 audit, round 3: corrections (G-20, G-21, G-22, G-31) and low-finding fixes
+Earlier entries are not rewritten; these corrections apply to them.
+- **N78 (G-20).** For variant b, "offered load rises 4–6×" should read **2.4–3.9×** against n48:
+  c=100 209.8/54.2, c=150 327.4/110.4, c=200 340.2/141.5 per s (`…N76-stress/summary.md`).
+- **N78 (G-21).** "126 (ab) and 277 (abs) refusals per 1000 at c=10" mixes a median with a worst
+  run. Per run: ab 126/28/166 (median **126**); abs 0/277/36 (median **36**, worst run 277).
+- **N56 (G-22).** The changed assertion bounds the **aggregate** server-side count, not each
+  token. `total` is between 3 and 4 × requests (hedged) and `all` between 3 and 5 × requests;
+  `Result.Contacted` is exact per token (`git show c46daba`).
+- **N59 (G-31).** T strict-all became Ready **1.4–1.7×** later than B0, not 1.5–1.7×: 26.3/15.7 =
+  1.68 at 50 pods, 57.2/39.6 = 1.44 at 100 pods (7A `summary.md:148-153`).
+
+**Fixes this round (each commit names its finding):**
+- C-4, C-5: request_id and response-size tests. Mutations X4 and X5 are now caught.
+- C-6: bounded waits in the queued-cancellation test.
+- C-8: policy boundary tests. gremlins on `internal/policy`: 92 killed, 0 lived.
+- D-1: NumericDates must be JSON numbers.
+- E-4: the dealer refuses a shared-writable output directory and cleans up partial shares.
+- E-5: ssh control sockets live in `~/.ssh/tk8s-cm`. Trust on first use is accepted, with the
+  reason in the code.
+- H-1: base images are pinned by digest.
+- J-1: `.gitleaksignore` lists the 6 false positives.
+- G-23, G-25, G-29, G-30, G-32, G-35: documentation.
+
+**Accepted with reasons (AUDIT.md):** H-2, J-2, G-33, G-34.

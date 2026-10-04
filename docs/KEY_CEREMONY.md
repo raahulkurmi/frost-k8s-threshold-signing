@@ -72,7 +72,8 @@ Run a new ceremony. It produces a new `kid`. Roll out signers with the new share
 coordinators with the new meta. Tokens signed under the old key stop verifying once the
 old public key is no longer served. The current single-key `FetchKeys` doesn't support
 publishing old and new keys together, so rotation causes a validation gap for existing
-tokens. See the open issues in `NOTES.md`.
+tokens. **Key rotation is not implemented**: FetchKeys serves exactly one key (I2), and no
+multi-key rollover exists (Phase 12 audit G-29; there are no rotation entries in `NOTES.md`).
 
 ## What this ceremony does not protect against
 

@@ -19,3 +19,10 @@ from another directory. The run's own `summary.md` is kept.
 Pod scale-up (`run1/scale/`): the raw `*.audit.jsonl` (kube-apiserver TokenRequest audit
 events) and `*.coord.jsonl` (coordinator Sign lines) were gzipped the same way; the summary
 regenerated from the gzipped files is identical in every table.
+
+## Commits recorded for this run (Phase 12 audit G-32)
+
+The token runs ran at **73be90f** (the directory name and `run-tokens.log`). The scale-up phase
+ran after the N71 fit-check fix at **1e77bee**, and `summary.md` was regenerated in that phase
+(`run-scale.log`), so `summary.md`'s header and `env.json` record `1e77bee`. Both commits apply:
+tokens 73be90f, scale-up and summary 1e77bee. `summary.md` is not modified by this note.
