@@ -4,8 +4,9 @@
 > `cmd/grpc-proxy`, `cmd/signer`; ceremony `cmd/dealer`). The abandoned FROST prototype
 > (`legacy/frost/`) is out of scope except where the claims audit refers to it.
 > Test IDs refer to `test/`, `internal/*/…_test.go`, `test/e2e/run.sh` (E*, N*, REQ-*),
-> `test/e2e/multihost.sh` (L*), and the Phase 9 compromise scenarios (C*), which are mapped to
-> existing tests in §7 (no separate adversarial test code).
+> `test/e2e/multihost.sh` (L*), and the Phase 9 compromise scenarios (C*). Invariants I1–I10
+> are defined in [INVARIANTS.md](INVARIANTS.md). The C* scenarios are mapped to existing
+> tests in §7 (no separate adversarial test code).
 
 ## 0. Assets and actors
 

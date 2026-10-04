@@ -113,6 +113,7 @@ per-host firewalls): [deploy/multihost/README.md](deploy/multihost/README.md), d
 
 | What | Where |
 |---|---|
+| Invariants I1–I10 (definition, enforcing code, tests) | [docs/INVARIANTS.md](docs/INVARIANTS.md) |
 | Unit / integration (T1–T12) | `make test`; `test/`, `internal/*/..._test.go` |
 | Image isolation (T13) | `make check-images`; negative control in `reports/gates/gate6-t13-negative-control.txt` |
 | Kubernetes e2e (single host) | `make e2e`; `reports/gates/gate6*.log`, `gate6.5*.log` |
