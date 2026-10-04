@@ -353,7 +353,8 @@ func TestVaultModeWritesSharesOnlyToVault(t *testing.T) {
 	srv := httptest.NewServer(fv)
 	defer srv.Close()
 	env := func(k string) string {
-		return map[string]string{"VAULT_ADDR": srv.URL, "VAULT_TOKEN": fv.token}[k]
+		// httptest serves plain http: the explicit dev flag is required (audit E-1).
+		return map[string]string{"VAULT_ADDR": srv.URL, "VAULT_TOKEN": fv.token, "VAULT_DEV_ALLOW_HTTP": "1"}[k]
 	}
 
 	var stdout, stderr bytes.Buffer
@@ -397,4 +398,26 @@ func keys[V any](m map[string]V) []string {
 		ks = append(ks, k)
 	}
 	return ks
+}
+
+// TestVaultModeRequiresHTTPS (audit E-1): the dealer refuses a plain-http
+// VAULT_ADDR before generating anything (the secret shares would cross the
+// network in the clear), unless the explicit dev flag is set.
+func TestVaultModeRequiresHTTPS(t *testing.T) {
+	t.Parallel()
+	for name, env := range map[string]map[string]string{
+		"plain http":    {"VAULT_ADDR": "http://vault.example:8200", "VAULT_TOKEN": "t"},
+		"dev flag typo": {"VAULT_ADDR": "http://vault.example:8200", "VAULT_TOKEN": "t", "VAULT_DEV_ALLOW_HTTP": "yes"},
+		"no scheme":     {"VAULT_ADDR": "vault.example:8200", "VAULT_TOKEN": "t"},
+	} {
+		var stdout, stderr bytes.Buffer
+		getenv := func(k string) string { return env[k] }
+		if code := run([]string{"--out", t.TempDir(), "--vault"}, &stdout, &stderr, getenv); code == 0 {
+			t.Fatalf("%s: --vault accepted VAULT_ADDR %q", name, env["VAULT_ADDR"])
+		}
+		if strings.Contains(stdout.String(), "Generating") {
+			t.Fatalf("%s: key generation started before the address was checked", name)
+		}
+		t.Logf("%s: refused: %s", name, strings.TrimSpace(stderr.String()))
+	}
 }

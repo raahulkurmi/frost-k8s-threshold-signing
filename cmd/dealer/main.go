@@ -20,6 +20,7 @@ import (
 
 	"frost-k8s-threshold-signing/internal/dealer"
 	"frost-k8s-threshold-signing/internal/prioritykey"
+	"frost-k8s-threshold-signing/internal/vaultclient"
 )
 
 func main() {
@@ -56,6 +57,12 @@ func ceremony(out string, bits, t, n int, useVault bool, mount string, stdout io
 	vaultAddr, vaultToken := getenv("VAULT_ADDR"), getenv("VAULT_TOKEN")
 	if useVault && (vaultAddr == "" || vaultToken == "") {
 		return errors.New("--vault requires VAULT_ADDR and VAULT_TOKEN")
+	}
+	if useVault {
+		// Audit E-1: https only (plain http only with VAULT_DEV_ALLOW_HTTP=1).
+		if err := vaultclient.CheckAddrEnv(vaultAddr, getenv); err != nil {
+			return err
+		}
 	}
 	// Refuse before spending minutes on keygen if any output already exists.
 	targets := []string{dealer.MetaFileName}

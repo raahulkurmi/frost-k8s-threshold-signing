@@ -129,3 +129,33 @@ func TestGuardKeepsCallerSettings(t *testing.T) {
 		t.Fatalf("Guard: %+v (caller client mutated: %v)", g, c.CheckRedirect != nil)
 	}
 }
+
+func TestCheckAddr(t *testing.T) {
+	for addr, want := range map[string]bool{ // want: accepted without the dev flag
+		"https://vault.example:8200":    true,
+		"https://10.0.0.5:8200/":        true,
+		"http://vault.example:8200":     false,
+		"vault.example:8200":            false,
+		"ftp://vault.example":           false,
+		"https://":                      false,
+		"https://user:pw@vault.example": false,
+		"":                              false,
+	} {
+		if err := vaultclient.CheckAddr(addr, false); (err == nil) != want {
+			t.Errorf("CheckAddr(%q) = %v, want accepted=%v", addr, err, want)
+		}
+	}
+	if err := vaultclient.CheckAddr("http://127.0.0.1:8200", true); err != nil {
+		t.Errorf("dev flag: %v", err)
+	}
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	if err := vaultclient.CheckAddrEnv("http://127.0.0.1:8200", env(nil)); err == nil {
+		t.Error("plain http accepted without the dev flag")
+	}
+	if err := vaultclient.CheckAddrEnv("http://127.0.0.1:8200", env(map[string]string{vaultclient.DevAllowHTTPEnv: "1"})); err != nil {
+		t.Errorf("dev flag 1: %v", err)
+	}
+	if err := vaultclient.CheckAddrEnv("https://vault.example", env(map[string]string{vaultclient.DevAllowHTTPEnv: "true"})); err == nil {
+		t.Error("dev flag value other than 1 accepted")
+	}
+}

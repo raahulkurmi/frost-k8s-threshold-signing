@@ -10,6 +10,8 @@
 //	VAULT_ADDR     Vault address; share read from <VAULT_MOUNT>/frost-k8s/signer-<SIGNER_ID>
 //	VAULT_TOKEN    required with VAULT_ADDR
 //	VAULT_MOUNT    optional, default "secret"
+//	VAULT_DEV_ALLOW_HTTP  optional, "1" permits a plain http:// VAULT_ADDR (local
+//	               development only); otherwise VAULT_ADDR must be https://
 //	POLICY_FILE    claims policy JSON
 //	AUDIT_LOG      audit log path (JSON lines)
 //	TLS_CERT, TLS_KEY   this signer's cert (SAN exactly DNS:signer-<SIGNER_ID>)
@@ -59,6 +61,7 @@ import (
 	"frost-k8s-threshold-signing/internal/prioritykey"
 	"frost-k8s-threshold-signing/internal/signer"
 	"frost-k8s-threshold-signing/internal/tlsconf"
+	"frost-k8s-threshold-signing/internal/vaultclient"
 )
 
 func main() {
@@ -123,6 +126,10 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
 	case shareFile != "" && vaultAddr != "":
 		return nil, errors.New("both SHARE_FILE and VAULT_ADDR are set; configure exactly one share source")
 	case vaultAddr != "":
+		// Audit E-1: https only (plain http only with VAULT_DEV_ALLOW_HTTP=1).
+		if err := vaultclient.CheckAddrEnv(vaultAddr, getenv); err != nil {
+			return nil, err
+		}
 		token, err := require(getenv, "VAULT_TOKEN")
 		if err != nil {
 			return nil, fmt.Errorf("VAULT_ADDR is set but %w", err)

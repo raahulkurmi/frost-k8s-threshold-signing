@@ -221,11 +221,34 @@ func TestSignerFailsClosed(t *testing.T) {
 		"no share source":     {func(e envMap) { delete(e, "SHARE_FILE") }, "no share source"},
 		"missing share file":  {func(e envMap) { e["SHARE_FILE"] = "/nonexistent/share-1.json" }, "no such file"},
 		"both share sources":  {func(e envMap) { e["VAULT_ADDR"] = "http://127.0.0.1:1" }, "configure exactly one"},
-		"vault without token": {func(e envMap) { delete(e, "SHARE_FILE"); e["VAULT_ADDR"] = "http://127.0.0.1:1" }, "VAULT_TOKEN is not set"},
+		"vault without token": {func(e envMap) { delete(e, "SHARE_FILE"); e["VAULT_ADDR"] = "https://127.0.0.1:1" }, "VAULT_TOKEN is not set"},
 		"vault unreachable": {func(e envMap) {
+			delete(e, "SHARE_FILE")
+			e["VAULT_ADDR"] = "https://127.0.0.1:1"
+			e["VAULT_TOKEN"] = "t"
+		}, "vault request"},
+		// Audit E-1: https only; plain http only with the explicit dev flag.
+		"vault plain http": {func(e envMap) {
 			delete(e, "SHARE_FILE")
 			e["VAULT_ADDR"] = "http://127.0.0.1:1"
 			e["VAULT_TOKEN"] = "t"
+		}, "uses plain http"},
+		"vault other scheme": {func(e envMap) {
+			delete(e, "SHARE_FILE")
+			e["VAULT_ADDR"] = "ftp://127.0.0.1:1"
+			e["VAULT_TOKEN"] = "t"
+		}, "must use https"},
+		"vault dev flag typo": {func(e envMap) {
+			delete(e, "SHARE_FILE")
+			e["VAULT_ADDR"] = "http://127.0.0.1:1"
+			e["VAULT_TOKEN"] = "t"
+			e["VAULT_DEV_ALLOW_HTTP"] = "true"
+		}, "only \"1\" is accepted"},
+		"vault http with dev flag": {func(e envMap) { // passes the scheme check, then fails to connect
+			delete(e, "SHARE_FILE")
+			e["VAULT_ADDR"] = "http://127.0.0.1:1"
+			e["VAULT_TOKEN"] = "t"
+			e["VAULT_DEV_ALLOW_HTTP"] = "1"
 		}, "vault request"},
 		"signer id 0":            {func(e envMap) { e["SIGNER_ID"] = "0" }, "outside [1,5]"},
 		"signer id 6":            {func(e envMap) { e["SIGNER_ID"] = "6" }, "outside [1,5]"},

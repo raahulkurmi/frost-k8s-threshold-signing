@@ -49,7 +49,7 @@ the wrong key, or a corrupted share, stops the signer from starting.
    ./dealer --out out/ --modulus-bits 2048 --t 3 --n 5
    ```
    Record the printed `kid` and fingerprints in the ceremony log. Two people should sign it.
-   **Vault variant:** `VAULT_ADDR=... VAULT_TOKEN=... ./dealer --out out/ --vault`. This writes
+   **Vault variant:** `VAULT_ADDR=https://... VAULT_TOKEN=... ./dealer --out out/ --vault` (`VAULT_ADDR` must be `https://`; plain http only with `VAULT_DEV_ALLOW_HTTP=1`, for local development; redirects to another host are refused; audit E-1). This writes
    `secret/frost-k8s/signer-<i>` and `secret/frost-k8s/priority-key` (KV v2) and puts only
    `public-meta.json` on disk. Use a
    token scoped to writing those paths and revoke it afterwards. In production, each signer
