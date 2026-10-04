@@ -440,15 +440,25 @@ Every fix commit names its finding (N83 freeze rule), and NOTES N84 lists them.
 | G-18 | med | **FIXED** | 01272b2, d23d0f4 | INDEPENDENCE §7C and NOTES N84: cause of the differing hashes not determined |
 | G-19 | med | **FIXED** (round 2) | 29868bd | `benchmark/derived.sh` → `derived.md` (7B coordinator CPU; lever hedge counts) from raw data; docs cite it |
 | A-1 | low | **FIXED** | (final evidence commit) | `reports/REPRO.md` replaced by the repro run on the final code (see below) |
-| C-4, C-5, C-6, C-8 | low | OPEN | – | – |
-| D-1 | low | OPEN | – | – |
-| E-4, E-5 | low | OPEN | – | – |
-| H-1, H-2 | low | OPEN (proposal below) | – | – |
+| C-4 | low | **FIXED** (round 3) | 2da5330 | `TestResponseRequestIDMustMatch`; mutation **X4: SURVIVED → CAUGHT** |
+| C-5 | low | **FIXED** (round 3) | 2da5330 | `TestOversizedResponseRejected`; mutation **X5: SURVIVED → CAUGHT** |
+| C-6 | low | **FIXED** (round 3) | 330113d, 54b1882 | bounded waits; root cause was `holdSlot`'s `sync.Once` blocking every later request behind the parked holder. Mutation **M13a: caught by six assertions in 62 s** (was a 30-minute package timeout) |
+| C-8 | low | **FIXED** (round 3) | 046ef34 | `internal/policy/edges_test.go`; gremlins `internal/policy`: **92 killed, 0 lived, 0 not covered** (was 74/15/3) |
+| D-1 | low | **FIXED** (round 3) | 046ef34 | `policy.num` refuses a quoted NumericDate; `TestPolicyRejectsQuotedNumericDates` (fails without the fix). e2e confirmation for real tokens: see "Final CI and repro, round 3" (REQ-a, REQ-c, E3, E4) |
+| E-4 | low | **FIXED** (round 3) | e1f0bf4 | `dealer.PrepareOutputDir`, cleanup of partial shares; `TestPrepareOutputDir`, `TestWriteShareFilesCleansUpOnFailure`, `TestRefusesSharedWritableOutputDir` (negative controls fail) |
+| E-5 | low | **FIXED** (ControlPath) + **ACCEPTED** (TOFU) (round 3) | 5517030 | control sockets in `~/.ssh/tk8s-cm` (0700). Accepted: `StrictHostKeyChecking=accept-new`, because freshly launched VMs' host keys cannot be pinned without console access; the first key is recorded, later changes refused (reason in `transport.sh`) |
+| H-1 | low | **FIXED** (round 3) | 9c88b02 | base images pinned by multi-arch index digest in all 4 Dockerfiles |
+| H-2 | low | **ACCEPTED** (round 3) | – | the 4 AWS scripts cannot be re-validated without cloud runs; adding `set -e` would change their failure behaviour untested |
 | H-3 | low | **FIXED** (round 2) | d26a5b5 | no released grpc fix (2026-10-04); acceptance extended to 2027-01-31 with justification; `scripts/govulncheck.sh` passes |
-| J-1, J-2 | low | OPEN | – | – |
+| J-1 | low | **FIXED** (round 3) | 9867652 | `.gitleaksignore` (6 public-kid false positives by fingerprint); `gitleaks git --log-opts=--all` now reports exactly the 4 real burned keys; HISTORY_PURGE §1 corrected |
+| J-2 | low | **ACCEPTED** (round 3) | – | the paths are inside verbatim evidence outputs; editing them would be a post-hoc change; the anonymized snapshot (HISTORY_PURGE §0a) strips them |
 | J-3 | low | **FIXED** (tree) | d23d0f4 | the name no longer appears in any tracked file, including these reports. It remains in the history of 0aac79c; removing it would need a history rewrite, which the audit rules forbid |
 | G-24, G-27, G-28 | low | **FIXED** (round 2, under the claims criterion) | 29868bd | THREAT_MODEL line ref; clock-skew provenance ('logs not retained'); CI e2e lines in `reports/gates/ci-e2e-run*.txt` |
-| G-20 … G-23, G-25, G-29 … G-35 | low | OPEN (proposal below) | – | – |
+| G-20, G-21, G-22, G-31 | low | **FIXED** (round 3) | 19f678e | NOTES N87 corrections, each re-derived from the summaries / `git show c46daba` |
+| G-23, G-25, G-29, G-32, G-35 | low | **FIXED** (round 3) | 19f678e | PRIORITY_ADMISSION_V2 §7/§8; CLAIMS_AUDIT row 9; KEY_CEREMONY; 7C POSTPROCESSING.md (summary.md unchanged); THREAT_MODEL |
+| G-30 | low | **FIXED** (round 3) | 9867652 | HISTORY_PURGE: `.summarize` added 9bb1f16, removed 6ebb013 |
+| G-33 | low | **ACCEPTED** (round 3) | – | the run-time summaries cannot be recovered; the regenerated ones reproduce byte-for-byte from raw data (Pass G); rule for future runs: keep `summary.run-time.md` |
+| G-34 | low | **ACCEPTED** (round 3) | – | same as J-2: a verbatim script-generated summary; stripped in the anonymized snapshot |
 | G-26 | low | **FIXED** | (final evidence commit) | REPRO.md replaced |
 | D-2, D-3, E-6, F-1, F-2, F-3, H-4, I-2, G-36 … G-44 | info | INFO | – | – |
 
@@ -551,3 +561,28 @@ Evidence: `mutation/rerun/*-round2.*`.
   - Its `make test` log includes `internal/vaultclient`, `cmd/grpc-proxy` and spike.
   - Artifact: `reports/repro/run-37202627639-7f10c65/`. `reports/REPRO.md` is now this run.
 - **Correction:** earlier text in this report, and the round-1 commit f4e6a32's message, said "20" e2e checks. The suite has 19; the text above is corrected. A commit message cannot be changed without rewriting history.
+
+---
+
+## Round 3 (approved 2026-10-05): low findings
+
+Applied exactly as proposed:
+- **Fixed:** C-4, C-5, C-6, C-8, D-1, E-4, E-5 (ControlPath), H-1, J-1, G-20, G-21, G-22, G-23, G-25, G-29, G-30, G-31, G-32, G-35.
+- **Accepted, with the reasons in the table above:** E-5 (TOFU), H-2, J-2, G-33, G-34.
+
+NOTES N87 records the corrections to earlier entries.
+
+**Mutation and gremlins re-runs (round 3)**, evidence in `mutation/rerun/*-round3.*` and `raw/C-gremlins-policy-round3.txt`:
+- **X4:** SURVIVED → CAUGHT (`TestResponseRequestIDMustMatch`).
+- **X5:** SURVIVED → CAUGHT (`TestOversizedResponseRejected`).
+- **M13a:** caught by `TestQueuedRequestCancelledByCallerComputesNoShare`, `TestRequestThatCannotFitIsShedImmediately`, `TestQueueCapEnforced`, `TestQueuedRequestThatFitsSucceeds`, `TestExpiredDeadlineNeverComputesShare` and `TestDeadlineHeaderIsCapped`, in 62 s. It was previously caught only by a 30-minute timeout.
+- **gremlins `internal/policy`:** 92 killed, 0 lived, 0 not covered (100 % efficacy, 100 % mutator coverage).
+
+**Every finding now has a status.**
+- 0 OPEN.
+- Critical/high: all fixed.
+- Medium: all fixed.
+- Low: fixed or accepted with a written reason.
+- Info: no action requested.
+
+The only surviving manual mutation is M3a, an unreachable defence-in-depth check documented in the code.

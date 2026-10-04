@@ -1,0 +1,13 @@
+mutation M13a  dir mut-r3b  start 2026-10-04T18:29:43Z
+unit rc=1 malicious rc=0 seconds=271
+failing tests:
+--- FAIL: TestDeadlineHeaderIsCapped
+--- FAIL: TestExpiredDeadlineNeverComputesShare
+--- FAIL: TestQueueCapEnforced
+--- FAIL: TestQueuedRequestCancelledByCallerComputesNoShare
+--- FAIL: TestQueuedRequestThatFitsSucceeds
+--- FAIL: TestRequestThatCannotFitIsShedImmediately
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	62.400s
+RESULT M13a CAUGHT

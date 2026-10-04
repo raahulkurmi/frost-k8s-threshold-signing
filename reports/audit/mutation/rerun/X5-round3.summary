@@ -1,0 +1,8 @@
+mutation X5  dir mut-r3  start 2026-10-04T17:33:22Z
+unit rc=1 malicious rc=0 seconds=147
+failing tests:
+--- FAIL: TestOversizedResponseRejected
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	39.351s
+RESULT X5 CAUGHT

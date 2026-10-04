@@ -1,0 +1,8 @@
+mutation X4  dir mut-r3  start 2026-10-04T17:30:51Z
+unit rc=1 malicious rc=0 seconds=150
+failing tests:
+--- FAIL: TestResponseRequestIDMustMatch
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	108.439s
+RESULT X4 CAUGHT
