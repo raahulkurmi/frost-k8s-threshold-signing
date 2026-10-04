@@ -1751,3 +1751,32 @@ Earlier entries are not rewritten; these corrections apply to them.
 - G-23, G-25, G-29, G-30, G-32, G-35: documentation.
 
 **Accepted with reasons (AUDIT.md):** H-2, J-2, G-33, G-34.
+
+### N88. Phase 12 audit complete
+The Phase 12 adversarial audit and its three approved fix rounds are complete.
+- **Final verified commit: `be4904a`.** On it, CI run 37225305132 passed every job: vet,
+  staticcheck, govulncheck, gitleaks, `make test` with T5 and the spike hazard tests, the image
+  check and the kind e2e on Kubernetes v1.36.5. The fresh-runner repro, run 37225310844, passed
+  in 817 s, with all 19 e2e checks green (`reports/REPRO.md`).
+- **Findings** (`reports/audit/AUDIT.md`, resolution column): 75 in total, no critical.
+  - 8 high: all fixed.
+  - 20 medium: all fixed.
+  - 30 low: fixed, or accepted with a written reason (E-5 trust on first use, H-2, J-2, G-33,
+    G-34).
+  - 17 info: no action requested.
+  - **0 open.**
+- **Exit criteria (all met):**
+  - zero open critical or high findings;
+  - all 17 required mutations caught, plus every extra mutation except M3a (an unreachable
+    defence-in-depth check, documented in the code);
+  - gremlins on `internal/policy`: 92 killed, 0 lived;
+  - no fuzz crash in 11 targets × 10 minutes;
+  - every claim sentence has evidence (`reports/audit/CLAIMS_RECHECK.md` §7);
+  - the fresh-clone repro passes.
+- **Still outside the repository, so unverified:** whether reviews 6B/6C contain points beyond
+  R1–R18 (the texts were never pasted), and counts that live only in the paper text.
+- **Not done, by decision:** git history is not rewritten (`reports/HISTORY_PURGE.md` §0). The
+  anonymized snapshot for double-blind review is planned in §0a but not created. The three
+  aborted result folders stay untracked (G-44).
+- The commit that adds this entry contains only documentation and evidence (this entry,
+  REPRO.md, AUDIT.md and the run artifact); it changes no code.

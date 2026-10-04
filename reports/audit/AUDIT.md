@@ -586,3 +586,15 @@ NOTES N87 records the corrections to earlier entries.
 - Info: no action requested.
 
 The only surviving manual mutation is M3a, an unreachable defence-in-depth check documented in the code.
+
+### Final CI and repro, round 3 (final code: `be4904a`)
+- **CI** run [37225305132](https://github.com/raahulkurmi/frost-k8s-threshold-signing/actions/runs/37225305132): **success**.
+  - vet, staticcheck, govulncheck, gitleaks: success.
+  - make test incl. T5 and spike: success.
+  - images + kind e2e (v1.36.5): success.
+- **Fresh-clone repro** run [37225310844](https://github.com/raahulkurmi/frost-k8s-threshold-signing/actions/runs/37225310844): **Overall PASS, 817 s**.
+  - Steps: make-test 391 s, make-check-images 40 s, make-e2e 338 s.
+  - e2e: all 19 checks PASS.
+  - Artifact: `reports/repro/run-37225310844-be4904a/`. `reports/REPRO.md` is now this run.
+- **D-1 confirmed with real tokens** (in both runs): REQ-a (kubelet-projected), REQ-c (pod-, node-, secret-bound TokenRequest), E3 (a pod's projected token) and E4 (controller-manager tokens) all PASS under the stricter NumericDate rule.
+- **The audit is complete:** NOTES N88.

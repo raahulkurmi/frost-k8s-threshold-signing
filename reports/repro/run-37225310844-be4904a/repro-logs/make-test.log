@@ -1,0 +1,136 @@
+make[1]: Entering directory '/home/runner/work/_temp/repo'
+go test -count=1 -timeout 30m ./...
+go: downloading google.golang.org/grpc v1.84.0
+go: downloading github.com/niclabs/tcrsa v0.0.5
+go: downloading google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
+go: downloading k8s.io/externaljwt v0.36.5
+go: downloading golang.org/x/time v0.16.0
+go: downloading github.com/go-jose/go-jose/v4 v4.1.5
+go: downloading gopkg.in/go-jose/go-jose.v2 v2.6.3
+go: downloading golang.org/x/net v0.59.0
+go: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800
+go: downloading golang.org/x/crypto v0.57.0
+go: downloading golang.org/x/sys v0.48.0
+go: downloading golang.org/x/text v0.42.0
+ok  	frost-k8s-threshold-signing/cmd/dealer	206.195s
+ok  	frost-k8s-threshold-signing/cmd/grpc-proxy	259.544s
+ok  	frost-k8s-threshold-signing/cmd/signer	77.953s
+?   	frost-k8s-threshold-signing/internal/audit	[no test files]
+ok  	frost-k8s-threshold-signing/internal/coordinator	82.739s
+ok  	frost-k8s-threshold-signing/internal/dealer	0.018s
+ok  	frost-k8s-threshold-signing/internal/grpcserver	99.279s
+?   	frost-k8s-threshold-signing/internal/jwtfmt	[no test files]
+?   	frost-k8s-threshold-signing/internal/keymeta	[no test files]
+?   	frost-k8s-threshold-signing/internal/keyshare	[no test files]
+ok  	frost-k8s-threshold-signing/internal/policy	0.011s
+ok  	frost-k8s-threshold-signing/internal/prioritykey	0.012s
+ok  	frost-k8s-threshold-signing/internal/signer	92.112s
+?   	frost-k8s-threshold-signing/internal/testutil	[no test files]
+?   	frost-k8s-threshold-signing/internal/tlsconf	[no test files]
+ok  	frost-k8s-threshold-signing/internal/vaultclient	0.013s
+?   	frost-k8s-threshold-signing/internal/wire	[no test files]
+ok  	frost-k8s-threshold-signing/test	112.614s
+?   	frost-k8s-threshold-signing/test/e2e/probe	[no test files]
+go test -count=1 -timeout 30m -tags testmalicious -run 'TestMaliciousSignerExcluded' -v ./test/
+=== RUN   TestMaliciousSignerExcluded
+testutil: generated 2048-bit 3-of-5 key in 16.165s
+=== RUN   TestMaliciousSignerExcluded/strict/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/strict/three_malicious
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=6f15087feaff72cca05ba117 signer_id=3 err="invalid signature share: invalid signature share with id 3"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=6f15087feaff72cca05ba117 signer_id=3 until=2026-10-04T18:56:34.020Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=6f15087feaff72cca05ba117 signer_id=1 err="invalid signature share: invalid signature share with id 1"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=6f15087feaff72cca05ba117 signer_id=1 until=2026-10-04T18:56:34.029Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=6f15087feaff72cca05ba117 signer_id=2 err="invalid signature share: invalid signature share with id 2"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=6f15087feaff72cca05ba117 signer_id=2 until=2026-10-04T18:56:34.039Z
+2026/10/04 18:46:34 ERROR sign failed request_id=6f15087feaff72cca05ba117 strategy=strict strategy_effective=strict fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]" share_verifications=5 quorum_impossible=false latency_ms=63.442
+    malicious_test.go:73: threshold not met: 2 valid shares, need 3; failures: [signer-3: invalid signature share: invalid signature share with id 3; signer-1: invalid signature share: invalid signature share with id 1; signer-2: invalid signature share: invalid signature share with id 2]
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=0d436d1b0a14ae10d357c81a signer_id=3 err="invalid signature share: invalid signature share with id 3"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=0d436d1b0a14ae10d357c81a signer_id=3 until=2026-10-04T18:56:34.084Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=0d436d1b0a14ae10d357c81a signer_id=1 err="invalid signature share: invalid signature share with id 1"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=0d436d1b0a14ae10d357c81a signer_id=1 until=2026-10-04T18:56:34.084Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=0d436d1b0a14ae10d357c81a signer_id=2 err="invalid signature share: invalid signature share with id 2"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=0d436d1b0a14ae10d357c81a signer_id=2 until=2026-10-04T18:56:34.085Z
+2026/10/04 18:46:34 ERROR sign failed request_id=0d436d1b0a14ae10d357c81a strategy=strict strategy_effective=strict fanout=all signers_contacted=5 valid_shares=0 failures="[{SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]" share_verifications=4 quorum_impossible=true latency_ms=45.098
+    malicious_test.go:86: abort: threshold not met: 0 valid shares, need 3; failures: [signer-3: invalid signature share: invalid signature share with id 3; signer-1: invalid signature share: invalid signature share with id 1; signer-2: invalid signature share: invalid signature share with id 2]
+=== RUN   TestMaliciousSignerExcluded/optimistic/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/optimistic/three_malicious
+2026/10/04 18:46:34 WARN optimistic combine failed final verification; verifying shares individually request_id=8ab52958975e35ee4e9a856f err="crypto/rsa: verification error"
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=8ab52958975e35ee4e9a856f signer_id=2 err="invalid signature share with id 2"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=8ab52958975e35ee4e9a856f signer_id=2 until=2026-10-04T18:56:34.189Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=8ab52958975e35ee4e9a856f signer_id=1 err="invalid signature share with id 1"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=8ab52958975e35ee4e9a856f signer_id=1 until=2026-10-04T18:56:34.200Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=8ab52958975e35ee4e9a856f signer_id=3 err="invalid signature share with id 3"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=8ab52958975e35ee4e9a856f signer_id=3 until=2026-10-04T18:56:34.210Z
+2026/10/04 18:46:34 ERROR sign failed request_id=8ab52958975e35ee4e9a856f strategy=optimistic strategy_effective=optimistic fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3}]" share_verifications=5 quorum_impossible=false latency_ms=67.073
+    malicious_test.go:73: threshold not met: 2 valid shares, need 3; failures: [signer-2: invalid signature share: invalid signature share with id 2; signer-1: invalid signature share: invalid signature share with id 1; signer-3: invalid signature share: invalid signature share with id 3]
+2026/10/04 18:46:34 WARN optimistic combine failed final verification; verifying shares individually request_id=ac24047f8fdc16bc15e23a95 err="crypto/rsa: verification error"
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=ac24047f8fdc16bc15e23a95 signer_id=2 err="invalid signature share with id 2"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=ac24047f8fdc16bc15e23a95 signer_id=2 until=2026-10-04T18:56:34.256Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=ac24047f8fdc16bc15e23a95 signer_id=3 err="invalid signature share with id 3"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=ac24047f8fdc16bc15e23a95 signer_id=3 until=2026-10-04T18:56:34.256Z
+2026/10/04 18:46:34 WARN excluded invalid signature share request_id=ac24047f8fdc16bc15e23a95 signer_id=1 err="invalid signature share with id 1"
+2026/10/04 18:46:34 WARN signer marked suspect: its shares are verified before combining request_id=ac24047f8fdc16bc15e23a95 signer_id=1 until=2026-10-04T18:56:34.267Z
+2026/10/04 18:46:34 ERROR sign failed request_id=ac24047f8fdc16bc15e23a95 strategy=optimistic strategy_effective=optimistic fanout=all signers_contacted=5 valid_shares=1 failures="[{SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:1 Reason:invalid signature share: invalid signature share with id 1}]" share_verifications=4 quorum_impossible=true latency_ms=57.077
+    malicious_test.go:86: abort: threshold not met: 1 valid shares, need 3; failures: [signer-2: invalid signature share: invalid signature share with id 2; signer-3: invalid signature share: invalid signature share with id 3; signer-1: invalid signature share: invalid signature share with id 1]
+--- PASS: TestMaliciousSignerExcluded (16.55s)
+    --- PASS: TestMaliciousSignerExcluded/strict/one_malicious (0.06s)
+    --- PASS: TestMaliciousSignerExcluded/strict/three_malicious (0.11s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/one_malicious (0.06s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/three_malicious (0.13s)
+PASS
+ok  	frost-k8s-threshold-signing/test	17.513s
+cd spike && go test -count=1 -timeout 30m -v .
+=== RUN   TestTcrsaModulusIsBitSizeMinusOne
+    threshold_rsa_test.go:230: NewKey(512) -> 511-bit modulus (3/3 runs); so NewKey(2049) is used for a 2048-bit modulus
+--- PASS: TestTcrsaModulusIsBitSizeMinusOne (1.48s)
+=== RUN   TestKeygen
+    threshold_rsa_test.go:236: keygen: tcrsa.NewKey(2049, k=3, l=5) took 52.79s; modulus = 2048 bits, e = 65537
+--- PASS: TestKeygen (52.79s)
+=== RUN   TestRS256JWTVerifies
+    threshold_rsa_test.go:257: token verified by rsa.VerifyPKCS1v15, go-jose v2.6.3, go-jose v4 (sig 256 bytes)
+--- PASS: TestRS256JWTVerifies (0.07s)
+=== RUN   TestAllThresholdSubsetsIdentical
+    threshold_rsa_test.go:279: subset [1 2 3]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [1 2 4]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [1 2 5]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [1 3 4]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [1 3 5]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [1 4 5]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [2 3 4]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [2 3 5]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [2 4 5]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:279: subset [3 4 5]: sha256(sig)=1f84d9499765bb9a388ab235214a54fcfa2a433c05209ab6a23767567c00fdb0
+    threshold_rsa_test.go:287: all 10 subsets byte-identical
+--- PASS: TestAllThresholdSubsetsIdentical (0.85s)
+=== RUN   TestBelowThresholdFails
+    threshold_rsa_test.go:320: all 10 pairs: Join refuses; forced K=2 combine yields invalid signature
+--- PASS: TestBelowThresholdFails (0.24s)
+=== RUN   TestTamperedShareRejected
+    threshold_rsa_test.go:353: relabelled Id 2->3: rejected (invalid signature share with id 3)
+    threshold_rsa_test.go:353: zero Xi: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: share for other input: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: flipped Xi: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: flipped C: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:353: flipped Z: rejected (invalid signature share with id 2)
+    threshold_rsa_test.go:370: Join with an unverified tampered share: no error from Join, final signature INVALID (library does not self-check)
+    threshold_rsa_test.go:387: bad share from id 2 excluded; ids {1,3,4} -> valid signature
+--- PASS: TestTamperedShareRejected (0.16s)
+=== RUN   TestLibraryHazards
+    threshold_rsa_test.go:408: HAZARD: SigShare.Verify panics on out-of-range Id=0 -> coordinator must bounds-check Id in [1,n] before Verify
+    threshold_rsa_test.go:408: HAZARD: SigShare.Verify panics on out-of-range Id=6 -> coordinator must bounds-check Id in [1,n] before Verify
+    threshold_rsa_test.go:417: HAZARD: Join accepts duplicate Ids {1,1,2} (err=<nil>) and yields an invalid signature -> coordinator must dedupe by Id
+--- PASS: TestLibraryHazards (0.02s)
+=== RUN   TestTimings
+    threshold_rsa_test.go:468: TIMINGS (modulus 2048 bits, N=20, single goroutine, linux/amd64, 4 CPUs, go1.27.1):
+    threshold_rsa_test.go:469:   keygen (safe primes, trusted dealer): 52.79s
+    threshold_rsa_test.go:470:   per-share sign:                       11.931ms
+    threshold_rsa_test.go:471:   per-share verify:                     9.558ms
+    threshold_rsa_test.go:472:   combine (Join, 3 shares):             374µs
+    threshold_rsa_test.go:473:   final verify rsa.VerifyPKCS1v15:      37µs
+    threshold_rsa_test.go:474:   final verify go-jose v2 parse+verify: 79µs
+--- PASS: TestTimings (1.30s)
+PASS
+ok  	github.com/raahulkurmi/frost-k8s-threshold-signing/spike	56.911s
+make[1]: Leaving directory '/home/runner/work/_temp/repo'
