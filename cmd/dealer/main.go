@@ -64,6 +64,10 @@ func ceremony(out string, bits, t, n int, useVault bool, mount string, stdout io
 			return err
 		}
 	}
+	// Audit E-4: refuse a group- or world-writable output directory before keygen.
+	if err := dealer.PrepareOutputDir(out); err != nil {
+		return err
+	}
 	// Refuse before spending minutes on keygen if any output already exists.
 	targets := []string{dealer.MetaFileName}
 	if !useVault {

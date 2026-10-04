@@ -421,3 +421,26 @@ func TestVaultModeRequiresHTTPS(t *testing.T) {
 		t.Logf("%s: refused: %s", name, strings.TrimSpace(stderr.String()))
 	}
 }
+
+// TestRefusesSharedWritableOutputDir (audit E-4): the dealer refuses a group-
+// or world-writable --out directory before generating anything.
+func TestRefusesSharedWritableOutputDir(t *testing.T) {
+	t.Parallel()
+	dir := filepath.Join(t.TempDir(), "out")
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"--out", dir}, &stdout, &stderr, noEnv); code == 0 {
+		t.Fatal("dealer accepted a world-writable output directory")
+	}
+	if strings.Contains(stdout.String(), "Generating") {
+		t.Fatal("key generation started before the directory was checked")
+	}
+	if !strings.Contains(stderr.String(), "writable by group or others") {
+		t.Fatalf("stderr %q", stderr.String())
+	}
+}

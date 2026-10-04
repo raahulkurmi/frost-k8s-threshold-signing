@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -112,7 +113,7 @@ func writeExclusive(path string, b []byte, mode os.FileMode) error {
 
 // WriteMeta writes public-meta.json (0644) into dir. It never overwrites.
 func WriteMeta(dir string, k *Key) (Output, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := PrepareOutputDir(dir); err != nil {
 		return Output{}, err
 	}
 	b, err := marshal(k.Meta)
@@ -127,11 +128,19 @@ func WriteMeta(dir string, k *Key) (Output, error) {
 }
 
 // WriteShareFiles writes share-<i>.json (0600) into dir, one share per file.
-func WriteShareFiles(dir string, k *Key) ([]Output, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+func WriteShareFiles(dir string, k *Key) (_ []Output, err error) {
+	if err := PrepareOutputDir(dir); err != nil {
 		return nil, err
 	}
 	var outs []Output
+	// Audit E-4: a failed ceremony leaves no secret share behind.
+	defer func() {
+		if err != nil {
+			for _, o := range outs {
+				_ = os.Remove(o.Name)
+			}
+		}
+	}()
 	for _, s := range k.Shares {
 		b, err := marshal(s)
 		if err != nil {
@@ -146,11 +155,32 @@ func WriteShareFiles(dir string, k *Key) ([]Output, error) {
 	return outs, nil
 }
 
+// PrepareOutputDir creates dir (mode 0700) if it does not exist. An existing
+// dir must be a real directory (not a symlink) that neither group nor others
+// can write: in a shared-writable directory another local user could replace
+// or delete key files between the ceremony and their distribution (audit E-4).
+func PrepareOutputDir(dir string) error {
+	fi, err := os.Lstat(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return os.MkdirAll(dir, 0o700)
+	}
+	if err != nil {
+		return err
+	}
+	if fi.Mode()&fs.ModeSymlink != 0 || !fi.IsDir() {
+		return fmt.Errorf("output %s is not a directory", dir)
+	}
+	if perm := fi.Mode().Perm(); perm&0o022 != 0 {
+		return fmt.Errorf("output directory %s is writable by group or others (mode %04o); use a directory only you can write (0700)", dir, perm)
+	}
+	return nil
+}
+
 // WritePriorityKey writes priority.key (0600) into dir: the signers' shared
 // admission-priority key K_prio (N76). Every signer gets a copy; the
 // coordinator never does. It never overwrites.
 func WritePriorityKey(dir string, k *Key) (Output, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := PrepareOutputDir(dir); err != nil {
 		return Output{}, err
 	}
 	f, err := prioritykey.Generate(k.Meta.KID)
