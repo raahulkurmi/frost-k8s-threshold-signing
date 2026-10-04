@@ -469,3 +469,15 @@ build tag `auditfuzz`, so the product gate does not build audit tooling. Seeds:
 - **Fuzz crashes:** 0.
 - **Every claim sentence has evidence:** **not yet**. The claim findings G-7, G-8, G-11–G-15 and G-19 are outside the approved scope and remain OPEN.
 - **Fresh-clone repro:** see "Final CI and repro".
+
+### Final CI and repro
+- **CI** run [37188818034](https://github.com/raahulkurmi/frost-k8s-threshold-signing/actions/runs/37188818034) on `5fdf63d`: **success**.
+  - vet, staticcheck, govulncheck, gitleaks: success.
+  - make test (T1–T12, T5 testmalicious, spike hazard tests): success.
+  - images + kind e2e (Kubernetes v1.36.5): success.
+- **Fresh-clone repro** run [37188822909](https://github.com/raahulkurmi/frost-k8s-threshold-signing/actions/runs/37188822909) on `5fdf63d`: **Overall PASS, 841 s**.
+  - Steps: install-base-packages, docker, kind/kubectl/gitleaks/go, node image, make-test 572 s, make-check-images 38 s, make-e2e 179 s.
+  - e2e: SETUP, E1–E8, REQ-a–d, N1–N3, TIMING, N76-ID, N76-PRIO all PASS; `REQ-d … quorum_abort=false (default, N82)`.
+  - Its `make test` log shows `cmd/grpc-proxy`, `internal/vaultclient` and spike (`TestLibraryHazards`, `TestTamperedShareRejected`) passing.
+  - Artifact: `reports/repro/run-37188822909-5fdf63d/`. `reports/REPRO.md` is now this run (A-1, G-26 fixed).
+- The commit after 5fdf63d changes only REPRO.md, the repro artifact and this section (documentation and evidence, no code). CI for it is recorded in the final report.
