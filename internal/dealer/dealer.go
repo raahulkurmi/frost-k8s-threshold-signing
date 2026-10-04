@@ -25,6 +25,7 @@ import (
 	"frost-k8s-threshold-signing/internal/keymeta"
 	"frost-k8s-threshold-signing/internal/keyshare"
 	"frost-k8s-threshold-signing/internal/prioritykey"
+	"frost-k8s-threshold-signing/internal/vaultclient"
 )
 
 // MetaFileName and ShareFileName are the output file names.
@@ -173,9 +174,7 @@ func WriteVault(ctx context.Context, client *http.Client, addr, token, mount str
 	if addr == "" || token == "" || mount == "" {
 		return nil, errors.New("vault: VAULT_ADDR, VAULT_TOKEN and mount are all required")
 	}
-	if client == nil {
-		client = &http.Client{Timeout: 10 * time.Second}
-	}
+	client = vaultclient.Guard(client, 10*time.Second) // audit E-1: no cross-host redirects
 	var outs []Output
 	for _, s := range k.Shares {
 		payload, err := json.Marshal(map[string]any{"data": s})
@@ -211,9 +210,7 @@ func WritePriorityKeyVault(ctx context.Context, client *http.Client, addr, token
 	if addr == "" || token == "" || mount == "" {
 		return Output{}, errors.New("vault: VAULT_ADDR, VAULT_TOKEN and mount are all required")
 	}
-	if client == nil {
-		client = &http.Client{Timeout: 10 * time.Second}
-	}
+	client = vaultclient.Guard(client, 10*time.Second) // audit E-1: no cross-host redirects
 	f, err := prioritykey.Generate(k.Meta.KID)
 	if err != nil {
 		return Output{}, err

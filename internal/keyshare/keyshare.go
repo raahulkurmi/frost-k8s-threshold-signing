@@ -22,6 +22,7 @@ import (
 	"github.com/niclabs/tcrsa"
 
 	"frost-k8s-threshold-signing/internal/keymeta"
+	"frost-k8s-threshold-signing/internal/vaultclient"
 )
 
 // FormatVersion is the share-N.json schema version.
@@ -132,7 +133,7 @@ func LoadFromVault(ctx context.Context, addr, token, mount string, meta *keymeta
 		return nil, err
 	}
 	req.Header.Set("X-Vault-Token", token)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := vaultclient.New(10 * time.Second).Do(req) // audit E-1: no cross-host redirects
 	if err != nil {
 		return nil, fmt.Errorf("keyshare: vault request: %w", err)
 	}
