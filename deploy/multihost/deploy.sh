@@ -40,11 +40,12 @@ id_vm()   { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { s="${s#
 id_port() { local s; for s in $SIGNERS; do [[ "${s%%:*}" == "$1" ]] && { echo "${s##*:}"; return; }; done; }
 vm_ids()  { local s out=""; for s in $SIGNERS; do local r="${s#*:}"; [[ "${r%%:*}" == "$1" ]] && out="$out ${s%%:*}"; done; echo "$out"; }
 SIGNER_VMS="$(for s in $SIGNERS; do r="${s#*:}"; echo "${r%%:*}"; done | sort -u | tr '\n' ' ')"
-for id in 1 2 3 4 5; do
-  n=0; for s in $SIGNERS; do [[ "${s%%:*}" == "$id" ]] && n=$((n + 1)); done
-  [[ $n -eq 1 ]] || die "signer $id must be listed exactly once in $TOPO (found $n)"
-done
-[[ -z "$(vm_ids "$COORD_VM")" ]] || die "the coordinator host must not hold any share"
+# Audit E-2: exactly one listing per signer, no share on the coordinator host,
+# and at most t-1 shares on any host (deploy/multihost/topology-guard.sh).
+DEALER_THRESHOLD=3   # cmd/dealer default (3-of-5); checked against public-meta.json after the ceremony
+# shellcheck disable=SC1091
+source deploy/multihost/topology-guard.sh
+why="$(topology_guard "$COORD_VM" "$DEALER_THRESHOLD" "$SIGNERS")" || die "unsafe topology in $TOPO: $why"
 
 COORD_IP="$(vm_ip "$COORD_VM")"; [[ -n "$COORD_IP" ]] || die "no IP for $COORD_VM"
 VM_IP_LIST=""
@@ -80,6 +81,7 @@ scripts/gen-certs.sh --out "$W/pki" >/dev/null
 go build -o "$W/dealer" ./cmd/dealer
 "$W/dealer" --out "$W/keys" | sed 's#'"$W"'#<ceremony>#'
 KID="$(jq -r .kid "$W/keys/public-meta.json")"
+[[ "$(jq -r .threshold "$W/keys/public-meta.json")" == "$DEALER_THRESHOLD" ]] || die "dealer threshold differs from DEALER_THRESHOLD=$DEALER_THRESHOLD used by the topology guard (audit E-2)"
 
 # --- 3. stage + ship per signer host, one assignment each ---
 stage_host() { # vm
