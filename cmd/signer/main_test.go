@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/niclabs/tcrsa"
 
 	"frost-k8s-threshold-signing/internal/keyshare"
 	"frost-k8s-threshold-signing/internal/prioritykey"
@@ -257,4 +260,49 @@ func metaWithExtra(t *testing.T, src string) string {
 	m["private_key"] = "x"
 	out, _ := json.Marshal(m)
 	return writeTemp(t, string(out))
+}
+
+// TestShareFileMustNameExactlyOneFile (audit C-2, I4): SHARE_FILE names one
+// regular file holding this signer's share. A list, a directory or a glob
+// fails closed, and a successful load yields exactly one share, whose index
+// is SIGNER_ID. Mutation M10b (a loader that accepts several share files)
+// must fail this test.
+func TestShareFileMustNameExactlyOneFile(t *testing.T) {
+	fx := testutil.Key(t)
+	for name, v := range map[string]string{
+		"comma list":   fx.SharePath(1) + "," + fx.SharePath(2),
+		"comma list 3": fx.SharePath(1) + "," + fx.SharePath(2) + "," + fx.SharePath(3),
+		"directory":    fx.Dir,
+		"glob":         filepath.Join(fx.Dir, "share-*.json"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			e := baseEnv(t, fx, 1)
+			e["SHARE_FILE"] = v
+			if s, err := load(context.Background(), e.get); err == nil {
+				t.Fatalf("SHARE_FILE=%q loaded (share %d); want refusal", v, s.Share.Id)
+			}
+		})
+	}
+	s, err := load(context.Background(), baseEnv(t, fx, 3).get)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Share == nil || int(s.Share.Id) != 3 {
+		t.Fatalf("loaded share %+v, want index 3", s.Share)
+	}
+	// Structural: settings can hold one share and nothing else share-typed.
+	n := 0
+	st := reflect.TypeOf(settings{})
+	shareT := reflect.TypeOf((*tcrsa.KeyShare)(nil))
+	for i := 0; i < st.NumField(); i++ {
+		ft := st.Field(i).Type
+		if ft == shareT {
+			n++
+		} else if (ft.Kind() == reflect.Slice || ft.Kind() == reflect.Array || ft.Kind() == reflect.Map) && ft.Elem() == shareT {
+			t.Fatalf("settings.%s can hold several shares", st.Field(i).Name)
+		}
+	}
+	if n != 1 {
+		t.Fatalf("settings has %d share fields, want exactly 1", n)
+	}
 }
