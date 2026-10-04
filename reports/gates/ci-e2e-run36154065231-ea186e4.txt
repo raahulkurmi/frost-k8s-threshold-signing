@@ -1,0 +1,4 @@
+# e2e lines of CI run 36154065231 (commit ea186e4, 2026-09-25), extracted with
+# gh run view 36154065231 --log | grep -E 'PASS  SETUP|E2E: '  (audit G-28)
+PASS  SETUP  apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+E2E: PASS

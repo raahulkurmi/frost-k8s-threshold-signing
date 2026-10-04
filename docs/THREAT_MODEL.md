@@ -4,7 +4,8 @@
 > `cmd/grpc-proxy`, `cmd/signer`; ceremony `cmd/dealer`). The abandoned FROST prototype
 > (`legacy/frost/`) is out of scope except where the claims audit refers to it.
 > Test IDs refer to `test/`, `internal/*/…_test.go`, `test/e2e/run.sh` (E*, N*, REQ-*),
-> `test/e2e/multihost.sh` (L*), and Phase 9's compromise tests (C*).
+> `test/e2e/multihost.sh` (L*), and the Phase 9 compromise scenarios (C*), which are mapped to
+> existing tests in §7 (no separate adversarial test code).
 
 ## 0. Assets and actors
 
@@ -13,7 +14,7 @@
 | 5 secret shares (`share-<i>.json`) | one per signer host, `0600`, owned by that signer's OS user | any 3 can sign anything |
 | The full RSA private key | only in the dealer's memory during the ceremony | signs anything, forever |
 | Group public key + share verification keys (`public-meta.json`) | coordinators, signers, kube-apiserver (via FetchKeys) | public; integrity matters |
-| mTLS keys: `coordinator`, `coordinator-grpc`, `lb`, `signer-<i>`; the CA key | coordinator host / nginx / each signer host; CA key only on the dealer machine | authenticate each hop |
+| mTLS keys: `coordinator-<k>` (one per coordinator replica, N76), `coordinator-grpc`, `lb`, `signer-<i>`; the CA key | coordinator host / nginx / each signer host; CA key only on the dealer machine | authenticate each hop |
 | Issued tokens | clients, pods | bearer credentials until `exp` |
 
 Actors: kube-apiserver (the only intended Sign caller), nginx, 3 coordinators, 5 signers,
@@ -32,7 +33,7 @@ So the set of callers must be as small as the deployment allows.
 |---|---|---|---|---|
 | kube-apiserver → nginx | Unix socket `run/signer.sock`, bind-mounted into the kind control-plane node at `/var/run/frost-k8s/signer.sock` | Filesystem permissions on the **parent directory**: `run/` is **`root:root 0700`**. nginx always chmods a unix listening socket to 0666 (`src/core/ngx_connection.c`), so the socket's own mode is not a control | **Only root** on the VM host or on the control-plane node (kube-apiserver runs as root). Non-root users are refused. There is **no TCP listener** | N2 (directory-mode check plus a non-root connect attempt), `deploy/nginx-grpc.conf` (only `listen unix:`) |
 | nginx → coordinator (×3) | TCP 9090 on `lb-net` (`172.30.1.0/24`) | **mTLS**. nginx presents SAN `lb` (clientAuth). Each coordinator presents SAN `coordinator-grpc` (serverAuth). The coordinator accepts **only** a client cert with exactly `DNS:lb` from the deployment CA | Only containers attached to `lb-net`: nginx, the coordinators and e2e probe containers. Even on `lb-net`, a caller without the `lb` key is refused at TLS | N1, `TestTCPListenerRequiresLBClientCert`, T8 (no plaintext TCP mode exists) |
-| coordinator → signer (×5) | TCP 8443 on `signer-net` (`172.30.2.0/24`) | mTLS. The coordinator presents SAN `coordinator`, and each signer presents `signer-<i>`, pinned per endpoint | Only containers on `signer-net`: coordinators and signers. **nginx is not on `signer-net`** | N3, `TestTLSRejectsClientWithoutCoordinatorSAN`, `TestShareIDBoundToMTLSIdentity` |
+| coordinator → signer (×5) | TCP 8443 on `signer-net` (`172.30.2.0/24`) | mTLS. Each coordinator replica presents its own SAN `coordinator-<k>` (it mounts only its own key; signers accept only that canonical form, N76), and each signer presents `signer-<i>`, pinned per endpoint | Only containers on `signer-net`: coordinators and signers. **nginx is not on `signer-net`** | N3, `TestTLSRejectsClientWithoutCoordinatorSAN`, `TestShareIDBoundToMTLSIdentity` |
 | VM host → any container | none | n/a | Nobody. Both networks are `internal` with `com.docker.network.bridge.inhibit_ipv4=true`, so the host has no address on either bridge and **no port is published** | N2 (`ss -tlnp` plus a connect attempt to every listening port of every container) |
 
 **Remaining reachability (stated plainly):**
@@ -43,8 +44,9 @@ So the set of callers must be as small as the deployment allows.
 - **Root on the VM host, or on the kind control-plane node**, can open the Unix socket, or
   exec into a coordinator and use its `lb`-facing listener with the mounted certs. Root on
   the host is also root over every container, share and key on this single host. This is
-  the "single host" limitation: the reference deployment has **no signer independence**
-  (Phase 7B).
+  the "single host" limitation: the reference deployment has **no signer independence**.
+  The Level 1 and Level 2 multi-host deployments are described in §6 and
+  `reports/INDEPENDENCE.md`.
 - **Anyone holding the `lb` private key** and attached to `lb-net` can call Sign. The key is
   mounted only into the nginx container.
 - **A caller that can reach Sign gets tokens for policy-compliant claims** (the online
@@ -91,7 +93,9 @@ wrong clocks, issuance stops.
 This was observed in Phase 7B (NOTES N44). After the host slept, the signer VMs resumed
 with clocks up to **39,124 s (about 10.9 h)** behind until systemd-timesyncd stepped them.
 During that window the affected signers refused every request with `iat … is …s from
-signer clock`. The policy behaved correctly; the cost was availability.
+signer clock`. The policy behaved correctly; the cost was availability. (Evidence: the
+signers' audit logs as read at the time and recorded in NOTES N44. Those audit logs were
+**not retained** in the repository, so the figures cannot be re-derived here; audit G-27.)
 
 Operational requirement: **every signer needs reliable time synchronisation** (chrony
 or NTP, stepping allowed at start/resume, with monitoring and alerting on offset). After a
@@ -181,7 +185,7 @@ reading its source and testing it (NOTES N3, N4, N5, N21):
 |---|---|---|
 | Single host (`make e2e`) | 5 containers on one VM | **none**: one kernel, one Docker, one operator |
 | Level 1 multi-host (`test/e2e/multihost.sh`) | native binaries on 3 VMs (2+2+1), per-signer OS users, hardened systemd, per-host firewalls | **multi-VM on one physical host**: separation of processes, users and networks (L1–L5), not of hardware, operator, software or dealer ([reports/INDEPENDENCE.md](../reports/INDEPENDENCE.md)) |
-| Level 2 (separate regions/providers) | – | **not done** |
+| Level 2 (Phase 7B, `test/e2e/multihost.sh` over ssh) | native binaries, one signer per AWS region (5 regions), coordinator host in ap-south-1 holding no share | **5 regions, one provider, one account, one operator, one build, one dealer**: removes the single physical host, not the shared account, operator, software or dealer. L1, L3–L5 and the coordinator-host e2e PASS; L2 PASS only on a re-run whose rule was written after a network drop (N60, N84) ([reports/INDEPENDENCE.md](../reports/INDEPENDENCE.md)) |
 
 ## 7. Attacker capability → what they get → evidence
 
@@ -212,7 +216,7 @@ E1–E8 (`test/e2e/run.sh`), L1–L5 (`test/e2e/multihost.sh`); named Go tests a
 | Corrupted (garbage) share | T5 `TestMaliciousSignerExcluded` (`-tags testmalicious`: signer returns a well-formed but corrupted share; 1 malicious → excluded, attributed by `signer_id` in result and log, token verifies; 3 malicious → `ThresholdError`, each attributed), strict and optimistic. `TestMaliciousShareExcludedAndAttributed` (response rewritten in transit, `xi` byte flipped), `TestThreeMaliciousFails`; spike `TestTamperedShareRejected` (library level: a tampered share fails `Verify`) | tested |
 | Share computed for a different input | spike `TestTamperedShareRejected` case "share for other input": a genuine share over a different signing input fails `SigShare.Verify` (the check the coordinator runs on every share in strict mode). Not exercised end to end through the coordinator | tested at library level; **coordinator path not separately tested** |
 | Spoofed Id | `TestShareIDBoundToMTLSIdentity` (R-b: response claims another signer's id; endpoint pointed at another signer's cert), `TestJoinOutOfRangeIDs` (R-b: out-of-range and duplicate Ids stopped before `Join`), `TestNewRejectsBadEndpoints` (ids 0 and 6) | tested |
-| Oversized payload | the coordinator reads at most `wire.MaxResponseBytes`+1 (`internal/coordinator/coordinator.go:485`); no test sends an oversized response | **not separately tested** |
+| Oversized payload | the coordinator reads at most `wire.MaxResponseBytes`+1 (`internal/coordinator/coordinator.go:644-652`; audit G-24); no test sends an oversized response | **not separately tested** |
 | Slow response / never answers | T10 `TestDeadlineRespected` (`test/`: 3 signers delayed 30 s, error within deadline + 200 ms), `internal/coordinator` `TestDeadlineRespected` (error names "no response before deadline") | tested (delayed response) |
 | Slow-loris (bytes trickled below the deadline) | none | **not separately tested** |
 | Coordinator never panics / never hangs past deadline | the tests above assert return within the deadline; no fuzzing | tested for the listed inputs only |
@@ -255,7 +259,7 @@ private material in any image layer; the negative control is in
 `reports/gates/gate6-t13-negative-control.txt`), L4 (the multihost coordinator host holds no
 share file). With no share and no private key present, there is no offline signing path.
 *Not separately tested:* a scan of a `docker export` of a *running* coordinator container.
-The mTLS `lb`/`coordinator` keys do give
+The mTLS `lb`/`coordinator-<k>` keys do give
 network access while they remain valid, but no signing capability without honest signers
 (C2).
 
@@ -286,12 +290,14 @@ captured request to a live signer.
 work per signer. Configured limit (`deploy/policy.json`): **200 requests/s, burst 400
 per signer** (one limiter per signer process, shared by all callers), plus
 `SIGNER_MAX_CONCURRENT` (default NumCPU) and `SIGNER_MAX_QUEUE` 64. What a legitimate
-cluster needs: **not measured**. The only observed rates are the preliminary Level 1
-benchmarks (≤ 22 successful req/s at the coordinator), which are far below the limit. A
+cluster needs: **not measured**. In the final Phase 7C benchmark the threshold system's
+throughput plateau was ≈ 68–70 tokens/s optimistic and ≈ 48–49 strict (`benchmark/results/20260927T131349Z-73be90f-7C/summary.md`);
+with fan-out all every signer receives every request, so ≈ 70 requests/s per signer, far below the
+limit. Rate-limit denials were observed only in the deliberately CPU-capped stress test (N73). A
 flood from a compromised coordinator therefore reaches the admission limit (CPU) before
 the rate limit, and it denies service to legitimate requests too (availability only).
 
-**N76 additions (implemented; evaluation pending).** Each coordinator replica has its
+**N76 additions (implemented; evaluated N78/N81: priority admission not recommended, off by default).** Each coordinator replica has its
 own client certificate (`coordinator-<k>`, signers accept only that canonical form:
 `TestTLSRejectsClientWithoutCoordinatorSAN`), and the signers cap a caller's deadline at
 4 s (`TestDeadlineHeaderIsCapped`). With `SIGNER_ADMISSION=priority` a signer admits by

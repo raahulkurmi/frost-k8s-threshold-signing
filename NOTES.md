@@ -1666,3 +1666,40 @@ entries below are **not rewritten**; these corrections apply to them.
 - `.gitignore`: `reports/audit/` is tracked.
 
 The resolution of every finding is the last column of `reports/audit/AUDIT.md`.
+
+### N85. Phase 12 audit, second round: claim corrections (G-7, G-8, G-11–G-15, G-19, G-24, G-27, G-28)
+Earlier entries are not rewritten. These corrections apply to them; the reports and docs now
+carry the corrected text.
+- **N69 (G-7).** "0 % errors in every configuration" is the median-of-runs error rate. In
+  absolute terms 4 of 72,000 requests failed, all `threshold not met` at the deadline:
+  T-5-region strict c=50 run 3 had 3, T-same-region strict c=50 run 1 had 1
+  (`…73be90f-7C/summary.md:131, :153`). N69's "Strict T-same-region at c=50 had 3 deadline
+  timeouts" names the wrong system: the 3 were in T-5-region.
+- **N78, N81 (G-8).** "throttled ≈ 92 % of wall time; RSA wall time 85–128/129 ms" transposes
+  two columns.
+  - RSA wall time is ≈ 92–95 ms per share (91.7–95.1 ms in N76 stress, 92.1–93.8 ms in v2
+    stress).
+  - The `throttled_usec`/wall-time ratio is 85–129 %. It exceeds 100 %, so it is not a fraction
+    of wall time, and what it accumulates was not verified.
+- **N72 (G-13).** The admission-slot attribution of the ≈ 70/s plateau is **withdrawn** (N78:
+  slot inference not supported; signers at 196.5 % of 200 % CPU over the measured window).
+- **N61, N63, N72 (G-19).** These figures now come from script-generated tables
+  (`benchmark/derived.sh` → `derived.md` in each results directory, from the committed raw data):
+  - **Coordinator-host CPU (7B).** "80–89 % strict vs ~20 % optimistic" becomes, at
+    c=10/50: strict 86.3–88.9 % with all 5 signers and 67.1–80.5 % with the far quorum;
+    optimistic 16.0–21.1 %.
+  - **Hedge counts.** Hedged fan-out contacted 5 signers for 1097, 1096 and 1097 of 1100 tokens.
+- **G-11, G-12.** THREAT_MODEL corrections:
+  - Level 2 is no longer marked "not done";
+  - the Level 1 rate is replaced by the 7C plateau;
+  - N76 is described as evaluated, not "evaluation pending";
+  - per-replica `coordinator-<k>` identities replace the shared `coordinator` identity.
+- **G-14.** The "bimodal ~35/~69 ms, also in the in-tree baseline" explanation is withdrawn.
+  36 ms is the average of 20 warm-path tokens; 70 ms is one token with 2 of 5 signers killed.
+- **G-15.** Upstream framing is now: "found and reported upstream; documentation gaps; awaiting
+  triage; community fixes proposed, none merged" (#141669, #141670 open; community PRs #141673
+  closed unmerged and #141687 open unmerged; checked 2026-10-04).
+- **G-24, G-27, G-28.** These fall under the same exit criterion:
+  - G-24: the THREAT_MODEL line reference is corrected;
+  - G-27: the clock-skew figures are marked as from audit logs that were not retained;
+  - G-28: the CI e2e summary lines are committed in `reports/gates/ci-e2e-run*.txt`.

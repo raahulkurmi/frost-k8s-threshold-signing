@@ -488,6 +488,9 @@ arrivals per window, or DAGOR's 1 s / 2000-request window, and θ re-checked for
 low-capacity signers.
 
 **Open question N73/N75 (§6), answered.** (c) The CPU drop is a window artefact: over the
-measured window the capped signers used exactly their 25 % quota. (a) Throttling (≈ 92 % of
-wall time) inflates RSA wall time and N48's estimate, so N48 over-sheds. (b) could not be
+measured window the capped signers used exactly their 25 % quota. (a) Throttling inflates RSA
+wall time (≈ 92–95 ms per share for ≈ 17 ms of CPU) and N48's estimate (≈ 71–80 ms), so N48
+over-sheds. The cgroup `throttled_usec`/wall-time ratio was 85–129 %, which exceeds 100 % and so
+is not a fraction of wall time (corrected in the Phase 12 audit, G-8: the two figures had been
+transposed). (b) could not be
 determined.
