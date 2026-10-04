@@ -516,8 +516,14 @@ collect:
 			if r.skipped { // strict: t shares already verified; this one is not needed
 				continue
 			}
+			// Defence in depth, unreachable today (audit C-3, mutation M3a): r.id is
+			// the endpoint id, New rejects duplicate endpoint ids
+			// (TestNewRejectsBadEndpoints), and each endpoint is launched once, so
+			// no second result can carry the same id. Kept so that tcrsa Join, which
+			// accepts duplicate ids and returns an invalid signature (NOTES N5),
+			// can never see one, even if those guarantees change.
 			if valid[r.id] != nil || candidates[r.id] != nil {
-				fail(r.id, "duplicate share id") // unreachable with unique endpoints; defensive dedupe
+				fail(r.id, "duplicate share id")
 				continue
 			}
 			switch {

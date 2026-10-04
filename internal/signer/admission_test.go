@@ -308,3 +308,63 @@ func TestSampleQueueLogs(t *testing.T) {
 		t.Fatalf("%d queue samples; log: %s", n, out)
 	}
 }
+
+// TestCancelledRequestRefusedBeforeAdmission (audit C-3, mutation M14a): a
+// request whose caller is already gone is refused by the check before
+// admission, not later, so it never occupies an admission slot. The audit
+// record names the stage.
+func TestCancelledRequestRefusedBeforeAdmission(t *testing.T) {
+	srv, in, ap := newAdmission(t, 1, 0)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, rej := srv.SignShare(ctx, wire.SignShareRequest{SigningInput: in, RequestID: "gone"}, "coordinator-1"); rej == nil || rej.Kind != "cancelled" {
+		t.Fatalf("rej = %v, want cancelled", rej)
+	}
+	b, _ := os.ReadFile(ap)
+	if !strings.Contains(string(b), `"reason":"before RSA: context canceled"`) {
+		t.Fatalf("audit does not show a refusal at the pre-admission check:\n%s", b)
+	}
+	if n := srv.RSAOps(); n != 0 {
+		t.Fatalf("%d RSA operations", n)
+	}
+}
+
+// goneAfterFirstCheck is a caller context that is still live at the signer's
+// first cancellation check and gone from then on: the caller went away while
+// the request was being admitted (its Done channel is never used by the
+// admission fast path, which takes a free slot without waiting).
+type goneAfterFirstCheck struct {
+	context.Context
+	mu    sync.Mutex
+	calls int
+}
+
+func (c *goneAfterFirstCheck) Err() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.calls++
+	if c.calls == 1 {
+		return nil
+	}
+	return context.Canceled
+}
+
+// TestCallerGoneDuringAdmissionComputesNoShare (audit C-3, mutation M14b): a
+// caller that disappears between the first check and the end of admission is
+// caught by the check after admission. No RSA work is done and the audit names
+// the stage. Without that check the share would be computed (and only then
+// discarded).
+func TestCallerGoneDuringAdmissionComputesNoShare(t *testing.T) {
+	srv, in, ap := newAdmission(t, 1, 0)
+	ctx := &goneAfterFirstCheck{Context: context.Background()}
+	if _, rej := srv.SignShare(ctx, wire.SignShareRequest{SigningInput: in, RequestID: "gone-mid"}, "coordinator-1"); rej == nil || rej.Kind != "cancelled" {
+		t.Fatalf("rej = %v, want cancelled", rej)
+	}
+	if n := srv.RSAOps(); n != 0 {
+		t.Fatalf("caller gone during admission: %d RSA operations, want 0", n)
+	}
+	b, _ := os.ReadFile(ap)
+	if !strings.Contains(string(b), `"reason":"after queue: context canceled"`) {
+		t.Fatalf("audit does not show a refusal at the post-admission check:\n%s", b)
+	}
+}
