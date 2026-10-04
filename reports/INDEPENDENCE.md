@@ -160,10 +160,17 @@ Results are read from `reports/multihost/e2e-20260926T191044Z-b2f63ca/multihost-
 > beyond Level 2 above. Written by hand from the files listed (not by
 > `gen-independence.sh`).
 
-Sources: `reports/aws/7c/deploy-manifest-t5.json`, `reports/aws/7c/deploy-manifest-tsame.json`
-(both `deploy/multihost/deploy.sh` at git commit `02ae373`),
-`reports/aws/7c/bootstrap-checks.jsonl`, the security-group log
-`deploy/aws/state/sg-rules.txt` (operator-side, gitignored; rules quoted below), NOTES N67, N68.
+Sources (7C session of 2026-09-27; per-session copies restored from git history in the
+Phase 12 audit fix for G-2, because later sessions had overwritten the shared
+`reports/aws/7c/` paths): `reports/aws/7c-session1/deploy-manifest-t5.json` and
+`reports/aws/7c-session1/deploy-manifest-tsame.json` (from commit a0173b4; both written by
+`deploy/multihost/deploy.sh` with recorded git commit `02ae373`),
+`reports/aws/7c-session1/bootstrap-checks.jsonl` (from 0ee7228, after the N69 field
+rename), and the session's security-group log `reports/aws/7c-session1/sg-rules.txt`
+(the 2026-09-27 lines of the operator-side log `deploy/aws/state/sg-rules.txt`, recovered
+from the operator machine and committed for audit finding G-4). NOTES N67, N68, N84.
+The N76/N77 session (2026-10-03, N78) and the v2 session (2026-10-03, N81) have their own
+copies in `reports/aws/n76-session/` and `reports/aws/v2-session/`.
 
 | Signer | T-5-region placement | T-same-region placement | share index |
 |---:|---|---|---:|
@@ -178,11 +185,16 @@ Sources: `reports/aws/7c/deploy-manifest-t5.json`, `reports/aws/7c/deploy-manife
   10 signer hosts holds exactly one share of its system's key, as the manifests record. The
   coordinator host (aws:ap-south-1a:c7i-flex.large, EIP) holds none (only public metadata).
 - **One build per system.** All 5 T-5-region hosts run signer binary sha256 `0dd3fa23…`
-  and all 5 T-same-region hosts `1f744909…` (identical `cmd/signer` source built at
-  different commits; N68).
-- **Network (security groups):** each signer's port 8441 accepts only the coordinator
-  (T-5-region: the coordinator EIP `/32`; T-same-region: the coordinator's private IP
-  `/32`); SSH only from the operator's `/32`. The signer hosts' own nftables SSH rule is
+  and all 5 T-same-region hosts `1f744909…`. **Correction (audit G-18):** N68 explained the
+  difference as builds "at different commits", but both manifests record the same commit
+  `02ae373` (deployed 10:18:46Z and 10:37:05Z). The cause of the different hashes was **not
+  determined** (an uncommitted change in the operator's tree is possible). The manifests
+  record no `vcs.modified` flag, so the exact code that ran in 7C is pinned only to
+  02ae373 plus possibly uncommitted changes.
+- **Network (security groups)**, as logged in `reports/aws/7c-session1/sg-rules.txt`:
+  each signer's port 8441 accepts only the coordinator (T-5-region: the coordinator EIP
+  `15.252.57.131/32`, the coordinator IP in both manifests; T-same-region: the
+  coordinator's private IP `/32`); SSH only from the operator's `/32`. The signer hosts' own nftables SSH rule is
   `any` (`signer_host_ssh_allow`, N57: enforced by the security group only, because the
   operator IP can change). The coordinators' port 9090–9092 accepts only the control
   plane; kube-apiserver accepts the load generator.

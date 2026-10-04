@@ -167,6 +167,10 @@ cmd_phase2() {
 # topology: hosts.env (every host) + one deploy topology per T system
 cmd_topology() {
   local role r iid az t addrs="" bind="" place="" eip
+  # Audit G-2: each provisioned cluster gets its own evidence directory, fixed
+  # once per state dir (archived per session), so no session overwrites another.
+  local evid; evid="$(cat "$S7/evidence-dir" 2>/dev/null || true)"
+  if [[ -z "$evid" ]]; then evid="reports/aws/7c-sessions/$(date -u +%Y%m%dT%H%M%SZ)"; echo "$evid" > "$S7/evidence-dir"; fi
   eip=$(cat "$S7/coord.eip")
   while read -r role r iid az t; do
     [[ -z "$role" ]] && continue
@@ -184,6 +188,7 @@ cmd_topology() {
     echo "HOST_ADDRS=\"${addrs# }\""
     echo "HOST_BIND=\"${bind# }\""
     echo "HOST_PLACEMENT=\"${place# }\""
+    echo "EVIDENCE_DIR=\"$evid\""
     echo "COORD_EIP=$eip"
   } > "$S7/hosts.env"
   local cpriv; cpriv=$(private_ip ap-south-1 "$(inst_of coord)")
@@ -192,7 +197,7 @@ cmd_topology() {
     echo 'TOPOLOGY_LABEL="7C T-5-region: 5 regions, one provider (AWS), one account, one operator, one build, one dealer"'
     echo "COORD_VM=coord"
     echo 'SIGNERS="1:t5-1:8441 2:t5-2:8441 3:t5-3:8441 4:t5-4:8441 5:t5-5:8441"'
-    echo "COORD_SECRETS_DIR=secrets-t5 LB_HOST=cp LB_DIR=/etc/frost-7c/lb-t5 MANIFEST_OUT=reports/aws/7c/deploy-manifest-t5.json"
+    echo "COORD_SECRETS_DIR=secrets-t5 LB_HOST=cp LB_DIR=/etc/frost-7c/lb-t5 MANIFEST_OUT=$evid/deploy-manifest-t5.json"
   } > "$S7/topology-t5.env"
   if grep -q '^ts-1 ' "$INST"; then
     local svc="" id
@@ -204,7 +209,7 @@ cmd_topology() {
       echo 'SIGNERS="1:ts-1:8441 2:ts-2:8441 3:ts-3:8441 4:ts-4:8441 5:ts-5:8441"'
       echo "HOST_SERVICE=\"${svc# }\""
       echo "SIGNER_SOURCE_IP=$cpriv"
-      echo "COORD_SECRETS_DIR=secrets-tsame LB_HOST=cp LB_DIR=/etc/frost-7c/lb-tsame MANIFEST_OUT=reports/aws/7c/deploy-manifest-tsame.json"
+      echo "COORD_SECRETS_DIR=secrets-tsame LB_HOST=cp LB_DIR=/etc/frost-7c/lb-tsame MANIFEST_OUT=$evid/deploy-manifest-tsame.json"
     } > "$S7/topology-tsame.env"
   fi
   log "wrote $S7/hosts.env and topology files"; cat "$S7/hosts.env" | grep -E 'HOST_ADDRS|HOST_PLACEMENT' >&2

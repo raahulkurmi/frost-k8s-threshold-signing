@@ -10,7 +10,8 @@
 #   deploy-t5   T-5-region: fresh certs + key ceremony, one share per signer host (deploy/multihost/deploy.sh)
 #   deploy-tsame  T-same-region (phase 2), same
 #   cp-tools    nginx static pod + config, switch/check/scale scripts, frost-probe on cp
-#   smoke       use_system + check for every available system -> reports/aws/7c/bootstrap-checks.jsonl
+#   smoke       use_system + check for every available system -> $EVIDENCE_DIR/bootstrap-checks.jsonl
+#               (per-session directory from provision-7c.sh topology; audit G-2)
 #   all         everything above in order (deploy-tsame / T-same smoke only if phase 2 exists)
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -19,7 +20,11 @@ REPO="$(pwd)"
 source benchmark/k8s7c/lib.sh
 D=deploy/aws/7c
 SHA="$(git rev-parse HEAD)"
-mkdir -p reports/aws/7c
+# Audit G-2: session evidence goes to this session's own directory and never
+# overwrites a committed file.
+EVID="${EVIDENCE_DIR:?hosts.env has no EVIDENCE_DIR: re-run deploy/aws/provision-7c.sh topology (audit G-2)}"
+mkdir -p "$EVID"
+refuse_committed() { ! git ls-files --error-unmatch "$1" >/dev/null 2>&1 || die "refusing to overwrite committed evidence $1 (audit G-2)"; }
 
 step_build() {
   mkdir -p bin/7c
@@ -96,14 +101,15 @@ step_cp_tools() {
   log "nginx static pod serving /var/run/frost-k8s/signer.sock on cp"
 }
 step_smoke() {
-  local out=reports/aws/7c/bootstrap-checks.jsonl sys systems="B0 B1 T-5region-optimistic T-5region-strict"
+  local out="$EVID/bootstrap-checks.jsonl" sys systems="B0 B1 T-5region-optimistic T-5region-strict"
   [[ -f "$S7/topology-tsame.env" ]] && systems="$systems T-sameregion-optimistic T-sameregion-strict"
+  refuse_committed "$out"
   : > "$out"
   for sys in $systems; do use_system "$sys" /tmp/c7check.json; cat /tmp/c7check.json >> "$out"; done
   jq -c '{system, ok, mode, jwt_header_kid, expected_kid, pinned_kid, tokenreview_authenticated}' "$out"
 }
 
-[[ $# -ge 1 ]] || { sed -n '2,17p' "$0"; exit 2; }
+[[ $# -ge 1 ]] || { sed -n '2,18p' "$0"; exit 2; }
 source deploy/multihost/clock-check.sh
 # shellcheck disable=SC2086
 clock_check $ALL_HOSTS || die "clock check failed (N50)"

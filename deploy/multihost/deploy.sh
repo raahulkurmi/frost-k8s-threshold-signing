@@ -155,6 +155,8 @@ on_pipe "$COORD_VM" sudo bash -s -- 172.30.3.0/24 $EGRESS < deploy/multihost/coo
 # --- 5. public manifest ---
 mkdir -p reports/multihost
 MAN="$MANIFEST_OUT"; mkdir -p "$(dirname "$MAN")"
+# Audit G-2: a committed manifest is session evidence; never overwrite it.
+! git ls-files --error-unmatch "$MAN" >/dev/null 2>&1 || die "refusing to overwrite committed evidence $MAN; set MANIFEST_OUT to a new per-session path (audit G-2)"
 {
   echo "{"
   echo "  \"topology\": \"$TOPOLOGY_LABEL\", \"transport\": \"$TRANSPORT\","

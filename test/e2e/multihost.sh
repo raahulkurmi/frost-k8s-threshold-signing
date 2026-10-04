@@ -23,6 +23,8 @@ KEEP=0 RECHECK_L2=0
 TOPO="${1:-deploy/multihost/topology.local.env}"
 # shellcheck disable=SC1090
 source "$TOPO"
+# The deployment manifest under test: deploy.sh MANIFEST_OUT (per-session path, audit G-2).
+MANIFEST="${MANIFEST_OUT:-reports/multihost/deploy-manifest.json}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
 SHA="$(git rev-parse HEAD)"
@@ -90,7 +92,7 @@ l2_test() {
 }
 
 if [[ $RECHECK_L2 == 1 ]]; then
-  echo "deployment under test: reports/multihost/deploy-manifest.json (kid $(jq -r .kid reports/multihost/deploy-manifest.json), deployed $(jq -r .deployed_at reports/multihost/deploy-manifest.json))"
+  echo "deployment under test: $MANIFEST (kid $(jq -r .kid "$MANIFEST"), deployed $(jq -r .deployed_at "$MANIFEST"))"
   l2_test
   section "Summary"
   printf '%s\n' "$RESULT_LINES" | sed '/^$/d'
@@ -104,7 +106,7 @@ on "$COORD_VM" bash -lc "cd ~/tk8s && git fetch -q && git checkout -q $SHA && gi
 
 section "Deploy (deploy/multihost/deploy.sh)"
 deploy/multihost/deploy.sh "$TOPO"
-cp reports/multihost/deploy-manifest.json "$RES/"
+cp "$MANIFEST" "$RES/"
 COORD_IP="$(vm_ip "$COORD_VM")"
 
 section "L1: lateral isolation between signer hosts"
@@ -170,7 +172,7 @@ if [[ $L4_OK == 1 ]]; then pass L4 "every signer host holds exactly its assigned
 
 section "L5: systemd hardening and binary"
 L5_OK=1
-BIN_SHA="$(jq -r .signer_binary.sha256 reports/multihost/deploy-manifest.json)"
+BIN_SHA="$(jq -r .signer_binary.sha256 "$MANIFEST")"
 for id in 1 2 3 4 5; do
   vm="$(id_vm "$id")"; u="frost-signer-$id"
   props="$(on "$vm" systemctl show "$u" -p ActiveState,User,NoNewPrivileges,ProtectSystem,ProtectHome,PrivateTmp,ReadWritePaths,IPAddressAllow,IPAddressDeny,CapabilityBoundingSet | tr -d '\r' | tr '\n' ' ')"
