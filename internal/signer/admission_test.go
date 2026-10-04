@@ -98,17 +98,36 @@ func TestQueuedRequestCancelledByCallerComputesNoShare(t *testing.T) {
 		_, rej := srv.SignShare(ctx, wire.SignShareRequest{SigningInput: in, RequestID: "aborted"}, "coordinator-1")
 		res <- rej
 	}()
+	// Audit C-6: bounded waits, so a missing admission stage fails with an
+	// assertion instead of hanging until the package timeout.
+	queued := time.After(5 * time.Second)
 	for srv.Waiting() == 0 {
-		time.Sleep(time.Millisecond)
+		select {
+		case rej := <-res:
+			t.Fatalf("request finished (rej %v) without queuing behind the busy slot: admission control missing", rej)
+		case <-queued:
+			t.Fatal("request never queued behind the busy slot within 5s: admission control missing")
+		case <-time.After(time.Millisecond):
+		}
 	}
 	cancel()
-	rej := <-res
+	var rej *Rejection
+	select {
+	case rej = <-res:
+	case <-time.After(5 * time.Second):
+		t.Fatal("cancelled queued request did not return within 5s")
+	}
 	if rej == nil || rej.Kind != "cancelled" {
 		t.Fatalf("rej = %v, want cancelled", rej)
 	}
 	release()
-	if r := <-done; r != nil {
-		t.Fatal(r)
+	select {
+	case r := <-done:
+		if r != nil {
+			t.Fatal(r)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("slot holder did not finish within 5s")
 	}
 	if n := srv.RSAOps(); n != 1 {
 		t.Fatalf("RSA ops %d, want 1 (the holder only)", n)
