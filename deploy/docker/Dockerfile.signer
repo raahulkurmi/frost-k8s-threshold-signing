@@ -1,7 +1,9 @@
 # Threshold signer. Its one share, public-meta.json, the policy file and its
 # own TLS cert are mounted at runtime (I4). Nothing secret is copied into any
 # layer, so one image serves every signer.
-FROM golang:1.27.1-alpine3.24 AS builder
+# Base images are pinned by multi-arch index digest (audit H-1); update with
+# docker buildx imagetools inspect <image:tag>.
+FROM golang:1.27.1-alpine3.24@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -9,7 +11,7 @@ COPY cmd/ cmd/
 COPY internal/ internal/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/signer ./cmd/signer
 
-FROM alpine:3.24
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 RUN adduser -D -H -u 10001 signer && mkdir -p /var/log/frost && chown 10001 /var/log/frost
 COPY --from=builder /out/signer /usr/local/bin/signer
 USER 10001
