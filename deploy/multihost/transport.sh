@@ -36,7 +36,15 @@ multipass)
 ssh)
   : "${HOST_ADDRS:?TRANSPORT=ssh needs HOST_ADDRS}" "${SSH_KEY:?TRANSPORT=ssh needs SSH_KEY}"
   SSH_KNOWN_HOSTS="${SSH_KNOWN_HOSTS:-$HOME/.ssh/known_hosts}"
-  _ssh_opts() { echo "-i $SSH_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$SSH_KNOWN_HOSTS -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 -o LogLevel=ERROR -o ControlMaster=auto -o ControlPath=/tmp/tk8s-cm-%C -o ControlPersist=15m"; }
+  # Audit E-5: multiplex control sockets live in a private 0700 directory, not in
+  # the shared /tmp (a %C hash keeps the path short enough for a unix socket).
+  SSH_CONTROL_DIR="${SSH_CONTROL_DIR:-$HOME/.ssh/tk8s-cm}"
+  mkdir -p "$SSH_CONTROL_DIR" && chmod 700 "$SSH_CONTROL_DIR"
+  # Accepted (audit E-5): StrictHostKeyChecking=accept-new is trust on first use.
+  # The signer VMs are freshly launched, and their host keys cannot be pinned in
+  # advance without console access; the first connection records the key in
+  # SSH_KNOWN_HOSTS, and any later change is refused.
+  _ssh_opts() { echo "-i $SSH_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$SSH_KNOWN_HOSTS -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 -o LogLevel=ERROR -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_DIR/%C -o ControlPersist=15m"; }
   vm_ip()      { _map_get "$HOST_ADDRS" "$1"; }
   vm_bind_ip() { _map_get "${HOST_BIND:-}" "$1" || vm_ip "$1"; }
   # ssh joins argv into one remote command line: quote each argument so the
