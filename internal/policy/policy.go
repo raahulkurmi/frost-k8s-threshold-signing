@@ -206,6 +206,13 @@ func num(obj map[string]json.RawMessage, key string) (*json.Number, error) {
 	if !ok {
 		return nil, nil
 	}
+	// Audit D-1: a NumericDate must be a JSON number. encoding/json would decode
+	// a quoted number literal ("1700000000") into json.Number, but go-jose v2
+	// (kube-apiserver's verifier) rejects it, so accepting it would be a parser
+	// differential.
+	if bytes.HasPrefix(bytes.TrimSpace(raw), []byte(`"`)) {
+		return nil, violation("claims", "%s is not a JSON number", key)
+	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
 	var n json.Number
