@@ -15,7 +15,7 @@ Companion files: [MUTATION.md](MUTATION.md), [FUZZ.md](FUZZ.md), [CLAIMS_RECHECK
 **No critical finding. 8 high, 20 medium, 30 low, 17 info (75 findings).**
 
 The security core held up under every adversarial check run in this audit:
-- **Reproduction:** `make repro` on a fresh GitHub runner passed end to end (unit and integration tests, image isolation, a kind cluster on the real v1.36.5 apiserver, 20 e2e checks).
+- **Reproduction:** `make repro` on a fresh GitHub runner passed end to end (unit and integration tests, image isolation, a kind cluster on the real v1.36.5 apiserver, 19 e2e checks).
 - **Mutation testing:** 16 of the 17 required mutations are caught by the suite, and so are all extra mutations against the policy, the TLS identities and the fail-closed paths.
 - **Fuzzing:** 11 targets ran 10 minutes each, including a differential against kube-apiserver's go-jose v2 claim parsing. No crash, no hang, and no input the policy accepted that the apiserver reads differently in an unsafe direction.
 - **Cryptography:** all 10 three-of-five subsets produced a byte-identical signature in a fresh run, and that signature equals `crypto/rsa.SignPKCS1v15` under the same key.
@@ -66,7 +66,7 @@ The high findings are about **evidence and tests, not exploitable code**:
 ### A-1: The committed reports/REPRO.md predates the final defaults
 - Severity: low
 - Location: reports/REPRO.md:3-62
-- Evidence: the committed file is for `aef95d5` (2026-09-25). Its REQ-d line reads `strategy=strict`, and it has no TIMING, N76-ID or N76-PRIO rows. This audit's run at 0aac79c shows `strategy=optimistic … quorum_abort=false` and 20 checks.
+- Evidence: the committed file is for `aef95d5` (2026-09-25). Its REQ-d line reads `strategy=strict`, and it has no TIMING, N76-ID or N76-PRIO rows. This audit's run at 0aac79c shows `strategy=optimistic … quorum_abort=false` and 19 checks.
 - Why it matters: the reproduction evidence the paper points to does not describe the frozen system.
 - Suggested fix: replace REPRO.md with the run-37160608647 artifact (`reports/repro/run-37160608647-0aac79c/`), and commit its step logs (see G-1).
 
@@ -539,3 +539,15 @@ Evidence: `mutation/rerun/*-round2.*`.
 - **Fuzz crashes:** 0.
 - **Every claim sentence has evidence:** **yes**. Every CONTRADICTED, STALE or UNSUPPORTED row of CLAIMS_RECHECK was corrected or given evidence (G-5…G-19, G-24, G-27, G-28, I-1).
 - **Fresh-clone repro:** see "Final CI and repro, round 2".
+
+### Final CI and repro, round 2
+- **CI** run [37202622816](https://github.com/raahulkurmi/frost-k8s-threshold-signing/actions/runs/37202622816) on `7f10c65`: **success**.
+  - vet, staticcheck, govulncheck, gitleaks: success (GO-2026-6443 accepted until 2027-01-31).
+  - make test incl. T5 and spike: success.
+  - images + kind e2e (v1.36.5): success.
+- **Fresh-clone repro** run [37202627639](https://github.com/raahulkurmi/frost-k8s-threshold-signing/actions/runs/37202627639) on `7f10c65`: **Overall PASS, 611 s**.
+  - Steps: make-test 369 s, make-check-images 31 s, make-e2e 161 s.
+  - e2e: all **19** checks PASS (SETUP, E1–E8, REQ-a–d, N1–N3, TIMING, N76-ID, N76-PRIO).
+  - Its `make test` log includes `internal/vaultclient`, `cmd/grpc-proxy` and spike.
+  - Artifact: `reports/repro/run-37202627639-7f10c65/`. `reports/REPRO.md` is now this run.
+- **Correction:** earlier text in this report, and the round-1 commit f4e6a32's message, said "20" e2e checks. The suite has 19; the text above is corrected. A commit message cannot be changed without rewriting history.

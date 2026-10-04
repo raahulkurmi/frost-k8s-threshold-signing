@@ -1,0 +1,23 @@
+download pass 1: 356575952 of 356575952 bytes
+/home/runner/.cache/tk8s-repro/kubernetes-server-linux-amd64-v1.36.5.tar.gz: OK
+official tarball verified: /home/runner/.cache/tk8s-repro/kubernetes-server-linux-amd64-v1.36.5.tar.gz
+Building using local file: "/home/runner/.cache/tk8s-repro/kubernetes-server-linux-amd64-v1.36.5.tar.gz"
+Starting to build Kubernetes
+Extracting "/home/runner/.cache/tk8s-repro/kubernetes-server-linux-amd64-v1.36.5.tar.gz"
+Finished building Kubernetes
+Building node image ...
+Building in container: kind-build-1791117360-1430925941
+registry.k8s.io/kube proxy amd64:v1.36.5	saved	
+application/vnd.docker.distribution.manifest.v2+json sha256:9a7b180368d2de486d55c0ff6a30ac7a026bc89fae14cac268ea7e9d97a96747
+Importing	elapsed: 2.8 s	total:   0.0 B	(0.0 B/s)	
+registry.k8s.io/kube scheduler amd64:v1.	saved	
+application/vnd.docker.distribution.manifest.v2+json sha256:7e9f243bb51eca0add8c1f3b9db669bc3dc0d0e425e76ec7ecf74a54382e2da0
+Importing	elapsed: 3.0 s	total:   0.0 B	(0.0 B/s)	
+registry.k8s.io/kube apiserver amd64:v1.	saved	
+application/vnd.docker.distribution.manifest.v2+json sha256:561d312b64e297717abd4013ba6dd2eb3b7d45e4a53ca94c486a48b58165ef60
+Importing	elapsed: 3.0 s	total:   0.0 B	(0.0 B/s)	
+registry.k8s.io/kube controller manager 	saved	
+application/vnd.docker.distribution.manifest.v2+json sha256:be3cc5f8c9ebd09daf9f1f52c43cacc3af9754bd41e33ae37cdee35719c786ec
+Importing	elapsed: 3.0 s	total:   0.0 B	(0.0 B/s)	
+Image "kindest/node:v1.36.5-tk8s" build completed.
+node image sha256:7ae8ebb4d24349a670792a0c8746adcccfb445aef21b6ea30d66552fc8ac2240
