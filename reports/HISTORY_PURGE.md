@@ -26,9 +26,9 @@ that proof, and every other cited hash, unverifiable. Instead, the history is di
     name (Phase 12 audit finding J-3).
   - No tracked file at d23d0f4 or later contains it, and no commit metadata (author or committer
     name or e-mail) contains it.
-- **Scans.** gitleaks over all refs reports 10 findings: the 4 private keys of §1, and 6
-  `generic-api-key` matches in `reports/aws/7c/bootstrap-checks.jsonl` at a0173b4. The latter are
-  public key IDs (`token_kid`), renamed in N69: false positives (audit J-1).
+- **Scans.** gitleaks over all refs finds the 4 private keys of §1, plus 6 `generic-api-key`
+  matches in `reports/aws/7c/bootstrap-checks.jsonl` at a0173b4. Those 6 are public key IDs
+  (`token_kid`, renamed in N69): false positives, listed in `.gitleaksignore` (audit J-1).
 
 ## 0a. Plan: anonymized, history-free artifact snapshot (for double-blind submission; NOT created yet)
 
@@ -81,7 +81,10 @@ through `FetchKeys`, must be treated as compromised. The new threshold RSA key s
 nothing with any of these keys, and fresh certs come from `scripts/gen-certs.sh`.
 
 The gitleaks history scan (`reports/gitleaks-history.json`, redacted) finds 4 of these:
-the three `certs/*.key` files and `data/ecdsa-signing.pem`. It does **not** flag the FROST
+the three `certs/*.key` files and `data/ecdsa-signing.pem`. (Correction, audit J-1: a scan of **all refs** reports 10 findings, these 4 plus 6
+`generic-api-key` false positives, which are public JWT key IDs in `reports/aws/7c/bootstrap-checks.jsonl` at
+a0173b4 (field `token_kid`, renamed in N69). Those 6 are listed by fingerprint in `.gitleaksignore`,
+so `gitleaks git . --log-opts=--all` now reports exactly the 4 real findings.) It does **not** flag the FROST
 shares (bare hex), the encrypted share file, the password or the Vault token. Those were
 found by hand with `git log --all -- <path>` and `git log --all -S<literal>`.
 
@@ -92,7 +95,7 @@ found by hand with `git log --all -- <path>` and `git log --all -S<literal>`.
 | `nohup.out` | f91807b | 8.6 MB of `sh: socat: command not found`. The pattern scan and gitleaks both found no secrets |
 | `grpc-proxy`, `signer` (root Mach-O binaries) | 562590e, 93f0dc5, ecfc0f5, bfec86c | Compiled binaries. They embed the `frost-dev-password` string, so purge them with the leaks |
 | `deploy/ nginx-grpc.conf` | f91807b | Duplicate config with a leading space in its name |
-| `benchmark/results/20260925T094221Z-4385a48-multihost-L1/.summarize` | dc9b396 (removed in the next commit) | 2.6 MB Mach-O build artifact of `benchmark/summarize`, committed by accident after an aborted benchmark run. Not secret |
+| `benchmark/results/20260925T094221Z-4385a48-multihost-L1/.summarize` | 9bb1f16 (added), 6ebb013 (removed) (corrected in the Phase 12 audit, G-30) | 2.6 MB Mach-O build artifact of `benchmark/summarize`, committed by accident after an aborted benchmark run. Not secret |
 | `certs/*.crt`, `certs/*.csr`, `certs/ca.srl`, `certs/*.cnf` | bfec86c, fd12b6c, 9b412e3, f91807b | Public certs, but they're bound to the burned keys |
 
 ## 3. Commands (run by the owner, on a fresh mirror clone)

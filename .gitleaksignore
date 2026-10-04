@@ -1,0 +1,9 @@
+# Phase 12 audit J-1: known false positives in git history. These are public JWT key IDs
+# (field token_kid, renamed in NOTES N69) in reports/aws/7c/bootstrap-checks.jsonl at a0173b4,
+# not secrets. The 4 real findings (burned prototype keys) are deliberately NOT ignored.
+a0173b4270b3c895995ff52884b9841d361e6cbc:reports/aws/7c/bootstrap-checks.jsonl:generic-api-key:1
+a0173b4270b3c895995ff52884b9841d361e6cbc:reports/aws/7c/bootstrap-checks.jsonl:generic-api-key:2
+a0173b4270b3c895995ff52884b9841d361e6cbc:reports/aws/7c/bootstrap-checks.jsonl:generic-api-key:3
+a0173b4270b3c895995ff52884b9841d361e6cbc:reports/aws/7c/bootstrap-checks.jsonl:generic-api-key:4
+a0173b4270b3c895995ff52884b9841d361e6cbc:reports/aws/7c/bootstrap-checks.jsonl:generic-api-key:5
+a0173b4270b3c895995ff52884b9841d361e6cbc:reports/aws/7c/bootstrap-checks.jsonl:generic-api-key:6
