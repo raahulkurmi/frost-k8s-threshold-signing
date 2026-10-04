@@ -1610,3 +1610,59 @@ e2e).
   - `QUORUM_ABORT=off`;
   - priority admission off (v1 and v2 selectable, evaluated, not recommended);
   - one client certificate per coordinator replica.
+
+## Phase 12 notes
+
+### N84. Phase 12 audit: corrections to earlier entries, and the fixes
+The fresh-session audit of the freeze commit is in `reports/audit/AUDIT.md`. The earlier
+entries below are **not rewritten**; these corrections apply to them.
+- **Correction to N68 (audit G-3).** N68 says "the real run is
+  `benchmark/results/20260927T123218Z-7faa09c-7C`". That directory is the **aborted** attempt
+  described in N69 (`…-ABORTED-switch-alarm`, not committed, not used). The 7C token and
+  scale-up run actually used is `benchmark/results/20260927T131349Z-73be90f-7C`.
+- **Disclosure for N60 (audit G-6).** N60 says L2 was re-run "per the rule for operator network
+  drops". **No such rule existed before the drop.**
+  - The drop happened at about 19:33Z on 2026-09-26. The last commit before it (b2f63ca,
+    19:08:35Z) contains no re-run rule.
+  - The rule, and the `--recheck-l2` code the re-run used, were written after the FAIL
+    (ebabdb1, 19:42:09Z). The re-run started 2 s later.
+  - The original FAIL stands and is kept (`reports/multihost/e2e-20260926T191044Z-b2f63ca/`).
+  - During the drop, the blocked-path checks passed vacuously, so the only L2 evidence for
+    Level 2 is that single re-run.
+- **Correction to N73 (audit G-17).** N73 says the ≈ 13.4/s prediction was "written down before
+  the first stress configuration finished". It was recorded in the working session, but it
+  first appears in git in 88473b0 (19:53:26Z), after the stress data commit (a436567,
+  19:40:31Z). The repository cannot show that it preceded the data. The N70 decision rule
+  itself is committed before the run (07bf7d8).
+- **Correction to N68 (audit G-18).** Both 7C manifests record commit `02ae373`, so "built at
+  different commits" does not explain the two signer binary hashes (`0dd3fa23…`,
+  `1f744909…`). The cause was not determined; an uncommitted change in the operator tree is
+  possible.
+- **N56's evidence (audit G-1).** The `make test` output of EC2 attempt 1 (`all: 99 signer
+  requests, want 100`) is **not retained**: `reports/repro-logs/` was gitignored and the
+  instance was terminated. The four GitHub-runner repro runs' logs are now committed in
+  `reports/repro/`.
+- **Evidence paths (audit G-2).** Entries N68–N70 cite `reports/aws/7c/<file>` for the 7C session,
+  N78 for the N76 session and N81 for the v2 session. Those files had been overwritten by
+  each later session. They are restored in `reports/aws/7c-session1/`, `n76-session/` and
+  `v2-session/` (`reports/aws/7c/README.md` maps them). New sessions write to
+  `reports/aws/7c-sessions/<UTC>/`, and the scripts refuse to overwrite committed evidence.
+  The operator-side security-group log is committed per session (audit G-4).
+
+**Fixes (each commit names its finding):**
+- **C-1:** tests for `cmd/grpc-proxy` defaults. Mutation M17a is now caught.
+- **C-2:** a signer `SHARE_FILE` naming more than one file fails closed. M10b is now caught.
+- **E-1:** Vault clients follow no redirect to another host.
+- **E-2:** the multihost deploy refuses more than t−1 shares on any host.
+- **C-7:** the spike hazard tests run in `make test` and CI.
+- **G-1, G-2, G-4, G-18:** evidence fixes, as above.
+- **Docs:**
+  - G-5, G-9, G-10: README independence wording, status box and verification description;
+  - G-16: multihost README;
+  - E-3: under the shipped policy, the online oracle includes kube-system service accounts.
+    This is now stated in README, THREAT_MODEL §4 and PAPER_INPUTS.
+- **I-1:** Apache-2.0 LICENSE.
+- **J-3:** instructions-file wording.
+- `.gitignore`: `reports/audit/` is tracked.
+
+The resolution of every finding is the last column of `reports/audit/AUDIT.md`.

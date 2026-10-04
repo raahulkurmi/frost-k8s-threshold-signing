@@ -33,6 +33,8 @@ out/
 share-*.json
 run/
 audit/
+# ...except the Phase 12 audit report (audit fix: the reports must be tracked)
+!reports/audit/
 test/e2e/results/*/kind-config.yaml
 bin/
 .summarize

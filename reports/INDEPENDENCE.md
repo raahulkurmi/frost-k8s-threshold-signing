@@ -131,7 +131,7 @@ Results are read from `reports/multihost/e2e-20260926T191044Z-b2f63ca/multihost-
 | Test | Claim | Result |
 |---|---|---|
 | L1 | No signer host can open TCP to another signer host's signer port or SSH | PASS |
-| L2 | SSH to signer hosts only from the operator; the operator cannot reach signer ports | FAIL in the e2e run (a CONTROL check failed during an operator network drop, NOTES N60); re-run once: PASS (`reports/multihost/l2-recheck-20260926T194211Z-ebabdb1`) |
+| L2 | SSH to signer hosts only from the operator; the operator cannot reach signer ports | FAIL in the e2e run (a CONTROL check failed during an operator network drop, NOTES N60); re-run once: PASS (`reports/multihost/l2-recheck-20260926T194211Z-ebabdb1`). **The re-run rule was written after the Wi-Fi drop (audit G-6)**: no rule for operator network drops existed before the event (~19:33Z on 2026-09-26; last commit before it b2f63ca, 19:08:35Z, has none); the rule and the `--recheck-l2` code it used were written afterwards (ebabdb1, 19:42:09Z) and the re-run started 2 s later. The original L2 FAIL is kept (`reports/multihost/e2e-20260926T191044Z-b2f63ca/`). During the drop the blocked-path checks passed vacuously, so the only L2 evidence is that single re-run |
 | L3 | Each signer's share and TLS key are 0600, owned by its own user (one signer per host) | PASS |
 | L4 | Each host holds exactly its assigned share index; the coordinator host holds none | PASS |
 | L5 | Every signer runs as its own user, NoNewPrivs=1, no capabilities, ProtectSystem=strict, same binary | PASS |

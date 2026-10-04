@@ -125,6 +125,24 @@ Loosening `clock_skew_seconds` to ride out such events would widen the replay wi
 - **An attacker who controls a coordinator or kube-apiserver obtaining signatures on
   policy-compliant claims while in control (online oracle).** The policy limits *what*
   is signed, not *who* asks (C2(b) in Phase 9).
+  **Under the shipped policy this includes kube-system service accounts** (audit E-3).
+  `deploy/policy.json` has empty `deny_namespaces` and `deny_service_accounts`, so a
+  "policy-compliant" token may name any service account in any namespace. Some kube-system
+  accounts can escalate to cluster-admin, for example
+  `kube-system:clusterrole-aggregation-controller`, which may escalate ClusterRoles. A live
+  coordinator (or apiserver) compromise is therefore, while it lasts, effectively a
+  cluster compromise. kube-system cannot simply be denied: kube-controller-manager runs its
+  controllers with those tokens (`--use-service-account-credentials`, N29).
+  What still bounds it:
+  - issuer, audience allowlist and maximum lifetime (7200 s), so stolen tokens expire;
+  - the ±60 s `iat` window, so nothing can be pre-minted for later;
+  - the per-signer rate limit (200/s, burst 400) and admission control;
+  - every signer's audit log (sub, aud, client replica, SHA-256 of the signing input),
+    which records every token the attacker obtains;
+  - the end of control: no share or key is on the coordinator (C4).
+
+  Deny lists can narrow the set for namespaces and accounts that the control plane does not
+  use.
 - **3 or more colluding or co-compromised signers.** They can sign anything (C3 in Phase 9
   confirms the boundary). On the Level 1 topology, compromising sig-a and sig-b (2 VMs)
   already yields 4 shares.
@@ -178,7 +196,7 @@ E1–E8 (`test/e2e/run.sh`), L1–L5 (`test/e2e/multihost.sh`); named Go tests a
 | One or two stolen shares (+ public metadata), offline | nothing: no valid signature for any message | C5: T4, spike I5 |
 | Full control of one signer (bad shares, spoofed id, garbage, slow responses) | disruption only; excluded and attributed; tokens still issued with ≥ 3 honest | C1: T5, tampered-share tests, R-b tests |
 | Coordinator's full filesystem and config, after losing control | no token, no offline signing | C4: T12, T13 (+ negative control), L4 |
-| Live control of the coordinator/apiserver | tokens for **policy-compliant** claims only while in control; policy-violating claims refused by every honest signer | C2(a): T7, `TestPolicyRejects` (N14); C2(b): E1/E2 (online oracle, a limitation) |
+| Live control of the coordinator/apiserver | tokens for **policy-compliant** claims only while in control, which under the shipped policy includes kube-system service accounts that can escalate to cluster-admin (§4, audit E-3); policy-violating claims refused by every honest signer | C2(a): T7, `TestPolicyRejects` (N14); C2(b): E1/E2 (online oracle, a limitation) |
 | 2 signers + live coordinator control | same as above: the 3 honest signers still enforce the policy | C2 (policy enforcement is per signer; the 2+coordinator combination is not separately tested) |
 | 3 colluding signers | **forgery**, the threshold boundary | C3: boundary statement, backed by T2 + T1/E2 (not tested adversarially) |
 | Replay of an old signing request to signers | the same deterministic share for the same input; stale `iat` refused outside the skew window | C6: `TestPolicyRejects` iat cases, N44 |

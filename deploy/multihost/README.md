@@ -7,7 +7,7 @@ ports yourself; the scripts then deploy to the IPs and SSH access you give them.
 | Level | Topology | Status |
 |---|---|---|
 | **Level 1** | 4 Multipass VMs on **one physical Mac**: `tk8s` (kind + nginx + 3 coordinators) and `sig-a` (signers 1, 2), `sig-b` (3, 4), `sig-c` (5) | Implemented and tested (`test/e2e/multihost.sh`) |
-| Level 2 | Signer hosts in separate regions or providers | **Not done.** Scripts are ready. The transport (`multipass exec/transfer`) would be swapped for `ssh/scp` |
+| **Level 2** | One signer host in each of 5 AWS regions, coordinator host in ap-south-1 (Phase 7B) | Implemented and tested with the `ssh` transport (`deploy/multihost/transport.sh`, NOTES N57, N58); L1, L3–L5, E1–E8 PASS, L2 PASS only on a re-run (N60). Label: **5 regions, one provider, one account, one operator, one build, one dealer** (`reports/INDEPENDENCE.md`) |
 
 **Level 1 is multi-VM on a single physical host.** It demonstrates the *deployment
 shape*: each share lives only on its own host, separate OS users and firewalls, no
@@ -19,13 +19,13 @@ one power supply and one operator. See `reports/INDEPENDENCE.md`.
 | File | Runs on | Purpose |
 |---|---|---|
 | `topology.local.env` | operator | Signer → host → port map (each signer exactly once), coordinator host, operator IP |
-| `deploy.sh` | operator (the dealer) | Build the signer binary (pinned Go), run the key ceremony in a `0700` temp dir, stage **exactly the assigned shares** per host (refuses anything else), install public material only on the coordinator host, write a public manifest, securely delete the ceremony dir |
+| `deploy.sh` | operator (the dealer) | Build the signer binary (pinned Go), refuse an unsafe topology (each signer once, none on the coordinator host, **at most t−1 shares on any host**: `topology-guard.sh`, audit E-2), run the key ceremony in a `0700` temp dir, stage **exactly the assigned shares** per host (refuses anything else), install public material only on the coordinator host, write a public manifest, securely delete the ceremony dir |
 | `setup-signer-host.sh` | each signer host, as root | One system user per signer, share/key `0600` owned by that user, a hardened systemd unit, a default-drop nftables firewall |
 | `coordinator-egress.sh` | coordinator host, as root | `DOCKER-USER` rules: the coordinators' uplink may reach only the signer IP:port pairs |
 | `../docker-compose.multihost.yml` | coordinator host | nginx + 3 coordinators, with no signer containers. gRPC is bound to `lb-net` only |
 | `teardown.sh` | operator | Stop signers, shred shares and keys, remove netem, tear down the coordinator-host stack |
 | `../../test/e2e/multihost.sh` | operator | e2e: deploy, L1–L5 isolation tests, then `test/e2e/run.sh TOPOLOGY=multihost` on the coordinator host, with signer control served from the operator |
-| `../../benchmark/multihost/run.sh` | operator | T 3-of-5 at concurrency 1/10/50 with 0/20/60/150 ms emulated RTT on the far hosts |
+| `../../benchmark/multihost/run.sh` | operator | T 3-of-5 at concurrency 1/10/50 with 0/20/60/150 ms of configured netem delay on the far hosts. The delay is a knob, not a measurement: rows are labelled by **measured** RTT (NOTES N45) |
 
 ## Level 1: exact steps (local Multipass)
 
@@ -57,7 +57,10 @@ as `reports/multihost/e2e-*/nftables-<vm>.txt`):
 The systemd unit adds `IPAddressAllow=<coordinator host>` / `IPAddressDeny=any` as a
 second, independent layer.
 
-## Level 2: what you would do (not done)
+## Level 2: what was done (Phase 7B, AWS)
+
+Level 2 was run with `deploy/aws/provision.sh` (it creates the hosts and security groups and logs every rule) and the `ssh` transport; the evidence is `reports/multihost/e2e-20260926T191044Z-b2f63ca/` and `reports/INDEPENDENCE.md`. The original plan, kept for reference:
+
 
 1. Create one coordinator host and three signer hosts, in at least two regions or
    providers. Give each signer host its own admin account.

@@ -4,14 +4,21 @@
 service account token signing to an external signer over its ExternalJWTSigner gRPC API
 (KEP-740). This repository implements that signer with **Shoup threshold RSA (3-of-5)**:
 the RS256 signature on every token is combined from signature shares that at least 3 of 5
-independent signers produce, and **no process ever holds the whole private key after key
-generation**. kube-apiserver verifies the result as an ordinary RS256 JWT against the group
+signers produce, each holding one share and applying its own claims policy, and **no process
+ever holds the whole private key after key generation**. The threshold protects only as far
+as the signers fail independently, which is a property of the deployment, not of the code:
+no tested deployment gives independent operators, accounts or software
+([Trust assumptions](#trust-assumptions)). kube-apiserver verifies the result as an ordinary RS256 JWT against the group
 public key; nothing in Kubernetes is modified.
 
-> **Status: open-source research prototype.** It has been tested end to end against a real
-> kube-apiserver v1.36.5, but security results rest on a single physical machine (the
-> multi-host evidence is multi-VM on one host), benchmark numbers are preliminary, and the
-> threshold RSA library (`niclabs/tcrsa` v0.0.5) is **unaudited**. Read
+> **Status: open-source research prototype (Apache-2.0).** It has been tested end to end against
+> a real kube-apiserver v1.36.5: single host (`make e2e`), multi-VM on one physical host
+> (Level 1), and one signer per AWS region (Level 2: **5 regions, one provider, one account,
+> one operator, one build, one dealer**; [reports/INDEPENDENCE.md](reports/INDEPENDENCE.md)).
+> Final benchmark numbers come from Phase 7C (kubeadm v1.36.5 on AWS); Phase 7A is single-host
+> and CPU-contended, Phase 7B is T only with one run per configuration, and the Level 1
+> numbers are preliminary (arm64). The threshold RSA library (`niclabs/tcrsa` v0.0.5) is
+> **unaudited**. Read
 > [Trust assumptions](#trust-assumptions) and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)
 > before relying on anything here.
 
@@ -40,9 +47,11 @@ kube-apiserver ──unix socket (dir 0700)──▶ nginx ──mTLS "lb"──
    skew, subject form, deny lists, rate limit), write an audit record, and only then return a
    signature share. They admit work only if it can finish before the coordinator's deadline.
 3. **Coordinators** (`cmd/grpc-proxy`) implement ExternalJWTSigner v1. They hold **only public
-   metadata**. They fan the signing input out to the signers, verify every share (Shoup
-   proof), combine ≥ 3 valid shares into a standard RS256 signature, verify it against the
-   group key, and only then return it. Fewer than 3 valid shares → a generic error, never a token.
+   metadata**. They fan the signing input out to the signers, combine 3 shares into a
+   standard RS256 signature and verify it against the group key before returning it. By
+   default (`optimistic`) shares are verified individually (Shoup proof) only after a failed
+   combine, for signers already marked suspect, or in `strict` mode; the final-signature check
+   always runs (NOTES N65). Fewer than 3 valid shares → a generic error, never a token.
 4. **kube-apiserver** verifies tokens with the key from `FetchKeys` (also served at
    `/openid/v1/jwks`). Verification needs no signer.
 
@@ -55,12 +64,22 @@ State these whenever you describe the system:
 - **Signer independence is required for the security claim.** Threshold signing protects
   against compromise of fewer than 3 signers only if signers fail independently (different
   hosts, operators, credentials). The single-host deployment has **none**; the Level 1
-  multi-host deployment is **multi-VM on one physical host**, with one operator and one
-  software build ([reports/INDEPENDENCE.md](reports/INDEPENDENCE.md)).
+  multi-host deployment is **multi-VM on one physical host**; Level 2 puts one signer in each
+  of 5 AWS regions but keeps **one provider, one account, one operator, one build and one
+  dealer**: whoever controls that account or operator controls every signer
+  ([reports/INDEPENDENCE.md](reports/INDEPENDENCE.md)).
 - **The signer claims policy limits *what* can be signed, not *who* asks.** Whoever controls
   a coordinator (or kube-apiserver) can obtain tokens for any **policy-compliant** claims
   while in control (an online oracle). What they cannot do is obtain policy-violating tokens,
   or mint tokens after losing control (no share or key is on the coordinator).
+  **Under the shipped policy (`deploy/policy.json`, empty deny lists) "policy-compliant"
+  includes tokens for kube-system service accounts**, some of which can escalate to cluster-admin (e.g.
+  `kube-system:clusterrole-aggregation-controller`, which may escalate ClusterRoles). A live coordinator compromise is
+  therefore, while it lasts, effectively a cluster compromise. What bounds it: the issuer,
+  audience allowlist and maximum lifetime (7200 s), the ±60 s `iat` window, the per-signer rate
+  limit, every signer's audit log, and the end of control (THREAT_MODEL §4). kube-system
+  cannot simply be denied, because kube-controller-manager's own controllers use those
+  tokens.
 - **3 colluding or co-compromised signers can forge.** That is the threshold.
 - **Unaudited cryptography.** `niclabs/tcrsa` v0.0.5 (2020) is unaudited and unmaintained;
   the coordinator guards its known hazards (docs/THREAT_MODEL.md §5).
@@ -97,23 +116,28 @@ per-host firewalls): [deploy/multihost/README.md](deploy/multihost/README.md), d
 | Unit / integration (T1–T12) | `make test`; `test/`, `internal/*/..._test.go` |
 | Image isolation (T13) | `make check-images`; negative control in `reports/gates/gate6-t13-negative-control.txt` |
 | Kubernetes e2e (single host) | `make e2e`; `reports/gates/gate6*.log`, `gate6.5*.log` |
-| Multi-host e2e + isolation (L1–L5) | `test/e2e/multihost.sh`; `reports/multihost/e2e-*/` |
-| Benchmarks (**preliminary**) | `benchmark/multihost/run.sh`; `benchmark/results/*/summary.md` (generated from raw CSVs) |
+| Multi-host e2e + isolation (L1–L5) | `test/e2e/multihost.sh`; `reports/multihost/e2e-*/` (Level 1 and Level 2) |
+| Fresh-host reproduction | `make repro` / `.github/workflows/repro.yml`; [reports/REPRO.md](reports/REPRO.md), step logs in `reports/repro/` |
+| Benchmarks | `benchmark/results/*/summary.md` (generated from raw CSVs): final Phase 7C `20260927T131349Z-73be90f-7C`; 7A, 7B and Level 1 with their labels |
+| Phase 12 adversarial audit | [reports/audit/AUDIT.md](reports/audit/AUDIT.md) (mutation, fuzz, claims recheck) |
 | Claims audit | [reports/CLAIMS_AUDIT.md](reports/CLAIMS_AUDIT.md) |
 | Every discrepancy and finding | [NOTES.md](NOTES.md) |
 
-All benchmark results so far are labelled **preliminary: arm64, multi-VM on one overloaded
-16 GB host; not for publication**. Every number quoted anywhere must have a row in a
-script-generated `summary.md`. The fair single-host comparison (native in-tree signing vs a
-single-key external signer vs threshold) runs on a dedicated amd64 cloud VM (Phase 7A,
-pending).
+Every benchmark number must carry its label and have a row in a script-generated
+`summary.md`. **Final numbers: Phase 7C** (kubeadm v1.36.5 on AWS; B0 in-tree / B1 single-key
+external signer / T threshold, one session, 3 runs; NOTES N69–N74). Phase 7A (single host,
+2 vCPU, all components co-located; CPU-contended) and Phase 7B (Level 2, T only, one run per
+configuration) keep their labels; the Level 1 numbers remain **preliminary: arm64, multi-VM on
+one overloaded 16 GB host; not for publication**.
 
 ## Licensing and patents
 
 - The threshold RSA dependency is **`github.com/niclabs/tcrsa` v0.0.5, used under the MIT
   License** (see [NOTICE](NOTICE)). It is pinned to exactly that version.
 - **Later upstream versions of tcrsa reference US patent 10735188** in their license.
-- This repository is an **open-source research prototype**.
+- This repository is an **open-source research prototype**, licensed under the
+  **Apache License 2.0** ([LICENSE](LICENSE)). Apache-2.0 is compatible with tcrsa v0.0.5's MIT
+  license and with every other dependency (BSD-3-Clause, Apache-2.0, MIT).
 - **Any commercial use requires independent legal review.**
 
 ## Defaults (final, NOTES N82)

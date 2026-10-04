@@ -102,7 +102,7 @@ Read, line by line: signer handler, policy, coordinator collection/verify/Join, 
 - .gitignore covers every generated artifact (secrets, run, audit, bin, results scratch).
 - reports/HISTORY_PURGE.md lists everything that must be purged from history, and nothing sensitive is missing from it.
 - No leftover debug code, commented-out blocks, personal paths (/Users/...) in shipped files.
-- The word "CleanStart" appears nowhere in the repo.
+- The author's employer name appears nowhere in the repo.
 
 ## Output
 
