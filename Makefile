@@ -1,7 +1,7 @@
 # frost-k8s: threshold RSA ExternalJWTSigner
 export GOTOOLCHAIN := go1.27.1
 
-.PHONY: all build vet lint vuln repro test test-unit test-malicious check-images e2e e2e-keep e2e-down legacy
+.PHONY: all build vet lint vuln repro test test-unit test-malicious test-spike check-images e2e e2e-keep e2e-down legacy
 
 all: build vet test
 
@@ -11,6 +11,7 @@ build:
 vet:
 	go vet ./...
 	go vet -tags testmalicious ./...
+	cd spike && go vet ./...
 
 ## staticcheck (as in CI).
 lint:
@@ -26,14 +27,18 @@ vuln:
 repro:
 	scripts/repro.sh
 
-## Unit + integration (T1–T12) + T5 with the test-only malicious signer build tag.
-test: test-unit test-malicious
+## Unit + integration (T1–T12) + T5 with the test-only malicious signer build tag
+## + the spike tcrsa hazard tests cited by THREAT_MODEL §5 (separate module; audit C-7).
+test: test-unit test-malicious test-spike
 
 test-unit:
 	go test -count=1 -timeout 30m ./...
 
 test-malicious:
 	go test -count=1 -timeout 30m -tags testmalicious -run 'TestMaliciousSignerExcluded' -v ./test/
+
+test-spike:
+	cd spike && go test -count=1 -timeout 30m -v .
 
 ## T13: no secret material in any image layer (needs docker).
 check-images:

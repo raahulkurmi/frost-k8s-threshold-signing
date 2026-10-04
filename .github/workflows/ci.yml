@@ -44,6 +44,7 @@ jobs:
           go vet ./...
           go vet -tags testmalicious ./...
           (cd benchmark && go vet ./...)
+          (cd spike && go vet ./...)
       - name: staticcheck
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}
@@ -61,7 +62,7 @@ jobs:
         run: gitleaks detect --no-git --source . --redact --no-banner -v
 
   test:
-    name: make test (T1-T12, T5 testmalicious)
+    name: make test (T1-T12, T5 testmalicious, spike hazard tests)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
