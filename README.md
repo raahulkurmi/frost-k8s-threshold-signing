@@ -26,8 +26,15 @@ The repository name comes from an earlier prototype that used FROST. That design
 work: Kubernetes verifies only RS256/ES256/ES384/ES512, FROST produces Schnorr signatures,
 and the prototype in fact signed every token with a single coordinator-held ECDSA key. It is
 kept, excluded from every build, in [legacy/frost/](legacy/frost/README.md), with its
-original README. Its keys were committed to this public repository and are **burned**
-([reports/HISTORY_PURGE.md](reports/HISTORY_PURGE.md)).
+original README. Its keys were committed to this public repository and are **burned**.
+
+**About the git history:** the early history contains those burned development keys and secrets
+of the abandoned FROST prototype; per the owner they were never used outside this repository, and nothing in
+the rebuilt system uses them. The author's employer name appears in the history of one
+audit-instructions commit (0aac79c) and nowhere in the current tree. The history is deliberately
+**not** rewritten, because rewriting would change every commit hash the evidence cites, including
+the pre-registration proof for the v2 evaluation. See [reports/HISTORY_PURGE.md](reports/HISTORY_PURGE.md),
+which also records the plan for an anonymized, history-free snapshot for double-blind review.
 
 ## How it works
 

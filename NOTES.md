@@ -1703,3 +1703,25 @@ carry the corrected text.
   - G-24: the THREAT_MODEL line reference is corrected;
   - G-27: the clock-skew figures are marked as from audit logs that were not retained;
   - G-28: the CI e2e summary lines are committed in `reports/gates/ci-e2e-run*.txt`.
+
+### N86. Phase 12 audit, second round: other fixes and decisions
+- **B-1:** invariants I1–I10 are defined in `docs/INVARIANTS.md`, linked from README and
+  THREAT_MODEL.
+- **C-3:** new tests catch the second-layer checks:
+  - `TestResponseSANCheckWithoutTLSPinning` catches M5a;
+  - `TestCancelledRequestRefusedBeforeAdmission` catches M14a;
+  - `TestCallerGoneDuringAdmissionComputesNoShare` catches M14b.
+
+  M3a (collect-loop duplicate-id check) is unreachable: endpoint ids are unique and each
+  endpoint is launched once. It is documented in the code as defence in depth; no code removed.
+- **H-3 (N52 update).** On 2026-10-04 no released grpc contains the GO-2026-6443 fix. The newest
+  release is v1.84.0; only v1.85.0-dev and v1.86.0-dev pre-releases exist. The acceptance is
+  extended once, to **2027-01-31**, with the justification in
+  `reports/ci/govulncheck-accepted.txt`. Upgrade to the first release that contains the fix.
+- **E-1 (extension):** `VAULT_ADDR` must be `https://`; plain http is allowed only with
+  `VAULT_DEV_ALLOW_HTTP=1`.
+- **History:** not rewritten. The reason, the disclosure (burned FROST-prototype keys; the
+  employer name in audit-instructions commit 0aac79c) and the plan for an anonymized,
+  history-free snapshot for double-blind review are in `reports/HISTORY_PURGE.md` §0–§0a, with a
+  short note in README.
+- **G-44:** the three aborted, untracked result folders stay untracked by decision.

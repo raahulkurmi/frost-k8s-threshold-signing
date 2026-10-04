@@ -1,4 +1,60 @@
-# History purge plan (NOT executed)
+# Git history: burned material, decision not to rewrite, anonymized snapshot plan
+
+## 0. Decision (2026-10-04): the history is **not** rewritten
+
+The purge plan below (§1–§4, prepared 2026-09-24) **will not be executed**. Rewriting history
+would change every commit hash. The reports, NOTES and the paper inputs cite commit hashes as
+evidence, including the proof that the v2 overload-control rules were pre-registered (293a919)
+before the v2 implementation (d07a8e7) and before any v2 data (a000c9b). A rewrite would make
+that proof, and every other cited hash, unverifiable. Instead, the history is disclosed:
+
+- **Burned development keys.** Early history (commits listed in §1) contains development keys
+  and secrets of the abandoned FROST prototype:
+  - a P-256 ECDSA key;
+  - the five FROST shares;
+  - three mTLS keys;
+  - a Vault dev token;
+  - a default password.
+
+  They were never used outside this repository and its local test environments (statement
+  of the repository owner; not verifiable from the repository). They are burned: nothing in the rebuilt system uses, trusts or derives from them, and every key the
+  rebuilt system uses is generated fresh (`scripts/gen-certs.sh`, `cmd/dealer`).
+- **The author's employer name.**
+  - It appears in the history of one audit-instructions commit, 0aac79c (the text of a Phase 12
+    audit rule).
+  - That file stayed unchanged in the trees of the next seven commits, until d23d0f4 removed the
+    name (Phase 12 audit finding J-3).
+  - No tracked file at d23d0f4 or later contains it, and no commit metadata (author or committer
+    name or e-mail) contains it.
+- **Scans.** gitleaks over all refs reports 10 findings: the 4 private keys of §1, and 6
+  `generic-api-key` matches in `reports/aws/7c/bootstrap-checks.jsonl` at a0173b4. The latter are
+  public key IDs (`token_kid`), renamed in N69: false positives (audit J-1).
+
+## 0a. Plan: anonymized, history-free artifact snapshot (for double-blind submission; NOT created yet)
+
+For a double-blind paper submission, reviewers get a snapshot, not this repository.
+
+1. **Source.** `git archive` of the final tagged commit (working tree only, no `.git`), so no
+   history, commit metadata, burned key or employer name is included.
+2. **Anonymize.** Replace the author's name, the GitHub owner and repository URL, the AWS
+   account-specific values (security-group IDs, instance and Elastic IPs, the operator's IP)
+   and absolute home paths with neutral placeholders. Use a reviewed sed map, and keep the map
+   outside the snapshot.
+3. **Keep the evidence verifiable without hashes.** Keep NOTES, the reports and the results
+   directories. Add a manifest of SHA-256 sums for every evidence file, and replace commit
+   hashes with neutral labels plus a sealed mapping that is disclosed after review.
+4. **Check before release.**
+   - gitleaks on the snapshot;
+   - `git grep`-style scans for the author's name, the employer name, the GitHub owner, `/Users/`
+     and the IP list (all must be empty);
+   - `make test` from the snapshot;
+   - one reviewer-style read-through.
+5. **Publish** as an anonymous archive (for example an anonymized artifact host). Record the
+   snapshot's SHA-256 in NOTES after submission.
+
+---
+
+## Original purge plan (2026-09-24; superseded by §0, kept for the record)
 
 Prepared 2026-09-24 on branch `fix/threshold-rsa`. **Nothing in this file has been run.**
 Rewriting history and force-pushing are for the repository owner to do.

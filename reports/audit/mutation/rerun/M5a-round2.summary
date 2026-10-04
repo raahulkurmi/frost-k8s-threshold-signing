@@ -1,0 +1,8 @@
+mutation M5a  dir mut-r2  start 2026-10-04T12:15:23Z
+unit rc=1 malicious rc=0 seconds=224
+failing tests:
+--- FAIL: TestResponseSANCheckWithoutTLSPinning
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	51.770s
+RESULT M5a CAUGHT

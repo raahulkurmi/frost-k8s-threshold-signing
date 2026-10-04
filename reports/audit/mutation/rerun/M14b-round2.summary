@@ -1,0 +1,8 @@
+mutation M14b  dir mut-r2  start 2026-10-04T12:21:44Z
+unit rc=1 malicious rc=0 seconds=174
+failing tests:
+--- FAIL: TestCallerGoneDuringAdmissionComputesNoShare
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	72.704s
+RESULT M14b CAUGHT
