@@ -1,0 +1,13 @@
+diff --git a/internal/keyshare/keyshare.go b/internal/keyshare/keyshare.go
+index 0021bb4..0fd36ef 100644
+--- a/internal/keyshare/keyshare.go
++++ b/internal/keyshare/keyshare.go
+@@ -79,7 +79,7 @@ func Parse(b []byte, meta *keymeta.Meta, expectedIndex int) (*tcrsa.KeyShare, er
+ 	if err := dec.Decode(&f); err != nil {
+ 		return nil, fmt.Errorf("decode: %w", err)
+ 	}
+-	if dec.More() {
++	if false && dec.More() { // MUTATION M10a
+ 		return nil, errors.New("trailing data after JSON object (a share file holds exactly one share)")
+ 	}
+ 	return f.validate(meta, expectedIndex)

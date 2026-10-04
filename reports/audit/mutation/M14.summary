@@ -1,0 +1,10 @@
+mutation M14  dir <clone>  start 2026-10-04T02:00:01Z
+unit rc=1 malicious rc=0 seconds=275
+failing tests:
+--- FAIL: TestCancelledDuringSigningDiscardsShare
+--- FAIL: TestCancelledRequestComputesNoShare
+--- FAIL: TestExpiredDeadlineNeverComputesShare
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	224.759s
+RESULT M14 CAUGHT

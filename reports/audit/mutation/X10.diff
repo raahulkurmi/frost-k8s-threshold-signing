@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..783b1e5 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -294,7 +294,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
+ 		if err != nil {
+ 			return nil, err
+ 		}
+-		if nbf > iat+skew || nbf < iat-skew {
++		if false && (nbf > iat+skew || nbf < iat-skew) { // MUTATION X10
+ 			return nil, violation("nbf", "nbf %d not within skew of iat %d", nbf, iat)
+ 		}
+ 	}

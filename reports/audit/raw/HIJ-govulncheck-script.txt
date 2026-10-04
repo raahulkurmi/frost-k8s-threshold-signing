@@ -1,0 +1,6 @@
+$ scripts/govulncheck.sh
+govulncheck.sh: GO-2026-6443 reachable, ACCEPTED until 2026-11-30 (see <clone>/reports/ci/govulncheck-accepted.txt)
+exit=0
+$ scripts/govulncheck.sh benchmark
+govulncheck.sh: GO-2026-6443 reachable, ACCEPTED until 2026-11-30 (see <clone>/reports/ci/govulncheck-accepted.txt)
+exit=0

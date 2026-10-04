@@ -1,0 +1,11 @@
+mutation M15  dir <clone>  start 2026-10-03T23:27:08Z
+unit rc=1 malicious rc=0 seconds=913
+failing tests:
+--- FAIL: TestBelowThresholdFails
+--- FAIL: TestBelowThresholdFailsWithAbort
+--- FAIL: TestSignErrorIsGeneric
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/grpcserver	267.560s
+FAIL	frost-k8s-threshold-signing/test	237.529s
+RESULT M15 CAUGHT

@@ -1,0 +1,13 @@
+diff --git a/internal/tlsconf/tlsconf.go b/internal/tlsconf/tlsconf.go
+index aee2108..32708fb 100644
+--- a/internal/tlsconf/tlsconf.go
++++ b/internal/tlsconf/tlsconf.go
+@@ -177,7 +177,7 @@ func CoordinatorGRPCServer(certFile, keyFile, caFile string) (*tls.Config, error
+ 			if len(cs.PeerCertificates) == 0 {
+ 				return errors.New("no client certificate")
+ 			}
+-			return exactlyOneSAN(cs.PeerCertificates[0], LBName)
++			return nil // MUTATION M16: no client SAN check on the coordinator listener
+ 		},
+ 	}, nil
+ }

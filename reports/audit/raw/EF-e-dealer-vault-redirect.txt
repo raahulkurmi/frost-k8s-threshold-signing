@@ -1,0 +1,7 @@
+=== RUN   TestEFDealerVaultRedirect
+    zz_ef_vault_test.go:32: WriteVault err=<nil> outs=[{vault:secret/frost-k8s/signer-1 4b6ec3ce155ca338d4d4b6e0b976d392f8e8ccd47104180502da0e0c044ddf5e}]
+    zz_ef_vault_test.go:33: redirect target got token=true, got share body containing si=true
+--- PASS: TestEFDealerVaultRedirect (0.00s)
+PASS
+ok  	frost-k8s-threshold-signing/internal/dealer	0.586s
+EXIT 0

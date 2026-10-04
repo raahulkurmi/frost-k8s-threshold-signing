@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..448af2a 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -348,7 +348,7 @@ func checkK8sClaims(raw json.RawMessage, ns, name string) (string, error) {
+ 	if err != nil {
+ 		return "", err
+ 	}
+-	if gotNS == nil || gotName == nil || *gotNS != ns || *gotName != name {
++	if false && (gotNS == nil || gotName == nil || *gotNS != ns || *gotName != name) { // MUTATION X9
+ 		return "", violation("sub", "sub %s:%s disagrees with kubernetes.io claims (%s/%s)", ns, name, strOrMissing(gotNS), strOrMissing(gotName))
+ 	}
+ 	podUID := ""

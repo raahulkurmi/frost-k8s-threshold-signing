@@ -1,0 +1,8 @@
+mutation X11  dir <clone>  start 2026-10-04T01:56:54Z
+unit rc=1 malicious rc=0 seconds=230
+failing tests:
+--- FAIL: TestTLSRejectsClientWithoutCoordinatorSAN
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	151.877s
+RESULT X11 CAUGHT

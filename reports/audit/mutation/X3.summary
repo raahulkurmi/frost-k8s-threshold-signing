@@ -1,0 +1,14 @@
+mutation X3  dir <clone>  start 2026-10-04T00:27:49Z
+unit rc=1 malicious rc=0 seconds=428
+failing tests:
+    --- FAIL: TestPolicyRejects/lifetime_above_max
+    --- FAIL: TestPolicyRejects/one-year_token
+--- FAIL: TestPolicyRejects
+--- FAIL: TestSignerAppliesPolicy
+--- FAIL: TestSignerPolicyRejectsCoordinatorBypass
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/policy	3.173s
+FAIL	frost-k8s-threshold-signing/internal/signer	217.132s
+FAIL	frost-k8s-threshold-signing/test	222.312s
+RESULT X3 CAUGHT

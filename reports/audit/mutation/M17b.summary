@@ -1,0 +1,19 @@
+mutation M17b  dir <clone>  start 2026-10-04T00:04:58Z
+unit rc=1 malicious rc=1 seconds=238
+failing tests:
+    --- FAIL: TestMaliciousSignerExcluded/optimistic/three_malicious
+    --- FAIL: TestQuorumImpossibleAbortsEarly/no-abort
+--- FAIL: TestBelowThresholdFails
+--- FAIL: TestBelowThresholdSigners
+--- FAIL: TestHedgedBelowThresholdFails
+--- FAIL: TestMaliciousSignerExcluded
+--- FAIL: TestQuorumAbortOffByDefault
+--- FAIL: TestQuorumAbortReducesWastedSharesSimulation
+--- FAIL: TestQuorumImpossibleAbortsEarly
+--- FAIL: TestThreeMaliciousFails
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	122.241s
+FAIL	frost-k8s-threshold-signing/test	227.345s
+FAIL	frost-k8s-threshold-signing/test	8.592s
+RESULT M17b CAUGHT

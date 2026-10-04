@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..95df677 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -401,7 +401,7 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error)
+ 		}
+ 	}
+ 
+-	t := c.meta.Threshold
++	t := c.meta.Threshold - 1 // MUTATION X16: one share fewer
+ 	valid := map[int]*tcrsa.SigShare{}      // verified shares, deduped by ID
+ 	candidates := map[int]*tcrsa.SigShare{} // optimistic: well-formed, unverified
+ 	var failures []SignerFailure

@@ -1,0 +1,39 @@
+diff --git a/cmd/signer/main.go b/cmd/signer/main.go
+index cc7688e..42369b8 100644
+--- a/cmd/signer/main.go
++++ b/cmd/signer/main.go
+@@ -47,6 +47,7 @@ import (
+ 	"os"
+ 	"os/signal"
+ 	"strconv"
++	"strings"
+ 	"syscall"
+ 	"time"
+ 
+@@ -74,6 +75,7 @@ type settings struct {
+ 	ID       int
+ 	Meta     *keymeta.Meta
+ 	Share    *tcrsa.KeyShare
++	Extra    []*tcrsa.KeyShare // MUTATION M10b
+ 	Policy   *policy.Policy
+ 	Audit    string
+ 	Listen   string
+@@ -135,8 +137,16 @@ func load(ctx context.Context, getenv func(string) string) (*settings, error) {
+ 			return nil, err
+ 		}
+ 	case shareFile != "":
+-		if s.Share, err = keyshare.Load(shareFile, s.Meta, s.ID); err != nil {
+-			return nil, err
++		for i, f := range strings.Split(shareFile, ",") { // MUTATION M10b: loads every listed share
++			ks, lerr := keyshare.Load(f, s.Meta, s.ID+i)
++			if lerr != nil {
++				return nil, lerr
++			}
++			if i == 0 {
++				s.Share = ks
++			} else {
++				s.Extra = append(s.Extra, ks)
++			}
+ 		}
+ 	default:
+ 		return nil, errors.New("no share source: set SHARE_FILE or VAULT_ADDR")

@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..5ea26d3 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -351,7 +351,7 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error)
+ 			if r.err == nil && strategy == Strict {
+ 				if gate.acquire() {
+ 					vs := time.Now()
+-					err := verifyShare(r.share)
++					var err error // MUTATION M1: strict skips per-share verification
+ 					gate.release(err == nil)
+ 					if err != nil {
+ 						r.err = fmt.Errorf("invalid signature share: %v", err)

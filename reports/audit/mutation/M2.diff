@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..1307891 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -459,7 +459,7 @@ func (c *Coordinator) Sign(ctx context.Context, claims string) (*Result, error)
+ 			return nil, ids, err
+ 		}
+ 		vs := time.Now()
+-		err = rsa.VerifyPKCS1v15(c.meta.PublicKey, crypto.SHA256, digest[:], s)
++		_ = rsa.VerifyPKCS1v15; err = nil // MUTATION M2: no final signature verification
+ 		finalVerify += time.Since(vs)
+ 		return s, ids, err
+ 	}

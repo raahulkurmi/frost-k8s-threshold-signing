@@ -1,0 +1,18 @@
+mutation M2  dir <clone>  start 2026-10-03T23:32:31Z
+unit rc=1 malicious rc=1 seconds=543
+failing tests:
+    --- FAIL: TestMaliciousShareExcludedAndAttributed/optimistic
+    --- FAIL: TestMaliciousSignerExcluded/optimistic/one_malicious
+    --- FAIL: TestMaliciousSignerExcluded/optimistic/three_malicious
+--- FAIL: TestBreakerFallbackToStrict
+--- FAIL: TestBreakerRecovery
+--- FAIL: TestBreakerTripMarksSuspect
+--- FAIL: TestBreakerWorkBound
+--- FAIL: TestMaliciousShareExcludedAndAttributed
+--- FAIL: TestMaliciousSignerExcluded
+--- FAIL: TestThreeMaliciousFails
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	206.320s
+FAIL	frost-k8s-threshold-signing/test	191.792s
+RESULT M2 CAUGHT

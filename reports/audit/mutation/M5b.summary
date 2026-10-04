@@ -1,0 +1,8 @@
+mutation M5b  dir <clone>  start 2026-10-04T00:37:04Z
+unit rc=1 malicious rc=0 seconds=237
+failing tests:
+--- FAIL: TestShareIDBoundToMTLSIdentity
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	100.978s
+RESULT M5b CAUGHT

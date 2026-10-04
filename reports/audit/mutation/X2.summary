@@ -1,0 +1,16 @@
+mutation X2  dir <clone>  start 2026-10-04T00:21:38Z
+unit rc=1 malicious rc=0 seconds=369
+failing tests:
+    --- FAIL: TestPolicyRejects/disallowed_aud
+    --- FAIL: TestPolicyRejects/one_disallowed_aud_among_allowed
+--- FAIL: TestPolicyRejects
+--- FAIL: TestSignErrorIsGeneric
+--- FAIL: TestSignerAppliesPolicy
+--- FAIL: TestSignerPolicyRejectsCoordinatorBypass
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/grpcserver	60.625s
+FAIL	frost-k8s-threshold-signing/internal/policy	3.397s
+FAIL	frost-k8s-threshold-signing/internal/signer	166.973s
+FAIL	frost-k8s-threshold-signing/test	176.536s
+RESULT X2 CAUGHT

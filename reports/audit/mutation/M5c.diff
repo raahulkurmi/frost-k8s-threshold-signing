@@ -1,0 +1,32 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..260b036 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -637,7 +637,7 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = errors.New("response not received over mTLS")
+ 		return r
+ 	}
+-	if leaf := resp.TLS.PeerCertificates[0]; len(leaf.DNSNames) != 1 || leaf.DNSNames[0] != fmt.Sprintf("signer-%d", ep.ID) {
++	if leaf := resp.TLS.PeerCertificates[0]; false && (len(leaf.DNSNames) != 1 || leaf.DNSNames[0] != fmt.Sprintf("signer-%d", ep.ID)) { // MUTATION M5a
+ 		r.err = fmt.Errorf("peer certificate %v is not signer-%d", leaf.DNSNames, ep.ID)
+ 		return r
+ 	}
+@@ -666,7 +666,7 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = fmt.Errorf("malformed response: %v", err)
+ 		return r
+ 	}
+-	if sr.SignerID != ep.ID {
++	if false && sr.SignerID != ep.ID { // MUTATION M5b
+ 		r.err = fmt.Errorf("response claims signer_id %d but came from authenticated signer-%d", sr.SignerID, ep.ID)
+ 		return r
+ 	}
+@@ -674,7 +674,8 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = fmt.Errorf("response request_id %q does not match %q", sr.RequestID, reqID)
+ 		return r
+ 	}
+-	share, err := sr.Share.ToTcrsa(ep.ID, c.meta.Parties, c.meta.PublicKey.N)
++	share, err := sr.Share.ToTcrsa(sr.SignerID, // MUTATION M5c: id from the response
++		 c.meta.Parties, c.meta.PublicKey.N)
+ 	if err != nil {
+ 		r.err = fmt.Errorf("malformed share: %v", err)
+ 		// keep r.share nil: nothing usable

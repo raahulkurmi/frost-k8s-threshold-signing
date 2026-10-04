@@ -1,0 +1,15 @@
+diff --git a/cmd/grpc-proxy/main.go b/cmd/grpc-proxy/main.go
+index dfa1113..3bfe32b 100644
+--- a/cmd/grpc-proxy/main.go
++++ b/cmd/grpc-proxy/main.go
+@@ -159,8 +159,8 @@ func load(getenv func(string) string) (*settings, error) {
+ 		return nil, fmt.Errorf("COORDINATOR_ID %q must be an integer in [1,%d]", idStr, tlsconf.MaxCoordinators)
+ 	}
+ 	switch v := getenv("QUORUM_ABORT"); v {
+-	case "", "off":
+-	case "on":
++	case "off":
++	case "", "on": // MUTATION M17a: QUORUM_ABORT defaults to on
+ 		s.Abort = true
+ 	default:
+ 		return nil, fmt.Errorf("QUORUM_ABORT %q must be on or off", v)

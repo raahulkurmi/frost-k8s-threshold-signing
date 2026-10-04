@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..aeacd40 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -670,7 +670,7 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = fmt.Errorf("response claims signer_id %d but came from authenticated signer-%d", sr.SignerID, ep.ID)
+ 		return r
+ 	}
+-	if sr.RequestID != reqID {
++	if false && sr.RequestID != reqID { // MUTATION X4: request_id not checked
+ 		r.err = fmt.Errorf("response request_id %q does not match %q", sr.RequestID, reqID)
+ 		return r
+ 	}

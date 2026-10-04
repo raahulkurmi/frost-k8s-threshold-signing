@@ -1,0 +1,31 @@
+diff --git a/internal/grpcserver/server.go b/internal/grpcserver/server.go
+index e597436..bfdd979 100644
+--- a/internal/grpcserver/server.go
++++ b/internal/grpcserver/server.go
+@@ -11,6 +11,10 @@ import (
+ 	"net"
+ 	"os"
+ 
++	"crypto/rand"
++	"crypto/rsa"
++	"crypto/x509"
++
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/codes"
+ 	"google.golang.org/grpc/status"
+@@ -92,7 +96,7 @@ func (s *Server) FetchKeys(context.Context, *externaljwtv1.FetchKeysRequest) (*e
+ 			KeyId:                    s.meta.KID,
+ 			Key:                      s.meta.PKIX,
+ 			ExcludeFromOidcDiscovery: false,
+-		}},
++		}, {KeyId: "other", Key: otherPKIX}}, // MUTATION M12a: an extra key
+ 		DataTimestamp:      timestamppb.New(s.meta.CreatedAt),
+ 		RefreshHintSeconds: s.refreshHint,
+ 	}, nil
+@@ -136,3 +140,6 @@ func ListenUnix(path string) (net.Listener, error) {
+ 	}
+ 	return l, nil
+ }
++
++// MUTATION M12a helper: some other RSA public key.
++var otherPKIX = func() []byte { k, _ := rsa.GenerateKey(rand.Reader, 2048); b, _ := x509.MarshalPKIXPublicKey(&k.PublicKey); return b }()

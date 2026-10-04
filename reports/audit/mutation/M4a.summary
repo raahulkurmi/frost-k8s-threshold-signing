@@ -1,0 +1,8 @@
+mutation M4a  dir <clone>  start 2026-10-04T00:10:27Z
+unit rc=1 malicious rc=0 seconds=628
+failing tests:
+--- FAIL: TestJoinOutOfRangeIDs
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	286.209s
+RESULT M4a CAUGHT

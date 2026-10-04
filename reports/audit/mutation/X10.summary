@@ -1,0 +1,9 @@
+mutation X10  dir <clone>  start 2026-10-04T01:04:45Z
+unit rc=1 malicious rc=0 seconds=3125
+failing tests:
+    --- FAIL: TestPolicyRejects/nbf_far_from_iat
+--- FAIL: TestPolicyRejects
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/policy	2.364s
+RESULT X10 CAUGHT

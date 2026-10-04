@@ -1,0 +1,8 @@
+37f3c5e 2026-10-04T03:53:03+05:30 N82: apply the pre-registered decision (QUORUM_ABORT off by default, opt-in); final defaults documented; priority admission evaluated, not recommended; PAPER_INPUTS two-iteration result
+4c8823a 2026-10-03T21:17:03+05:30 N78: N76/N77 AWS evaluation results; teardown proof
+b672ab7 2026-10-03T14:01:57+05:30 N77: stable-identity priority (proposal), DAGOR 4.2.3 histogram controller, storm test for retry amplification
+8032da3 2026-09-28T03:00:03+05:30 N76: quorum-impossible abort (B), priority-consistent signer admission (A), per-replica coordinator certs + fair share, 4 s deadline cap
+48fb8f8 2026-09-28T01:46:18+05:30 Design (not implemented): priority-consistent signer admission after DAGOR; NOTES N75 incl. open question on the signer-CPU drop
+
+N76 data dirs commits:
+4c8823a 2026-10-03T21:17:03+05:30 N78: N76/N77 AWS evaluation results; teardown proof

@@ -1,0 +1,24 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..a2f7b94 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -195,16 +195,16 @@ func (s *Server) admitN48(ctx context.Context) (func(), *Rejection) {
+ 		deadline = s.cfg.Now().Add(s.cfg.DefaultWait + est)
+ 	}
+ 	budget := time.Until(deadline) - est // latest moment we may still start
+-	if budget <= 0 {
++	if false && budget <= 0 { // MUTATION M13b
+ 		return nil, reject(http.StatusServiceUnavailable, "overloaded",
+ 			"signer %d busy and the request cannot finish in time (remaining %v, RSA estimate %v)", s.cfg.ID, time.Until(deadline).Round(time.Millisecond), est.Round(time.Millisecond))
+ 	}
+-	if n := s.waiting.Add(1); n > int64(s.cfg.MaxQueue) {
++	if n := s.waiting.Add(1); false && n > int64(s.cfg.MaxQueue) { // MUTATION M13b
+ 		s.waiting.Add(-1)
+ 		return nil, reject(http.StatusServiceUnavailable, "overloaded", "signer %d queue full (%d waiting)", s.cfg.ID, s.cfg.MaxQueue)
+ 	}
+ 	defer s.waiting.Add(-1)
+-	t := time.NewTimer(budget)
++	t := time.NewTimer(time.Hour) // MUTATION M13b
+ 	defer t.Stop()
+ 	select {
+ 	case s.slots <- struct{}{}:

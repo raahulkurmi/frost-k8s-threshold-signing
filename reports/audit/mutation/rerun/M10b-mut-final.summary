@@ -1,0 +1,10 @@
+mutation M10b  dir mut-final  start 2026-10-04T08:20:35Z
+unit rc=1 malicious rc=0 seconds=179
+failing tests:
+    --- FAIL: TestShareFileMustNameExactlyOneFile/comma_list
+    --- FAIL: TestShareFileMustNameExactlyOneFile/comma_list_3
+--- FAIL: TestShareFileMustNameExactlyOneFile
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/cmd/signer	132.821s
+RESULT M10b CAUGHT

@@ -1,0 +1,14 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..ccf48fe 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -376,6 +376,9 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 		return deny(reject(http.StatusBadRequest, "bad_request", "payload: %v", err))
+ 	}
+ 	decision, err := s.cfg.Policy.Evaluate(payload, start)
++	if err != nil { // MUTATION M7: policy result ignored
++		decision, err = &policy.Decision{}, nil
++	}
+ 	if err != nil {
+ 		return deny(reject(http.StatusForbidden, "policy", "%v", err))
+ 	}

@@ -1,0 +1,16 @@
+mutation M1  dir <clone>  start 2026-10-03T23:23:08Z
+unit rc=1 malicious rc=1 seconds=560
+failing tests:
+    --- FAIL: TestMaliciousShareExcludedAndAttributed/strict
+    --- FAIL: TestMaliciousSignerExcluded/strict/one_malicious
+    --- FAIL: TestMaliciousSignerExcluded/strict/three_malicious
+--- FAIL: TestBreakerFallbackToStrict
+--- FAIL: TestMaliciousShareExcludedAndAttributed
+--- FAIL: TestMaliciousSignerExcluded
+--- FAIL: TestStrictVerifiesUntilT
+--- FAIL: TestThreeMaliciousFails
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	149.500s
+FAIL	frost-k8s-threshold-signing/test	33.510s
+RESULT M1 CAUGHT

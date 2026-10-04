@@ -1,0 +1,9 @@
+mutation M6b  dir <clone>  start 2026-10-04T00:51:49Z
+unit rc=1 malicious rc=0 seconds=219
+failing tests:
+--- FAIL: TestSignerRejectsPrehashedInput
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	89.223s
+FAIL	frost-k8s-threshold-signing/test	115.543s
+RESULT M6b CAUGHT

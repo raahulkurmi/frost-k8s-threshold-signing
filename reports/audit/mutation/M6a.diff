@@ -1,0 +1,16 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..46e1055 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -364,6 +364,11 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 	if !wire.ValidRequestID(req.RequestID) {
+ 		return deny(reject(http.StatusBadRequest, "bad_request", "request_id missing or invalid"))
+ 	}
++	if raw, derr := jwtfmt.DecodeSegment(req.SigningInput); derr == nil && len(raw) == 32 { // MUTATION M6a: accept a pre-hashed input
++		doc, _ := tcrsa.PrepareDocumentHash(s.cfg.Meta.PublicKey.Size(), crypto.SHA256, raw)
++		ss, _ := s.cfg.Share.Sign(doc, crypto.SHA256, s.cfg.Meta.Tcrsa)
++		return &wire.SignShareResponse{SignerID: s.cfg.ID, Share: wire.FromTcrsa(ss), RequestID: req.RequestID}, nil
++	}
+ 	headerSeg, payloadSeg, err := jwtfmt.SplitSigningInput(req.SigningInput)
+ 	if err != nil {
+ 		return deny(reject(http.StatusBadRequest, "bad_request", "%v", err))

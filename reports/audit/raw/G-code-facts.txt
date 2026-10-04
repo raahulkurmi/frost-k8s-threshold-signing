@@ -1,0 +1,113 @@
+{
+  "issuer": "https://kubernetes.default.svc.cluster.local",
+  "allowed_audiences": [
+    "https://kubernetes.default.svc.cluster.local",
+    "frost-e2e-allowed"
+  ],
+  "max_token_expiration_seconds": 7200,
+  "clock_skew_seconds": 60,
+  "deny_namespaces": [],
+  "deny_service_accounts": [],
+  "rate_limit": {
+    "requests_per_second": 200,
+    "burst": 400
+  }
+}
+
+coordinator.go:480-490
+	}
+	quorumImpossible := false
+	received := 0
+collect:
+	for received < launched || launched < len(order) {
+		if impossible() {
+			quorumImpossible = true
+			c.quorumAborts.Add(1)
+			break collect
+		}
+		if received == launched { // everything contacted has answered without quorum
+internal/coordinator/coordinator.go:644:	raw, err := io.ReadAll(io.LimitReader(resp.Body, wire.MaxResponseBytes+1))
+internal/coordinator/coordinator.go:649:	if len(raw) > wire.MaxResponseBytes {
+internal/wire/wire.go:19:	// MaxResponseBytes bounds a sign-share response body.
+internal/wire/wire.go:20:	MaxResponseBytes = 16 << 10
+
+58:	ErrMsgThreshold      = "token signing failed: threshold not met"
+59:	ErrMsgInvalidRequest = "token signing failed: invalid request"
+60:	ErrMsgInternal       = "token signing failed"
+
+6:test/correctness_test.go-191-	for a := 0; a < 5; a++ {
+7:test/correctness_test.go-192-		for b := a + 1; b < 5; b++ {
+8:test/correctness_test.go-193-			pair := []*tcrsa.KeyShare{fx.Shares[a], fx.Shares[b]}
+9:test/correctness_test.go-194-			if _, err := testutil.OfflineCombine(t, meta.Tcrsa, pair, doc); err == nil {
+13:test/correctness_test.go-198-			weak.K = 2
+14:test/correctness_test.go-199-			if sig, err := testutil.OfflineCombine(t, &weak, pair, doc); err == nil && testutil.VerifyPKCS1(meta.PublicKey, input, sig) == nil {
+15:test/correctness_test.go-200-				t.Fatalf("pair {%d,%d} forged with K forced to 2", a+1, b+1)
+17:test/correctness_test.go-202-			// A fabricated third share (random si, index of a missing signer).
+19:test/correctness_test.go-204-			for missing == a+1 || missing == b+1 {
+23:test/correctness_test.go-208-			if sig, err := testutil.OfflineCombine(t, meta.Tcrsa, append(pair, fake), doc); err == nil && testutil.VerifyPKCS1(meta.PublicKey, input, sig) == nil {
+
+4:internal/signer/signer_test.go-191-	e := newEnv(t, 1, func(c *policy.Config) { c.RateLimit = policy.Rate{RequestsPerSecond: 0.001, Burst: 2} })
+12:internal/signer/signer_test.go-199-	if rej == nil || rej.Status != http.StatusTooManyRequests {
+
+4:test/correctness_test.go-348-			return testutil.Delay(30*time.Second, h)
+8:test/correctness_test.go-352-	const deadline = 500 * time.Millisecond
+17:test/correctness_test.go-361-	if el > deadline+200*time.Millisecond {
+20:test/correctness_test.go-364-	t.Logf("returned after %v with deadline %v: %v", el.Round(time.Millisecond), deadline, err)
+18://	SIGNER_MAX_CONCURRENT optional, default runtime.NumCPU(): concurrent RSA
+20://	SIGNER_MAX_QUEUE optional, default 64: requests that may wait for a slot;
+22://	SIGNER_MAX_DEADLINE optional, Go duration, default 4s: cap on the caller's
+26://	SIGNER_ADMISSION optional, n48 (default) | priority: priority-consistent
+160:	if v := getenv("SIGNER_MAX_CONCURRENT"); v != "" {
+162:			return nil, fmt.Errorf("SIGNER_MAX_CONCURRENT %q must be a positive integer", v)
+165:	if v := getenv("SIGNER_MAX_QUEUE"); v != "" {
+167:			return nil, fmt.Errorf("SIGNER_MAX_QUEUE %q must be a positive integer", v)
+170:	if v := getenv("SIGNER_MAX_DEADLINE"); v != "" {
+172:			return nil, fmt.Errorf("SIGNER_MAX_DEADLINE %q is not a positive duration", v)
+
+21://	SIGN_DEADLINE      optional, Go duration, default 2s
+22://	VERIFY_STRATEGY    optional, optimistic (default, N65) | strict
+23://	BREAKER_SUSPECT_COOLDOWN  optional, Go duration, default 10m: how long a
+26://	BREAKER_FALLBACK_AFTER    optional, default 3: failed optimistic combines
+27://	                   within BREAKER_FALLBACK_WINDOW (default 1m) that switch
+28://	                   to strict for BREAKER_FALLBACK_COOLDOWN (default 10m)
+30://	FANOUT             optional, all (default) | hedged: contact t+1 signers
+31://	                   first and the rest after HEDGE_DELAY or on a failure (N46)
+32://	HEDGE_DELAY        optional, Go duration, default 50ms (hedged only)
+33://	QUORUM_ABORT       optional, off (default) | on: fail a request as soon as
+161:	switch v := getenv("QUORUM_ABORT"); v {
+166:		return nil, fmt.Errorf("QUORUM_ABORT %q must be on or off", v)
+204:	if v := getenv("SIGN_DEADLINE"); v != "" {
+206:			return nil, fmt.Errorf("SIGN_DEADLINE %q is not a positive duration", v)
+210:	if v := getenv("VERIFY_STRATEGY"); v != "" {
+216:	if v := getenv("FANOUT"); v != "" {
+222:	if v := getenv("HEDGE_DELAY"); v != "" {
+224:			return nil, fmt.Errorf("HEDGE_DELAY %q is not a positive duration", v)
+230:	}{{&s.Breaker.SuspectCooldown, "BREAKER_SUSPECT_COOLDOWN"}, {&s.Breaker.FallbackWindow, "BREAKER_FALLBACK_WINDOW"}, {&s.Breaker.FallbackCooldown, "BREAKER_FALLBACK_COOLDOWN"}} {
+237:	if v := getenv("BREAKER_FALLBACK_AFTER"); v != "" {
+
+7:# FAILS if its skew exceeds MAX_SKEW_MS
+8:# (default 1000).
+21:_ck_now_ms() { perl -MTime::HiRes=time -e 'printf "%d\n", time()*1000'; }
+32:  local max="${MAX_SKEW_MS:-1000}" vm bad=0 t0 t1 out rv mid skew rtt tries synced trk sys_ms last_ms tmp
+73:    sys_ms="$(awk -F: '/^System time/{split($2,a," "); v=a[1]*1000; if ($2 ~ /slow/) v=-v; printf "%.3f", v}' <<<"$trk")"
+74:    last_ms="$(awk -F: '/^Last offset/{split($2,a," "); printf "%.3f", a[1]*1000}' <<<"$trk")"
+80:      if [[ ${skew#-} -gt $max ]]; then echo "clock-check: FAIL: $vm skew ${skew} ms exceeds ${max} ms" >&2; bad=1; fi
+89:  echo "clock-check: all VMs within ${MAX_SKEW_MS:-1000} ms of the operator clock"
+
+144:trap on_exit EXIT
+
+25:	"frost-k8s-threshold-signing/internal/audit"
+39:	Audit  *audit.Log
+90:	case cfg.Audit == nil:
+91:		return nil, errors.New("signer: audit log is required")
+347:	entry := audit.Entry{Time: start.UTC(), SignerID: s.cfg.ID, RequestID: req.RequestID, Client: client}
+354:		if err := s.cfg.Audit.Write(entry); err != nil {
+355:			s.cfg.Logger.Error("audit write failed", "err", err)
+393:		_ = s.cfg.Audit.Write(entry)
+412:			_ = s.cfg.Audit.Write(entry)
+423:		_ = s.cfg.Audit.Write(entry)
+430:		_ = s.cfg.Audit.Write(entry)
+433:	// Record the allow decision before releasing the share; no audit, no share.
+435:	if err := s.cfg.Audit.Write(entry); err != nil {
+436:		s.cfg.Logger.Error("audit write failed; refusing to sign", "err", err)
+437:		return nil, reject(http.StatusInternalServerError, "internal", "audit log unavailable")

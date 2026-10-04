@@ -1,0 +1,11 @@
+mutation X1  dir <clone>  start 2026-10-04T00:08:58Z
+unit rc=1 malicious rc=0 seconds=758
+failing tests:
+    --- FAIL: TestSignerRejectsBadHeaders/duplicate_alg
+    --- FAIL: TestSignerRejectsBadHeaders/non-canonical_order
+    --- FAIL: TestSignerRejectsBadHeaders/whitespace
+--- FAIL: TestSignerRejectsBadHeaders
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	168.641s
+RESULT X1 CAUGHT

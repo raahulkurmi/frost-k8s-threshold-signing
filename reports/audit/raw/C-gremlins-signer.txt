@@ -1,0 +1,18 @@
+Starting...
+Gathering coverage... done in 57.395537709s
+      KILLED ARITHMETIC_BASE at priority.go:102:15
+      KILLED CONDITIONALS_NEGATION at priority.go:101:13
+      KILLED CONDITIONALS_NEGATION at priority.go:107:14
+      KILLED CONDITIONALS_NEGATION at priority.go:104:16
+       LIVED CONDITIONALS_NEGATION at priority.go:110:22
+       LIVED ARITHMETIC_BASE at priority.go:108:18
+   TIMED OUT CONDITIONALS_NEGATION at priority.go:98:12
+      KILLED CONDITIONALS_NEGATION at priority.go:116:12
+      KILLED CONDITIONALS_NEGATION at priority.go:119:19
+
+Shutting down gracefully...
+      KILLED CONDITIONALS_NEGATION at priority.go:113:13
+      KILLED CONDITIONALS_NEGATION at priority.go:125:17
+      KILLED CONDITIONALS_NEGATION at priority.go:122:13
+      KILLED CONDITIONALS_NEGATION at priority.go:128:18
+      KILLED CONDITIONALS_NEGATION at priority.go:131:17

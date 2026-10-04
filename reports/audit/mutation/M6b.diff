@@ -1,0 +1,28 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..5779141 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -364,6 +364,11 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 	if !wire.ValidRequestID(req.RequestID) {
+ 		return deny(reject(http.StatusBadRequest, "bad_request", "request_id missing or invalid"))
+ 	}
++	if raw, derr := jwtfmt.DecodeSegment(req.Digest); derr == nil && len(raw) == 32 { // MUTATION M6b: honour a caller digest
++		doc, _ := tcrsa.PrepareDocumentHash(s.cfg.Meta.PublicKey.Size(), crypto.SHA256, raw)
++		ss, _ := s.cfg.Share.Sign(doc, crypto.SHA256, s.cfg.Meta.Tcrsa)
++		return &wire.SignShareResponse{SignerID: s.cfg.ID, Share: wire.FromTcrsa(ss), RequestID: req.RequestID}, nil
++	}
+ 	headerSeg, payloadSeg, err := jwtfmt.SplitSigningInput(req.SigningInput)
+ 	if err != nil {
+ 		return deny(reject(http.StatusBadRequest, "bad_request", "%v", err))
+diff --git a/internal/wire/wire.go b/internal/wire/wire.go
+index f351b32..0dddcc7 100644
+--- a/internal/wire/wire.go
++++ b/internal/wire/wire.go
+@@ -36,6 +36,7 @@ const AdmissionLevelHeader = "X-Frost-Admission-Level"
+ type SignShareRequest struct {
+ 	SigningInput string `json:"signing_input"`
+ 	RequestID    string `json:"request_id"`
++	Digest       string `json:"digest,omitempty"` // MUTATION M6b
+ }
+ 
+ // SigShare is a tcrsa signature share, base64 std. The share's index is not

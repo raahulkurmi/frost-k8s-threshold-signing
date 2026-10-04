@@ -1,0 +1,8 @@
+mutation X17  dir <clone>  start 2026-10-03T23:49:50Z
+unit rc=1 malicious rc=0 seconds=395
+failing tests:
+--- FAIL: TestNoKeyMaterialFilesInTree
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/test	202.151s
+RESULT X17 CAUGHT

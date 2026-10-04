@@ -1,0 +1,13 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..50b0b46 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -425,7 +425,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 	}
+ 	defer release()
+ 	// The wait may have outlived the caller.
+-	if err := ctx.Err(); err != nil {
++	if err := ctx.Err(); false && err != nil { // MUTATION M14b
+ 		entry.Decision, entry.Reason = "cancelled", "after queue: "+err.Error()
+ 		_ = s.cfg.Audit.Write(entry)
+ 		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")

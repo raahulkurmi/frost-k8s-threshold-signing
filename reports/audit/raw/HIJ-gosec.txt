@@ -1,0 +1,383 @@
+== module . ==
+Results:
+
+
+[<clone>/internal/coordinator/coordinator.go:373] - G115 (CWE-190): integer overflow conversion uint64 -> int (Confidence: MEDIUM, Severity: HIGH)
+    372: 	order := make([]Endpoint, len(c.endpoints))
+  > 373: 	off := int(c.rr.Add(1) % uint64(len(c.endpoints)))
+    374: 	for i := range c.endpoints {
+
+Autofix: 
+
+[<clone>/internal/jwtfmt/jwtfmt.go:37] - G115 (CWE-190): integer overflow conversion rune -> byte (Confidence: MEDIUM, Severity: HIGH)
+    36: 	for _, c := range kid {
+  > 37: 		if !isB64URL(byte(c)) || c > 127 {
+    38: 			return fmt.Errorf("kid contains %q; only base64url characters are allowed", c)
+
+Autofix: 
+
+[<clone>/internal/signer/priority.go:178] - G115 (CWE-190): integer overflow conversion int64 -> uint64 (Confidence: MEDIUM, Severity: HIGH)
+    177: 	var e [8]byte
+  > 178: 	binary.BigEndian.PutUint64(e[:], uint64(Epoch(iat)))
+    179: 	m.Write(e[:])
+
+Autofix: 
+
+[<clone>/internal/signer/priority.go:206] - G115 (CWE-190): integer overflow conversion int64 -> uint16 (Confidence: MEDIUM, Severity: HIGH)
+    205: 	shift := ((StableEpoch(iat, epoch) % r) + r) % r * (65536 / r)
+  > 206: 	return uint16((base + shift) % 65536)
+    207: }
+
+Autofix: 
+
+[<clone>/internal/wire/wire.go:117] - G115 (CWE-190): integer overflow conversion int -> uint16 (Confidence: MEDIUM, Severity: HIGH)
+    116: 	}
+  > 117: 	return &tcrsa.SigShare{Id: uint16(id), Xi: xi, C: c, Z: z}, nil
+    118: }
+
+Autofix: 
+
+[<clone>/internal/keyshare/keyshare.go:111] - G115 (CWE-190): integer overflow conversion int -> uint16 (Confidence: MEDIUM, Severity: HIGH)
+    110: 	}
+  > 111: 	return &tcrsa.KeyShare{Si: si, Id: uint16(expectedIndex)}, nil
+    112: }
+
+Autofix: 
+
+[<clone>/internal/keymeta/keymeta.go:191] - G115 (CWE-190): integer overflow conversion int -> uint16 (Confidence: MEDIUM, Severity: HIGH)
+    190: 			PublicKey:       pub,
+  > 191: 			K:               uint16(f.Threshold),
+    192: 			L:               uint16(f.Parties),
+
+Autofix: 
+
+[<clone>/internal/dealer/dealer.go:54] - G115 (CWE-190): integer overflow conversion int -> uint16 (Confidence: MEDIUM, Severity: HIGH)
+    53: 	}
+  > 54: 	shares, meta, err := tcrsa.NewKey(modulusBits+1, uint16(t), uint16(n), nil)
+    55: 	if err != nil {
+
+Autofix: 
+
+[<clone>/test/e2e/probe/main.go:117] - G704 (CWE-918): SSRF via taint analysis (Confidence: HIGH, Severity: HIGH)
+    116: 	case "connect":
+  > 117: 		c, err := net.DialTimeout("tcp", target, *timeout)
+    118: 		if err != nil {
+
+Autofix: 
+
+[<clone>/test/e2e/probe/main.go:106] - G704 (CWE-918): SSRF via taint analysis (Confidence: HIGH, Severity: HIGH)
+    105: 		hc := &http.Client{Timeout: *timeout, Transport: &http.Transport{TLSClientConfig: cfg}}
+  > 106: 		resp, err := hc.Get("https://" + target + "/healthz")
+    107: 		if err != nil {
+
+Autofix: 
+
+[<clone>/test/e2e/probe/main.go:91] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    90: 	case "https":
+  > 91: 		pem, err := os.ReadFile(*ca)
+    92: 		if err != nil {
+
+Autofix: 
+
+[<clone>/test/e2e/probe/main.go:43] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    42: 	if *ca != "" {
+  > 43: 		pem, err := os.ReadFile(*ca)
+    44: 		if err != nil {
+
+Autofix: 
+
+[<clone>/internal/tlsconf/tlsconf.go:67] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    66: 	}
+  > 67: 	pem, err := os.ReadFile(caFile)
+    68: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/prioritykey/prioritykey.go:59] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    58: func Load(path, wantKID string) ([]byte, error) {
+  > 59: 	b, err := os.ReadFile(path)
+    60: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/policy/policy.go:78] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    77: 	}
+  > 78: 	b, err := os.ReadFile(path)
+    79: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/keyshare/keyshare.go:54] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    53: 	}
+  > 54: 	b, err := os.ReadFile(path)
+    55: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/keymeta/keymeta.go:107] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    106: 	}
+  > 107: 	b, err := os.ReadFile(path)
+    108: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/dealer/dealer.go:93] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    92: func writeExclusive(path string, b []byte, mode os.FileMode) error {
+  > 93: 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
+    94: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/audit/audit.go:37] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    36: 	}
+  > 37: 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0o600)
+    38: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/internal/grpcserver/server.go:133] - G302 (CWE-276): Expect file permissions to be 0600 or less (Confidence: HIGH, Severity: MEDIUM)
+    132: 	}
+  > 133: 	if err := os.Chmod(path, 0o660); err != nil {
+    134: 		l.Close()
+
+Autofix: 
+
+[<clone>/internal/testutil/testkey.go:206] - G306 (CWE-276): Expect WriteFile permissions to be 0600 or less (Confidence: HIGH, Severity: MEDIUM)
+    205: 	p := filepath.Join(dir, "policy.json")
+  > 206: 	if err := os.WriteFile(p, b, 0o644); err != nil {
+    207: 		t.Fatal(err)
+
+Autofix: 
+
+[<clone>/test/e2e/probe/main.go:122] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    121: 		}
+  > 122: 		c.Close()
+    123: 		fmt.Printf("connect %s: ACCEPTED\n", target)
+
+Autofix: 
+
+[<clone>/test/e2e/probe/main.go:111] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    110: 		}
+  > 111: 		resp.Body.Close()
+    112: 		fmt.Printf("https %s: HTTP %d\n", target, resp.StatusCode)
+
+Autofix: 
+
+[<clone>/internal/testutil/cluster.go:60] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    59: 		}
+  > 60: 		t.Cleanup(func() { al.Close() })
+    61: 		srv, err := signer.New(signer.Config{ID: id, Meta: fx.Meta, Share: fx.Shares[id-1], Policy: pol, Audit: al,
+
+Autofix: 
+
+[<clone>/internal/grpcserver/server.go:134] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    133: 	if err := os.Chmod(path, 0o660); err != nil {
+  > 134: 		l.Close()
+    135: 		return nil, err
+
+Autofix: 
+
+[<clone>/internal/dealer/dealer.go:237] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    236: 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
+  > 237: 	resp.Body.Close()
+    238: 	if resp.StatusCode/100 != 2 {
+
+Autofix: 
+
+[<clone>/internal/dealer/dealer.go:198] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    197: 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
+  > 198: 		resp.Body.Close()
+    199: 		if resp.StatusCode/100 != 2 {
+
+Autofix: 
+
+[<clone>/internal/dealer/dealer.go:102] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    101: 	if err := f.Sync(); err != nil {
+  > 102: 		f.Close()
+    103: 		return err
+
+Autofix: 
+
+[<clone>/internal/dealer/dealer.go:98] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    97: 	if _, err := f.Write(b); err != nil {
+  > 98: 		f.Close()
+    99: 		return err
+
+Autofix: 
+
+Summary:
+  Gosec  : dev
+  Files  : 23
+  Lines  : 5195
+  Nosec  : 0
+  Issues : 29
+
+exit=1
+== module benchmark ==
+Results:
+
+
+[<clone>/benchmark/k8s7c/main.go:220] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    219: 	case "kid":
+  > 220: 		b, err := os.ReadFile(args[1])
+    221: 		if err != nil {
+
+Autofix: 
+
+[<clone>/benchmark/k8s7c/main.go:173] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    172: 	}
+  > 173: 	return os.Rename(tmp, path)
+    174: }
+
+Autofix: 
+
+[<clone>/benchmark/k8s7c/main.go:170] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    169: 	tmp := path + ".tmp"
+  > 170: 	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+    171: 		return err
+
+Autofix: 
+
+[<clone>/benchmark/k8s7c/main.go:153] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    152: func readPod(path string) (*corev1.Pod, error) {
+  > 153: 	b, err := os.ReadFile(path)
+    154: 	if err != nil {
+
+Autofix: 
+
+[<clone>/benchmark/tokenbench/main.go:244] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    243: 	elapsed := time.Since(start)
+  > 244: 	f, err := os.Create(podsOut)
+    245: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/stress.go:35] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    34: func readSignerMetrics(path string) (*signerMetrics, bool) {
+  > 35: 	b, err := os.ReadFile(path)
+    36: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/scale.go:173] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    172: 	for _, f := range files {
+  > 173: 		b, err := os.ReadFile(f)
+    174: 		if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/scale.go:73] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    72: 	if err != nil {
+  > 73: 		g, gerr := os.Open(path + ".gz")
+    74: 		if gerr != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/scale.go:71] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    70: 	var r io.Reader
+  > 71: 	f, err := os.Open(path)
+    72: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/main.go:93] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    92: func load(tag, path string) ([]*stats, error) {
+  > 93: 	f, err := os.Open(path)
+    94: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/main.go:68] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    67: func quorumRTT(path string) (float64, bool) {
+  > 68: 	b, err := os.ReadFile(path)
+    69: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/k8s7c/main.go:153] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    152: func readPod(path string) (*corev1.Pod, error) {
+  > 153: 	b, err := os.ReadFile(path)
+    154: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/b1signer/main.go:72] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    71: func loadKey(path string) (*rsa.PrivateKey, error) {
+  > 72: 	b, err := os.ReadFile(path)
+    73: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[<clone>/benchmark/summarize/single.go:272] - G306 (CWE-276): Expect WriteFile permissions to be 0600 or less (Confidence: HIGH, Severity: MEDIUM)
+    271: 	fmt.Fprintf(&b, "\nSource CSVs (under `%s`):\n%s\n", dir, strings.Join(sources, "\n"))
+  > 272: 	return os.WriteFile(outPath, []byte(b.String()), 0o644)
+    273: }
+
+Autofix: 
+
+[<clone>/benchmark/summarize/main.go:406] - G306 (CWE-276): Expect WriteFile permissions to be 0600 or less (Confidence: HIGH, Severity: MEDIUM)
+    405: 	fmt.Fprintf(&b, "\nSource CSVs:\n%s\n", strings.Join(sources, "\n"))
+  > 406: 	if err := os.WriteFile(*outPath, []byte(b.String()), 0o644); err != nil {
+    407: 		fmt.Fprintln(os.Stderr, "summarize:", err)
+
+Autofix: 
+
+[<clone>/benchmark/tokenbench/main.go:257] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    256: 	}
+  > 257: 	f.Close()
+    258: 	fmt.Printf("storm: %d pods (%d aggressive), %d issued, %d attempts in %v\n", pods, nAggr, issued, len(rows), elapsed.Round(time.Millisecond))
+
+Autofix: 
+
+[<clone>/benchmark/tokenbench/main.go:161] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    160: 	}
+  > 161: 	f.Close()
+    162: 	fmt.Printf("%s: %d requests (+%d warm-up) at c=%d in %v; %d errors -> %s\n", *label, len(rows), *warm, *conc, elapsed.Round(time.Millisecond), errs, *out)
+
+Autofix: 
+
+[<clone>/benchmark/summarize/stress.go:218] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    217: 		if m := singleRe.FindStringSubmatch(l); m != nil {
+  > 218: 			fmt.Sscanf(m[2], "%d", &c)
+    219: 		}
+
+Autofix: 
+
+[<clone>/benchmark/summarize/sevenc.go:170] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    169: 		var v int64
+  > 170: 		fmt.Sscanf(f[2], "%d", &v)
+    171: 		if first == 0 || v < first {
+
+Autofix: 
+
+[<clone>/benchmark/summarize/sevenc.go:150] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    149: 		var rt float64
+  > 150: 		fmt.Sscanf(n.RequestTime, "%f", &rt)
+    151: 		n2c, _ := m["nginx_to_coordinator_ms"].(float64)
+
+Autofix: 
+
+[<clone>/benchmark/summarize/eval.go:357] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    356: 		fmt.Sscanf(f[2], "%f", &st)
+  > 357: 		fmt.Sscanf(f[3], "%f", &lat)
+    358: 		last = math.Max(last, st+lat)
+
+Autofix: 
+
+[<clone>/benchmark/summarize/eval.go:356] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    355: 		var st, lat float64
+  > 356: 		fmt.Sscanf(f[2], "%f", &st)
+    357: 		fmt.Sscanf(f[3], "%f", &lat)
+
+Autofix: 
+
+Summary:
+  Gosec  : dev
+  Files  : 9
+  Lines  : 2803
+  Nosec  : 0
+  Issues : 22
+
+exit=1
+== module spike ==
+exit=0

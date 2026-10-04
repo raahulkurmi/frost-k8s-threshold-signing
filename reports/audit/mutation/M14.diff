@@ -1,0 +1,31 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..2407fc0 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -388,7 +388,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 		return deny(reject(http.StatusInternalServerError, "internal", "encode: %v", err))
+ 	}
+ 	// N46: never start RSA work for a caller that has already gone away.
+-	if err := ctx.Err(); err != nil {
++	if err := ctx.Err(); false && err != nil { // MUTATION M14a
+ 		entry.Decision, entry.Reason = "cancelled", "before RSA: "+err.Error()
+ 		_ = s.cfg.Audit.Write(entry)
+ 		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")
+@@ -425,7 +425,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 	}
+ 	defer release()
+ 	// The wait may have outlived the caller.
+-	if err := ctx.Err(); err != nil {
++	if err := ctx.Err(); false && err != nil { // MUTATION M14b
+ 		entry.Decision, entry.Reason = "cancelled", "after queue: "+err.Error()
+ 		_ = s.cfg.Audit.Write(entry)
+ 		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled before signing")
+@@ -448,7 +448,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 	if err != nil {
+ 		return nil, reject(http.StatusInternalServerError, "internal", "sign: %v", err)
+ 	}
+-	if err := ctx.Err(); err != nil {
++	if err := ctx.Err(); false && err != nil { // MUTATION M14c
+ 		// Computed too late: the caller is gone. Do not release the share.
+ 		s.cfg.Logger.Info("sign-share discarded: request cancelled during signing", "request_id", req.RequestID)
+ 		return nil, reject(http.StatusServiceUnavailable, "cancelled", "request cancelled during signing")

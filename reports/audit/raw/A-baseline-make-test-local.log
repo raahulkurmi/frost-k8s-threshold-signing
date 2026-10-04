@@ -1,0 +1,71 @@
+go test -count=1 -timeout 30m ./...
+ok  	frost-k8s-threshold-signing/cmd/dealer	75.931s
+?   	frost-k8s-threshold-signing/cmd/grpc-proxy	[no test files]
+ok  	frost-k8s-threshold-signing/cmd/signer	72.561s
+?   	frost-k8s-threshold-signing/internal/audit	[no test files]
+ok  	frost-k8s-threshold-signing/internal/coordinator	108.024s
+?   	frost-k8s-threshold-signing/internal/dealer	[no test files]
+ok  	frost-k8s-threshold-signing/internal/grpcserver	122.147s
+?   	frost-k8s-threshold-signing/internal/jwtfmt	[no test files]
+?   	frost-k8s-threshold-signing/internal/keymeta	[no test files]
+?   	frost-k8s-threshold-signing/internal/keyshare	[no test files]
+ok  	frost-k8s-threshold-signing/internal/policy	2.667s
+ok  	frost-k8s-threshold-signing/internal/prioritykey	3.087s
+ok  	frost-k8s-threshold-signing/internal/signer	123.940s
+?   	frost-k8s-threshold-signing/internal/testutil	[no test files]
+?   	frost-k8s-threshold-signing/internal/tlsconf	[no test files]
+?   	frost-k8s-threshold-signing/internal/wire	[no test files]
+ok  	frost-k8s-threshold-signing/test	81.630s
+?   	frost-k8s-threshold-signing/test/e2e/probe	[no test files]
+go test -count=1 -timeout 30m -tags testmalicious -run 'TestMaliciousSignerExcluded' -v ./test/
+=== RUN   TestMaliciousSignerExcluded
+testutil: generated 2048-bit 3-of-5 key in 22.656s
+=== RUN   TestMaliciousSignerExcluded/strict/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/strict/three_malicious
+2026/10/04 04:38:03 WARN excluded invalid signature share request_id=755a2ead73afeb53801f0342 signer_id=1 err="invalid signature share: invalid signature share with id 1"
+2026/10/04 04:38:03 WARN signer marked suspect: its shares are verified before combining request_id=755a2ead73afeb53801f0342 signer_id=1 until=2026-10-04T04:48:03.973+05:30
+2026/10/04 04:38:03 WARN excluded invalid signature share request_id=755a2ead73afeb53801f0342 signer_id=3 err="invalid signature share: invalid signature share with id 3"
+2026/10/04 04:38:03 WARN signer marked suspect: its shares are verified before combining request_id=755a2ead73afeb53801f0342 signer_id=3 until=2026-10-04T04:48:03.979+05:30
+2026/10/04 04:38:03 WARN excluded invalid signature share request_id=755a2ead73afeb53801f0342 signer_id=2 err="invalid signature share: invalid signature share with id 2"
+2026/10/04 04:38:03 WARN signer marked suspect: its shares are verified before combining request_id=755a2ead73afeb53801f0342 signer_id=2 until=2026-10-04T04:48:03.984+05:30
+2026/10/04 04:38:03 ERROR sign failed request_id=755a2ead73afeb53801f0342 strategy=strict strategy_effective=strict fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]" share_verifications=5 quorum_impossible=false latency_ms=24.332
+    malicious_test.go:73: threshold not met: 2 valid shares, need 3; failures: [signer-1: invalid signature share: invalid signature share with id 1; signer-3: invalid signature share: invalid signature share with id 3; signer-2: invalid signature share: invalid signature share with id 2]
+2026/10/04 04:38:03 WARN excluded invalid signature share request_id=ca1dcc072003f8e79e281c43 signer_id=3 err="invalid signature share: invalid signature share with id 3"
+2026/10/04 04:38:03 WARN signer marked suspect: its shares are verified before combining request_id=ca1dcc072003f8e79e281c43 signer_id=3 until=2026-10-04T04:48:03.998+05:30
+2026/10/04 04:38:03 WARN excluded invalid signature share request_id=ca1dcc072003f8e79e281c43 signer_id=2 err="invalid signature share: invalid signature share with id 2"
+2026/10/04 04:38:03 WARN signer marked suspect: its shares are verified before combining request_id=ca1dcc072003f8e79e281c43 signer_id=2 until=2026-10-04T04:48:03.998+05:30
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=ca1dcc072003f8e79e281c43 signer_id=1 err="invalid signature share: invalid signature share with id 1"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=ca1dcc072003f8e79e281c43 signer_id=1 until=2026-10-04T04:48:04.003+05:30
+2026/10/04 04:38:04 ERROR sign failed request_id=ca1dcc072003f8e79e281c43 strategy=strict strategy_effective=strict fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:1 Reason:invalid signature share: invalid signature share with id 1}]" share_verifications=5 quorum_impossible=false latency_ms=19.025
+    malicious_test.go:86: abort: threshold not met: 2 valid shares, need 3; failures: [signer-3: invalid signature share: invalid signature share with id 3; signer-2: invalid signature share: invalid signature share with id 2; signer-1: invalid signature share: invalid signature share with id 1]
+=== RUN   TestMaliciousSignerExcluded/optimistic/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/optimistic/three_malicious
+2026/10/04 04:38:04 WARN optimistic combine failed final verification; verifying shares individually request_id=9a887d5b63a287d41798cd3d err="crypto/rsa: verification error"
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=9a887d5b63a287d41798cd3d signer_id=1 err="invalid signature share with id 1"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=9a887d5b63a287d41798cd3d signer_id=1 until=2026-10-04T04:48:04.043+05:30
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=9a887d5b63a287d41798cd3d signer_id=2 err="invalid signature share with id 2"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=9a887d5b63a287d41798cd3d signer_id=2 until=2026-10-04T04:48:04.049+05:30
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=9a887d5b63a287d41798cd3d signer_id=3 err="invalid signature share with id 3"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=9a887d5b63a287d41798cd3d signer_id=3 until=2026-10-04T04:48:04.054+05:30
+2026/10/04 04:38:04 ERROR sign failed request_id=9a887d5b63a287d41798cd3d strategy=optimistic strategy_effective=optimistic fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3}]" share_verifications=5 quorum_impossible=false latency_ms=23.758
+    malicious_test.go:73: threshold not met: 2 valid shares, need 3; failures: [signer-1: invalid signature share: invalid signature share with id 1; signer-2: invalid signature share: invalid signature share with id 2; signer-3: invalid signature share: invalid signature share with id 3]
+2026/10/04 04:38:04 WARN optimistic combine failed final verification; verifying shares individually request_id=881e8cc6f2a6a203ee937a8e err="crypto/rsa: verification error"
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=881e8cc6f2a6a203ee937a8e signer_id=1 err="invalid signature share with id 1"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=881e8cc6f2a6a203ee937a8e signer_id=1 until=2026-10-04T04:48:04.068+05:30
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=881e8cc6f2a6a203ee937a8e signer_id=2 err="invalid signature share with id 2"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=881e8cc6f2a6a203ee937a8e signer_id=2 until=2026-10-04T04:48:04.068+05:30
+2026/10/04 04:38:04 WARN excluded invalid signature share request_id=881e8cc6f2a6a203ee937a8e signer_id=3 err="invalid signature share with id 3"
+2026/10/04 04:38:04 WARN signer marked suspect: its shares are verified before combining request_id=881e8cc6f2a6a203ee937a8e signer_id=3 until=2026-10-04T04:48:04.073+05:30
+2026/10/04 04:38:04 ERROR sign failed request_id=881e8cc6f2a6a203ee937a8e strategy=optimistic strategy_effective=optimistic fanout=all signers_contacted=5 valid_shares=1 failures="[{SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3}]" share_verifications=4 quorum_impossible=true latency_ms=18.83
+    malicious_test.go:86: abort: threshold not met: 1 valid shares, need 3; failures: [signer-1: invalid signature share: invalid signature share with id 1; signer-2: invalid signature share: invalid signature share with id 2; signer-3: invalid signature share: invalid signature share with id 3]
+--- PASS: TestMaliciousSignerExcluded (22.83s)
+    --- PASS: TestMaliciousSignerExcluded/strict/one_malicious (0.02s)
+    --- PASS: TestMaliciousSignerExcluded/strict/three_malicious (0.04s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/one_malicious (0.03s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/three_malicious (0.04s)
+PASS
+ok  	frost-k8s-threshold-signing/test	24.103s
+make test  575.06s user 10.23s system 389% cpu 2:30.37 total
+exit=0

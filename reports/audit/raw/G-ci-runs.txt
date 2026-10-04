@@ -1,0 +1,31 @@
+== 36154065231
+{"conclusion":"success","createdAt":"2026-09-25T15:25:28Z","event":"push","headBranch":"fix/threshold-rsa","headSha":"ea186e489b9b3fc8bf34445a8dafa18311311e07","workflowName":"ci"}
+== 36151825518
+{"conclusion":"success","createdAt":"2026-09-25T15:05:20Z","event":"push","headBranch":"fix/threshold-rsa","headSha":"3d91818dddcb1fdf8ba2140918d4e255b2e33602","workflowName":"ci"}
+== 36275189321
+{"conclusion":"success","createdAt":"2026-09-26T22:06:37Z","event":"push","headBranch":"fix/threshold-rsa","headSha":"bfab4d9d5b877884790efffde58231a918a37140","workflowName":"ci"}
+== 37139624877
+{"conclusion":"success","createdAt":"2026-10-03T17:11:57Z","event":"push","headBranch":"fix/threshold-rsa","headSha":"d07a8e7c46f1f5afeadfc8d0575e832e73b57f90","workflowName":"ci"}
+== 36157069748
+{"conclusion":"success","createdAt":"2026-09-25T15:52:15Z","event":"push","headBranch":"fix/threshold-rsa","headSha":"aef95d5e88657e4132475633ad34553a78381f95","workflowName":"repro"}
+== 36157069679
+{"conclusion":"success","createdAt":"2026-09-25T15:52:15Z","event":"push","headBranch":"fix/threshold-rsa","headSha":"aef95d5e88657e4132475633ad34553a78381f95","workflowName":"ci"}
+== 36151825518 E6-E8
+images + kind e2e (Kubernetes v1.36.5)	make e2e (E1-E8, REQ-a..d, N1-N3)	2026-09-25T15:13:07.0725123Z PASS  E6  2 down: issued; 3 down: refused with threshold error (60ms); old tokens still authenticate
+images + kind e2e (Kubernetes v1.36.5)	make e2e (E1-E8, REQ-a..d, N1-N3)	2026-09-25T15:13:07.0725622Z PASS  E7  issuance recovered 341ms after signer start request
+images + kind e2e (Kubernetes v1.36.5)	make e2e (E1-E8, REQ-a..d, N1-N3)	2026-09-25T15:13:07.0726215Z PASS  E8  3 replicas serve identical FetchKeys; issuance survives 2 replicas down and a rolling restart (0/15 failed)
+images + kind e2e (Kubernetes v1.36.5)	make e2e (E1-E8, REQ-a..d, N1-N3)	2026-09-25T15:13:07.0729460Z E2E: PASS
+== 36154065231 SETUP
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-25T15:31:31.1109521Z PASS  SETUP  apiserver uses only --service-account-signing-endpoint; no in-tree SA key flags on apiserver or controller-manager
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-25T15:31:31.1124636Z E2E: PASS
+== 36275189321 E2E/TIMING
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-26T22:10:09.6598993Z check-images: PASS (no shares, keys, certs, encrypted blobs or private keys in any layer of either image)
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-26T22:13:54.8139895Z ================ TIMING (N64): nginx and coordinator timing lines join by request_id ================
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-26T22:13:54.9662856Z PASS TIMING: 71 of 72 coordinator Sign lines joined an nginx line by request_id; median nginx total 29 ms, nginx->coordinator 1.155 ms, coordinator 28.259 ms
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-26T22:13:55.0219435Z PASS  TIMING  71 of 72 coordinator Sign lines joined an nginx line by request_id; median nginx total 29 ms, nginx->coordinator 1.155 ms, coordinator 28.259 ms
+images + kind e2e (Kubernetes v1.36.5)	UNKNOWN STEP	2026-09-26T22:13:55.0219921Z E2E: PASS
+== 37139624877 jobs
+make test (T1-T12, T5 testmalicious) success
+vet, staticcheck, govulncheck, gitleaks success
+images + kind e2e (Kubernetes v1.36.5) success
+repro	21116	false	2026-12-24T15:52:16Z

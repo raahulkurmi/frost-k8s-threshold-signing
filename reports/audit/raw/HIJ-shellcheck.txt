@@ -1,0 +1,201 @@
+version: 0.11.0
+=== benchmark/k8s7c/lib.sh
+benchmark/k8s7c/lib.sh:1:1: error: Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive. [SC2148]
+benchmark/k8s7c/lib.sh:11:35: warning: CP_PRIV appears unused. Verify use (or export if used externally). [SC2034]
+benchmark/k8s7c/lib.sh:130:27: warning: Declare and assign separately to avoid masking return values. [SC2155]
+benchmark/k8s7c/lib.sh:148:79: note: Double quote to prevent globbing and word splitting. [SC2086]
+benchmark/k8s7c/lib.sh:148:90: note: Double quote to prevent globbing and word splitting. [SC2086]
+benchmark/k8s7c/lib.sh:148:107: note: Double quote to prevent globbing and word splitting. [SC2086]
+benchmark/k8s7c/lib.sh:172:58: note: Double quote to prevent globbing and word splitting. [SC2086]
+benchmark/k8s7c/lib.sh:180:29: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== benchmark/k8s7c/run.sh
+benchmark/k8s7c/run.sh:78:20: warning: Tilde does not expand in quotes. Use $HOME. [SC2088]
+benchmark/k8s7c/run.sh:81:20: warning: Tilde does not expand in quotes. Use $HOME. [SC2088]
+benchmark/k8s7c/run.sh:86:23: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/k8s7c/run.sh:91:15: warning: np appears unused. Verify use (or export if used externally). [SC2034]
+benchmark/k8s7c/run.sh:117:41: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/k8s7c/run.sh:135:12: note: Not following: deploy/multihost/clock-check.sh was not specified as input (see shellcheck -x). [SC1091]
+benchmark/k8s7c/run.sh:188:12: note: Not following: deploy/multihost/clock-check.sh was not specified as input (see shellcheck -x). [SC1091]
+benchmark/k8s7c/run.sh:220:12: note: Not following: deploy/multihost/clock-check.sh was not specified as input (see shellcheck -x). [SC1091]
+benchmark/k8s7c/run.sh:265:12: note: Not following: deploy/multihost/clock-check.sh was not specified as input (see shellcheck -x). [SC1091]
+benchmark/k8s7c/run.sh:296:12: note: Not following: deploy/multihost/clock-check.sh was not specified as input (see shellcheck -x). [SC1091]
+exit=1
+=== benchmark/multihost/run-l2.sh
+benchmark/multihost/run-l2.sh:69:26: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/multihost/run-l2.sh:72:39: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/multihost/run-l2.sh:192:29: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/multihost/run-l2.sh:197:27: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/multihost/run-l2.sh:202:29: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+benchmark/multihost/run-l2.sh:280:101: warning: Use semicolon or linefeed before 'fi' (or quote to make it literal). [SC1010]
+exit=1
+=== benchmark/multihost/run.sh
+benchmark/multihost/run.sh:49:12: note: Possible misspelling: COORD_VM may not be assigned. Did you mean COORD_IP? [SC2153]
+benchmark/multihost/run.sh:97:1: warning: COORD_IP appears unused. Verify use (or export if used externally). [SC2034]
+benchmark/multihost/run.sh:185:12: warning: This format string has 9 variables, but is passed 7 arguments. [SC2183]
+benchmark/multihost/run.sh:186:55: warning: Quote this to prevent word splitting. [SC2046]
+benchmark/multihost/run.sh:186:55: note: Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'. [SC2116]
+benchmark/multihost/run.sh:186:62: note: Double quote to prevent globbing and word splitting. [SC2086]
+benchmark/multihost/run.sh:187:94: note: Double quote to prevent globbing and word splitting. [SC2086]
+exit=1
+=== benchmark/multihost/scale-remote.sh
+benchmark/multihost/scale-remote.sh:22:11: note: Not following: secrets/multihost.env was not specified as input (see shellcheck -x). [SC1091]
+benchmark/multihost/scale-remote.sh:26:8: warning: Declare and assign separately to avoid masking return values. [SC2155]
+exit=1
+=== benchmark/single/run.sh
+benchmark/single/run.sh:42:39: warning: Declare and assign separately to avoid masking return values. [SC2155]
+benchmark/single/run.sh:71:6: warning: rc is referenced but not assigned. [SC2154]
+benchmark/single/run.sh:127:23: warning: Declare and assign separately to avoid masking return values. [SC2155]
+exit=1
+=== benchmark/single/scale-lib.sh
+benchmark/single/scale-lib.sh:1:1: error: Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive. [SC2148]
+benchmark/single/scale-lib.sh:47:38: note: Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'. [SC2116]
+benchmark/single/scale-lib.sh:47:45: note: Double quote to prevent globbing and word splitting. [SC2086]
+exit=1
+=== benchmark/single/timing-breakdown.sh
+exit=0
+=== deploy/aws/7c/bootstrap.sh
+deploy/aws/7c/bootstrap.sh:62:20: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+deploy/aws/7c/bootstrap.sh:80:22: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+deploy/aws/7c/bootstrap.sh:107:8: note: Not following: deploy/multihost/clock-check.sh was not specified as input (see shellcheck -x). [SC1091]
+exit=1
+=== deploy/aws/7c/check.sh
+exit=0
+=== deploy/aws/7c/cp-init.sh
+exit=0
+=== deploy/aws/7c/docker-setup.sh
+deploy/aws/7c/docker-setup.sh:8:3: note: Not following: /etc/os-release was not specified as input (see shellcheck -x). [SC1091]
+exit=1
+=== deploy/aws/7c/nginx-lines.sh
+deploy/aws/7c/nginx-lines.sh:14:12: warning: Iterating over ls output is fragile. Use globs. [SC2045]
+exit=1
+=== deploy/aws/7c/node-setup.sh
+deploy/aws/7c/node-setup.sh:11:3: note: Not following: /etc/os-release was not specified as input (see shellcheck -x). [SC1091]
+exit=1
+=== deploy/aws/7c/scale-rep.sh
+exit=0
+=== deploy/aws/7c/signer-config.sh
+exit=0
+=== deploy/aws/7c/signer-sampler.sh
+exit=0
+=== deploy/aws/7c/switch.sh
+exit=0
+=== deploy/aws/common.sh
+deploy/aws/common.sh:1:1: error: Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive. [SC2148]
+deploy/aws/common.sh:12:1: warning: COORD_REGION appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:13:1: warning: COORD_AZ appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:14:1: warning: COORD_TYPE appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:15:1: warning: COORD_DISK_GB appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:16:1: warning: SIGNER_TYPE appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:17:1: warning: SIGNER_DISK_GB appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:18:1: warning: MUMBAI_SIGNER_AZ appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:19:1: warning: SIGNER_PORT appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:21:1: warning: SIGNER_REGIONS appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:23:1: warning: KEY_FILE appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/common.sh:86:59: warning: Quote this to prevent word splitting. [SC2046]
+deploy/aws/common.sh:111:26: warning: Quote this to prevent word splitting. [SC2046]
+deploy/aws/common.sh:111:71: note: Double quote to prevent globbing and word splitting. [SC2086]
+exit=1
+=== deploy/aws/provision-7c.sh
+deploy/aws/provision-7c.sh:21:3: note: Not following: ./common.sh was not specified as input (see shellcheck -x). [SC1091]
+deploy/aws/provision-7c.sh:94:62: note: Double quote to prevent globbing and word splitting. [SC2086]
+deploy/aws/provision-7c.sh:128:21: warning: NAME_TAG appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/provision-7c.sh:129:85: warning: Quote this to prevent word splitting. [SC2046]
+deploy/aws/provision-7c.sh:219:15: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== deploy/aws/provision.sh
+deploy/aws/provision.sh:19:3: note: Not following: ./common.sh was not specified as input (see shellcheck -x). [SC1091]
+deploy/aws/provision.sh:56:28: warning: Quote this to prevent word splitting. [SC2046]
+deploy/aws/provision.sh:76:5: warning: NAME_TAG appears unused. Verify use (or export if used externally). [SC2034]
+deploy/aws/provision.sh:77:98: warning: Quote this to prevent word splitting. [SC2046]
+deploy/aws/provision.sh:148:15: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== deploy/aws/ssh.sh
+deploy/aws/ssh.sh:4:3: note: Not following: ./common.sh was not specified as input (see shellcheck -x). [SC1091]
+exit=1
+=== deploy/aws/teardown.sh
+deploy/aws/teardown.sh:12:3: note: Not following: ./common.sh was not specified as input (see shellcheck -x). [SC1091]
+deploy/aws/teardown.sh:22:63: note: Double quote to prevent globbing and word splitting. [SC2086]
+deploy/aws/teardown.sh:27:120: note: Double quote to prevent globbing and word splitting. [SC2086]
+exit=1
+=== deploy/multihost/clock-check.sh
+deploy/multihost/clock-check.sh:41:7: warning: try appears unused. Verify use (or export if used externally). [SC2034]
+deploy/multihost/clock-check.sh:42:35: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== deploy/multihost/coordinator-egress.sh
+exit=0
+=== deploy/multihost/deploy.sh
+deploy/multihost/deploy.sh:19:1: warning: REPO appears unused. Verify use (or export if used externally). [SC2034]
+deploy/multihost/deploy.sh:47:18: note: Possible misspelling: COORD_VM may not be assigned. Did you mean COORD_IP? [SC2153]
+deploy/multihost/deploy.sh:59:25: note: Double quote to prevent globbing and word splitting. [SC2086]
+exit=1
+=== deploy/multihost/gen-independence-l2.sh
+exit=0
+=== deploy/multihost/gen-independence.sh
+exit=0
+=== deploy/multihost/setup-signer-host.sh
+exit=0
+=== deploy/multihost/teardown.sh
+deploy/multihost/teardown.sh:16:25: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+deploy/multihost/teardown.sh:23:25: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== deploy/multihost/transport.sh
+deploy/multihost/transport.sh:1:1: error: Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive. [SC2148]
+exit=1
+=== legacy/frost/benchmark/run_benchmarks_baseline.sh
+legacy/frost/benchmark/run_benchmarks_baseline.sh:17:14: note: Double quote to prevent globbing and word splitting. [SC2086]
+legacy/frost/benchmark/run_benchmarks_baseline.sh:52:11: warning: Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a. [SC2206]
+legacy/frost/benchmark/run_benchmarks_baseline.sh:56:9: warning: Prefer mapfile or read -a to split command output (or quote to avoid splitting). [SC2207]
+exit=1
+=== legacy/frost/benchmark/run_benchmarks_frost.sh
+legacy/frost/benchmark/run_benchmarks_frost.sh:17:14: note: Double quote to prevent globbing and word splitting. [SC2086]
+legacy/frost/benchmark/run_benchmarks_frost.sh:52:11: warning: Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a. [SC2206]
+legacy/frost/benchmark/run_benchmarks_frost.sh:57:9: warning: Prefer mapfile or read -a to split command output (or quote to avoid splitting). [SC2207]
+legacy/frost/benchmark/run_benchmarks_frost.sh:190:11: warning: Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a. [SC2206]
+exit=1
+=== legacy/frost/scripts/restart-frost.sh
+exit=0
+=== legacy/frost/scripts/setup-minikube.sh
+exit=0
+=== legacy/frost/scripts/vault-init.sh
+exit=0
+=== scripts/check-images.sh
+scripts/check-images.sh:86:100: note: Use find instead of ls to better handle non-alphanumeric filenames. [SC2012]
+exit=1
+=== scripts/ci-install-gitleaks.sh
+exit=0
+=== scripts/gen-certs.sh
+exit=0
+=== scripts/govulncheck.sh
+exit=0
+=== scripts/repro.sh
+scripts/repro.sh:37:3: note: Not following: /etc/os-release was not specified as input (see shellcheck -x). [SC1091]
+scripts/repro.sh:58:1: note: This function is never invoked. Check usage (or ignored if invoked indirectly). [SC2329]
+scripts/repro.sh:65:1: note: This function is never invoked. Check usage (or ignored if invoked indirectly). [SC2329]
+scripts/repro.sh:86:1: note: This function is never invoked. Check usage (or ignored if invoked indirectly). [SC2329]
+scripts/repro.sh:103:8: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+scripts/repro.sh:108:1: note: This function is never invoked. Check usage (or ignored if invoked indirectly). [SC2329]
+scripts/repro.sh:116:1: note: This function is never invoked. Check usage (or ignored if invoked indirectly). [SC2329]
+scripts/repro.sh:132:1: note: This function is never invoked. Check usage (or ignored if invoked indirectly). [SC2329]
+scripts/repro.sh:161:59: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+scripts/repro.sh:161:82: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== test/e2e/multihost.sh
+test/e2e/multihost.sh:67:72: note: Possible misspelling: COORD_VM may not be assigned. Did you mean COORD_IP? [SC2153]
+test/e2e/multihost.sh:108:1: warning: COORD_IP appears unused. Verify use (or export if used externally). [SC2034]
+test/e2e/multihost.sh:150:46: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+test/e2e/multihost.sh:157:34: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+test/e2e/multihost.sh:159:16: warning: Quote this to prevent word splitting. [SC2046]
+test/e2e/multihost.sh:159:16: note: Useless echo? Instead of 'echo $(cmd)', just use 'cmd'. [SC2005]
+test/e2e/multihost.sh:218:34: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+test/e2e/multihost.sh:237:27: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1
+=== test/e2e/run.sh
+test/e2e/run.sh:35:8: warning: Declare and assign separately to avoid masking return values. [SC2155]
+test/e2e/run.sh:68:1: warning: SIGNET appears unused. Verify use (or export if used externally). [SC2034]
+test/e2e/run.sh:139:13: note: Not following: secrets/multihost.env was not specified as input (see shellcheck -x). [SC1091]
+test/e2e/run.sh:240:39: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+test/e2e/run.sh:241:37: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+test/e2e/run.sh:264:10: note: Double quote to prevent globbing and word splitting. [SC2086]
+test/e2e/run.sh:318:43: note: Expressions don't expand in single quotes, use double quotes for that. [SC2016]
+exit=1

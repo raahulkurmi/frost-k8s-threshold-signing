@@ -1,0 +1,9 @@
+=== RUN   TestObservations
+    observations_test.go:34: O1 string iat: policy err=<nil>; go-jose v2 err=claims: go-jose/go-jose/jwt: expected number value to unmarshal NumericDate
+    observations_test.go:34: O1 string exp: policy err=<nil>; go-jose v2 err=claims: go-jose/go-jose/jwt: expected number value to unmarshal NumericDate
+    observations_test.go:34: O1 string nbf: policy err=<nil>; go-jose v2 err=claims: go-jose/go-jose/jwt: expected number value to unmarshal NumericDate
+    observations_test.go:48: O2 negated share 3: Verify err=<nil>; Join+VerifyPKCS1v15 err=<nil>
+    observations_test.go:53: O3 ParseHeader(null) = {Alg: Typ: Kid:}, err=<nil>; CheckHeader err=header alg "", only RS256 is signed
+--- PASS: TestObservations (0.30s)
+PASS
+ok  	frost-k8s-threshold-signing/reports/audit/fuzz	0.919s

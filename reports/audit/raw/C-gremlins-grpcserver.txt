@@ -1,0 +1,26 @@
+Starting...
+Gathering coverage... done in 47.179779958s
+ NOT COVERED CONDITIONALS_NEGATION at server.go:43:24
+ NOT COVERED CONDITIONALS_NEGATION at server.go:45:23
+ NOT COVERED CONDITIONALS_BOUNDARY at server.go:47:19
+ NOT COVERED CONDITIONALS_NEGATION at server.go:43:9
+ NOT COVERED CONDITIONALS_BOUNDARY at server.go:45:23
+ NOT COVERED CONDITIONALS_NEGATION at server.go:47:19
+      KILLED CONDITIONALS_NEGATION at server.go:70:9
+      KILLED CONDITIONALS_NEGATION at server.go:118:10
+      KILLED CONDITIONALS_NEGATION at server.go:121:36
+      KILLED CONDITIONALS_NEGATION at server.go:122:30
+      KILLED CONDITIONALS_NEGATION at server.go:66:21
+      KILLED CONDITIONALS_NEGATION at timing.go:36:48
+      KILLED CONDITIONALS_NEGATION at timing.go:39:43
+      KILLED CONDITIONALS_NEGATION at timing.go:40:60
+      KILLED ARITHMETIC_BASE at timing.go:42:48
+      KILLED CONDITIONALS_NEGATION at server.go:125:34
+      KILLED CONDITIONALS_NEGATION at server.go:133:39
+      KILLED CONDITIONALS_NEGATION at server.go:130:9
+
+Mutation testing completed in 2 minutes 18 seconds
+Killed: 12, Lived: 0, Not covered: 6
+Timed out: 0, Not viable: 0, Skipped: 0
+Test efficacy: 100.00%
+Mutator coverage: 66.67%

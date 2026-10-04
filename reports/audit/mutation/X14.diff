@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..f98fd60 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -255,7 +255,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
+ 	}
+ 
+ 	// iss
+-	if iss == nil || *iss != p.cfg.Issuer {
++	if false && (iss == nil || *iss != p.cfg.Issuer) { // MUTATION X14: issuer unchecked
+ 		return nil, violation("iss", "issuer %s is not %q", strOrMissing(iss), p.cfg.Issuer)
+ 	}
+ 

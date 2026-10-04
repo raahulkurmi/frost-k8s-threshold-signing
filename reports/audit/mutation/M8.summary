@@ -1,0 +1,11 @@
+mutation M8  dir <clone>  start 2026-10-03T23:31:25Z
+unit rc=1 malicious rc=0 seconds=608
+failing tests:
+    --- FAIL: TestPolicyRejects/case-variant_ISS_key
+    --- FAIL: TestPolicyRejects/case-variant_nested_namespace
+    --- FAIL: TestPolicyRejects/duplicate_iss_key
+--- FAIL: TestPolicyRejects
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/policy	2.558s
+RESULT M8 CAUGHT

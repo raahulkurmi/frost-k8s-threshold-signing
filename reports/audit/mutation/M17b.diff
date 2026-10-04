@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..3a72dd3 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -235,7 +235,7 @@ func New(cfg Config) (*Coordinator, error) {
+ 		return nil, err
+ 	}
+ 	return &Coordinator{meta: cfg.Meta, endpoints: cfg.Endpoints, deadline: cfg.Deadline, strategy: cfg.Strategy, log: lg, headerSeg: hdr,
+-		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now, abort: cfg.QuorumAbort}, nil
++		fanout: cfg.Fanout, hedge: cfg.HedgeDelay, brk: newBreaker(bc), now: time.Now, abort: true}, nil // MUTATION M17b: abort on regardless of Config
+ }
+ 
+ // BreakerConfig returns the effective breaker configuration (defaults applied).

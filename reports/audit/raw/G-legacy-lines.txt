@@ -1,0 +1,126 @@
+grpc-proxy/main.go:180: 		headerJSON := []byte(fmt.Sprintf(`{"alg":"ES256","typ":"JWT","kid":"%s"}`, keyID))
+grpc-proxy/main.go:198: 		_, err = aggregateSignature(signingInput, commitments, shares)
+grpc-proxy/main.go:205: 		signature, err := ecKey.SignES256(signingInput)
+grpc-proxy/main.go:228: 	ecKey, err := signing.NewECDSAKey(ecdsaKeyPath)
+grpc-proxy/main.go:234: 	pkix, err := ecKey.PublicKeyPKIX()
+ecdsa.go:61-71:
+// SignES256 signs using IEEE P1363 format (R || S) — required by go-jose/JWT
+// NOT DER/ASN1 format
+func (e *ECDSAKey) SignES256(signingInput string) (string, error) {
+	hash := sha256.Sum256([]byte(signingInput))
+
+	r, s, err := ecdsa.Sign(rand.Reader, e.key, hash[:])
+	if err != nil {
+		return "", fmt.Errorf("ecdsa sign: %w", err)
+	}
+
+	// IEEE P1363 format: R || S, each padded to curve size (32 bytes for P256)
+keygen/main.go:19: 	group := ecc.Ristretto255Sha512
+--- 7692d5a Dockerfile.proxy 18-22
+COPY --from=builder /app/data/frost-keys.enc /app/data/frost-keys.enc
+COPY --from=builder /app/data/frost-keys.json /app/data/frost-keys.json
+COPY --from=builder /app/data/ecdsa-signing.pem /app/data/ecdsa-signing.pem
+COPY --from=builder /app/certs/proxy.crt /app/certs/proxy.crt
+COPY --from=builder /app/certs/proxy.key /app/certs/proxy.key
+--- 7692d5a coordinatorstate/bootstrap.go 40-56
+	var keyShares []*keys.KeyShare
+	var publicShares []*keys.PublicKeyShare
+
+	for _, shareHex := range stored.Shares {
+
+		keyShare := &keys.KeyShare{}
+
+		if err := keyShare.DecodeHex(
+			shareHex,
+		); err != nil {
+			return fmt.Errorf(
+				"decode key share: %w",
+				err,
+			)
+		}
+
+		keyShares = append(
+--- signHandler
+46:func signHandler(w http.ResponseWriter, r *http.Request) {
+--- froststate Init
+86:func Init() error {
+--- README-prototype 819,821,924, 916-948 headers
+| Warm path P95 | 48ms | 69ms | +44% |
+| 500 tokens (sequential avg) | 31ms | 44ms | +42% |
+### L2 — Coordinator-Assisted DKG (Primary Research Challenge)
+1:### L1 — macOS Unix Socket Workaround
+9:### L2 — Coordinator-Assisted DKG (Primary Research Challenge)
+17:### L3 — Per-Signer Mutex Contention
+25:### L4 — Vault Dev Mode (No Persistence) 
+33:### L5 — Single-Node Benchmark Environment
+--- README Why FROST abandoned
+15:## Why FROST was abandoned
+63:## Contents
+baseline_benchmark_20260619_201519.txt
+benchmark_20260608_224047.txt
+benchmark_20260619_191416.txt
+frost_benchmark_20260619_200532.txt
+
+frost_benchmark_20260619_200532.txt:37:   Min: 31ms | Avg: 36ms | P50: 34ms | P95: 69ms | P99: 69ms | Max: 69ms
+benchmark_20260608_224047.txt:44:   Token with 3/5 signers: 70ms
+baseline runs:
+8:  Run 1: 41ms
+9:  Run 2: 61ms
+10:  Run 3: 60ms
+11:  Run 4: 57ms
+12:  Run 5: 69ms
+16:  Run 1: 48ms
+17:  Run 2: 40ms
+18:  Run 3: 32ms
+19:  Run 4: 31ms
+20:  Run 5: 30ms
+21:  Run 6: 33ms
+22:  Run 7: 32ms
+23:  Run 8: 33ms
+24:  Run 9: 35ms
+25:  Run 10: 30ms
+26:  Run 11: 35ms
+27:  Run 12: 37ms
+28:  Run 13: 34ms
+29:  Run 14: 40ms
+30:  Run 15: 41ms
+31:  Run 16: 31ms
+32:  Run 17: 33ms
+33:  Run 18: 32ms
+34:  Run 19: 36ms
+35:  Run 20: 36ms
+37:  Min: 30ms | Avg: 34ms | P50: 34ms | P95: 48ms | P99: 48ms | Max: 48ms
+41:  Total: 3222ms | Avg: 32ms/token | Throughput: 31 tok/s
+45:  Total: 15928ms | Avg: 31ms/token | Throughput: 31 tok/s
+49:  Total: 31470ms | Avg: 31ms/token | Throughput: 31 tok/s
+53:  10 concurrent: 174ms total | 57 tok/s
+57:  20 concurrent: 143ms total | 139 tok/s
+61:  50 concurrent: 340ms total | 147 tok/s
+177:  100 pods ready: 252772ms
+
+## Why FROST was abandoned
+
+**1. Kubernetes verifies only RS256, ES256, ES384 and ES512.** At the target version,
+v1.36.5 (commit `ad950d1cc78b0183c476bd4d3f1934c104229727`):
+
+| File | Line | What it enforces |
+|---|---|---|
+| `pkg/serviceaccount/externaljwt/plugin/plugin.go` | 180 | `validateJWTHeader`: `case "RS256", "ES256", "ES384", "ES512":`, any other `alg` is rejected (`bad signing algorithm`) |
+| `pkg/serviceaccount/jwt.go` | 123, 153–161 | Signers exist only for RSA (RS256) and ECDSA P-256/384/521 (ES256/384/512) |
+| `pkg/serviceaccount/openidmetadata.go` | 316–325 | `algorithmFromPublicKey` maps only RSA → RS256 and ECDSA curves → ES256/384/512 |
+| `staging/src/k8s.io/externaljwt/apis/v1/api.proto` | 60, 91 | "alg must be one of … (currently RS256, ES256, ES384, ES512)"; keys must be "RSA 256 or ECDSA 256/384/521" (PKIX) |
+
+The verifier is go-jose **v2.6.3** (`gopkg.in/go-jose/go-jose.v2`). It has no EdDSA
+over Ristretto255 and no Schnorr algorithm.
+
+**2. FROST outputs Schnorr signatures over Ristretto255.** The prototype used
+`frost.Default` / `ecc.Ristretto255Sha512` (`cmd/keygen`,
+`internal/coordinatorstate/bootstrap.go`). The group key is a Ristretto255 point, not a
+P-256 point. It cannot be exported as a PKIX ECDSA key that ES256 would verify, and it
+cannot be expressed as an RSA key.
+
+**3. No re-encoding turns one signature into the other.** A Schnorr signature `(R, z)`
+satisfies `z·G = R + c·Y` on Ristretto255. ECDSA verification checks a different
+equation (`r ≟ x((e·s⁻¹)·G + (r·s⁻¹)·Q)`) on a different group, and RSA verification
+checks `σ^e ≡ EMSA-PKCS1-v1_5(m) (mod N)`. Converting to IEEE P1363 or DER only changes
+how bytes are laid out. It doesn't change which equation the signature satisfies. A

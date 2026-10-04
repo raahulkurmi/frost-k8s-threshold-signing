@@ -1,0 +1,15 @@
+cmd/dealer                  87.2%
+cmd/grpc-proxy               0.0%
+cmd/signer                  54.7%
+internal/audit              80.0%
+internal/coordinator        90.1%
+internal/dealer             73.9%
+internal/grpcserver         87.0%
+internal/jwtfmt             85.0%
+internal/keymeta            71.4%
+internal/keyshare           81.2%
+internal/policy             92.5%
+internal/prioritykey        82.5%
+internal/signer             91.0%
+internal/tlsconf            81.8%
+internal/wire               86.2%

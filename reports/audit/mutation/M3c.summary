@@ -1,0 +1,8 @@
+mutation M3c  dir <clone>  start 2026-10-04T00:00:08Z
+unit rc=1 malicious rc=0 seconds=617
+failing tests:
+--- FAIL: TestNewRejectsBadEndpoints
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	257.812s
+RESULT M3c CAUGHT

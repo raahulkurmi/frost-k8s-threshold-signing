@@ -1,0 +1,199 @@
+commit 8032da345fc0b10d72871dcbf0080bd5268c5117
+Author: Rahul Chaudhary <raahulchaudhary07@gmail.com>
+Date:   Mon Sep 28 03:00:03 2026 +0530
+
+    N76: quorum-impossible abort (B), priority-consistent signer admission (A), per-replica coordinator certs + fair share, 4 s deadline cap
+    
+    B: the coordinator fails a request as soon as t shares are impossible and cancels
+    the rest (QUORUM_ABORT, default on). A: signers admit by p = HMAC(K_prio, iat epoch,
+    request_id) against an adaptive level (SIGNER_ADMISSION=priority, default n48);
+    K_prio from the dealer (priority.key / Vault), never on the coordinator. Hardening:
+    coordinator-<k> client certs (COORDINATOR_ID), per-client fair share under
+    overload, SIGNER_MAX_DEADLINE (4s). Instrumentation for the N75 open question and
+    the AWS evaluation driver (eval-stress, eval-noregress, eval-slots) with the
+    pre-registered rules in the summarizer. Existing tests that assert Valid == 2 keep
+    their assertions on the no-abort path and gain an abort-mode case. Not evaluated on
+    AWS yet. Follow-up recorded: p bound to the signing input + replay cache.
+    
+    Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+
+diff --git a/internal/coordinator/coordinator_test.go b/internal/coordinator/coordinator_test.go
+index cf8e8cb..ae62e87 100644
+--- a/internal/coordinator/coordinator_test.go
++++ b/internal/coordinator/coordinator_test.go
+@@ -122,7 +122,9 @@ func TestThreeMaliciousFails(t *testing.T) {
+ 		return h
+ 	}})
+ 	for _, st := range strategies {
+-		co := c.NewCoordinator(t, st, 5*time.Second, nil)
++		// Without the quorum-impossible abort (N76) the coordinator waits for
++		// every signer: exactly the 2 honest shares are valid.
++		co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, NoQuorumAbort: true})
+ 		res, err := co.Sign(context.Background(), claims(t))
+ 		var te *coordinator.ThresholdError
+ 		if !errors.As(err, &te) || res != nil {
+@@ -133,6 +135,26 @@ func TestThreeMaliciousFails(t *testing.T) {
+ 		}
+ 		t.Logf("%s: %v", st, err)
+ 	}
++	// With the abort (default) it stops once 3 shares are known bad: no token,
++	// the 3 corrupt signers attributed, at most the 2 honest shares counted.
++	for _, st := range strategies {
++		co := c.NewCoordinator(t, st, 5*time.Second, nil)
++		res, err := co.Sign(context.Background(), claims(t))
++		var te *coordinator.ThresholdError
++		if !errors.As(err, &te) || res != nil || te.Valid > 2 {
++			t.Fatalf("%s (abort): res=%v err=%v", st, res, err)
++		}
++		bad := 0
++		for _, f := range te.Failures {
++			if f.SignerID <= 3 {
++				bad++
++			}
++		}
++		if bad != 3 && st == coordinator.Strict {
++			t.Fatalf("%s (abort): %d of the 3 corrupt signers attributed: %v", st, bad, te.Failures)
++		}
++		t.Logf("%s (abort): %v", st, err)
++	}
+ }
+ 
+ func TestBelowThresholdSigners(t *testing.T) {
+@@ -142,13 +164,21 @@ func TestBelowThresholdSigners(t *testing.T) {
+ 		}
+ 		return h
+ 	}})
+-	co := c.NewCoordinator(t, coordinator.Strict, 5*time.Second, nil)
++	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict, NoQuorumAbort: true})
+ 	res, err := co.Sign(context.Background(), claims(t))
+ 	var te *coordinator.ThresholdError
+ 	if !errors.As(err, &te) || res != nil || te.Valid != 2 || len(te.Failures) != 3 {
+ 		t.Fatalf("res=%v err=%v", res, err)
+ 	}
+ 	t.Log(err)
++	// With the quorum-impossible abort (N76, default): the 3 down signers are
++	// attributed and the request fails at once, with at most 2 valid shares.
++	co = c.NewCoordinator(t, coordinator.Strict, 5*time.Second, nil)
++	res, err = co.Sign(context.Background(), claims(t))
++	if !errors.As(err, &te) || res != nil || te.Valid > 2 || len(te.Failures) != 3 || co.Stats().QuorumAborts != 1 {
++		t.Fatalf("abort: res=%v err=%v aborts=%d", res, err, co.Stats().QuorumAborts)
++	}
++	t.Log("abort:", err)
+ }
+ 
+ func TestDeadlineRespected(t *testing.T) {
+diff --git a/internal/coordinator/fanout_test.go b/internal/coordinator/fanout_test.go
+index c5c8880..ffe8d10 100644
+--- a/internal/coordinator/fanout_test.go
++++ b/internal/coordinator/fanout_test.go
+@@ -113,13 +113,22 @@ func TestHedgedBelowThresholdFails(t *testing.T) {
+ 		}
+ 		return h
+ 	}})
+-	co := c.NewCoordinatorFanout(t, coordinator.FanoutHedged, time.Second, 5*time.Second, nil)
++	co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: coordinator.Strict,
++		Fanout: coordinator.FanoutHedged, HedgeDelay: time.Second, NoQuorumAbort: true})
+ 	res, err := co.Sign(context.Background(), claims(t))
+ 	var te *coordinator.ThresholdError
+ 	if !errors.As(err, &te) || res != nil || te.Valid != 2 {
+ 		t.Fatalf("res=%v err=%v", res, err)
+ 	}
+ 	t.Log(err)
++	// With the quorum-impossible abort (N76, default): fails as soon as 3
++	// signers have refused; at most 2 valid shares.
++	co = c.NewCoordinatorFanout(t, coordinator.FanoutHedged, time.Second, 5*time.Second, nil)
++	res, err = co.Sign(context.Background(), claims(t))
++	if !errors.As(err, &te) || res != nil || te.Valid > 2 || co.Stats().QuorumAborts != 1 {
++		t.Fatalf("abort: res=%v err=%v", res, err)
++	}
++	t.Log("abort:", err)
+ }
+ 
+ // TestOverloadedIsFastFailureInAllMode (N46b): 503s are counted as failures
+diff --git a/test/correctness_test.go b/test/correctness_test.go
+index e81164e..1e5ec9c 100644
+--- a/test/correctness_test.go
++++ b/test/correctness_test.go
+@@ -127,7 +127,10 @@ func TestBelowThresholdFails(t *testing.T) {
+ 		c.Servers[id].Close()
+ 	}
+ 	var logs testutil.LogBuffer
+-	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, logs.Logger()))
++	// Without the quorum-impossible abort (N76) the coordinator waits for all
++	// 5 answers, so the log records exactly the 2 reachable signers' shares.
++	// TestBelowThresholdFailsWithAbort covers the default.
++	client := serveGRPC(t, c, c.NewCoordinatorWith(t, coordinator.Config{Strategy: coordinator.Strict, Deadline: 2 * time.Second, Logger: logs.Logger(), NoQuorumAbort: true}))
+ 	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
+ 	if err == nil || resp != nil {
+ 		t.Fatalf("resp=%v err=%v", resp, err)
+@@ -149,6 +152,35 @@ func TestBelowThresholdFails(t *testing.T) {
+ 	t.Logf("caller: %v; coordinator log: valid_shares=2, signers 3,4,5 named", err)
+ }
+ 
++// T3 (I5) with the quorum-impossible abort (N76, the default): the request
++// fails as soon as 3 signers are known unreachable, the caller sees the same
++// generic error, and the log names each failed signer and marks the abort.
++func TestBelowThresholdFailsWithAbort(t *testing.T) {
++	c := testutil.StartCluster(t, testutil.ClusterOpts{})
++	for _, id := range []int{3, 4, 5} {
++		c.Servers[id].Close()
++	}
++	var logs testutil.LogBuffer
++	client := serveGRPC(t, c, c.NewCoordinator(t, coordinator.Strict, 2*time.Second, logs.Logger()))
++	resp, err := client.Sign(context.Background(), &externaljwtv1.SignJWTRequest{Claims: saClaims(t)})
++	if err == nil || resp != nil {
++		t.Fatalf("resp=%v err=%v", resp, err)
++	}
++	if st, _ := status.FromError(err); st.Code() != codes.Unavailable || st.Message() != grpcserver.ErrMsgThreshold {
++		t.Fatalf("caller error %v, want Unavailable %q", err, grpcserver.ErrMsgThreshold)
++	}
++	l := logs.String()
++	if !strings.Contains(l, `"msg":"sign failed"`) || !strings.Contains(l, `"quorum_impossible":true`) {
++		t.Fatalf("coordinator log lacks the abort:\n%s", l)
++	}
++	for _, id := range []string{`"signer_id":3`, `"signer_id":4`, `"signer_id":5`} {
++		if !strings.Contains(l, id) {
++			t.Fatalf("coordinator log does not name failed %s:\n%s", id, l)
++		}
++	}
++	t.Logf("caller: %v; coordinator log: quorum_impossible, signers 3,4,5 named", err)
++}
++
+ // T4 (I5): an attacker holding 2 real shares cannot forge, whatever they do
+ // with the library.
+ func TestTwoSharesCannotForge(t *testing.T) {
+diff --git a/test/malicious_test.go b/test/malicious_test.go
+index 6e53db7..816e457 100644
+--- a/test/malicious_test.go
++++ b/test/malicious_test.go
+@@ -57,7 +57,9 @@ func TestMaliciousSignerExcluded(t *testing.T) {
+ 		})
+ 		t.Run(string(st)+"/three malicious", func(t *testing.T) {
+ 			signer.SetMalicious(1, 2, 3)
+-			co := c.NewCoordinator(t, st, 5*time.Second, nil)
++			// Without the quorum-impossible abort (N76) the coordinator waits for
++			// all 5: exactly the 2 honest shares are valid.
++			co := c.NewCoordinatorWith(t, coordinator.Config{Deadline: 5 * time.Second, Strategy: st, NoQuorumAbort: true})
+ 			res, err := co.Sign(context.Background(), saClaims(t))
+ 			var te *coordinator.ThresholdError
+ 			if !errors.As(err, &te) || res != nil || te.Valid != 2 {
+@@ -69,6 +71,19 @@ func TestMaliciousSignerExcluded(t *testing.T) {
+ 				}
+ 			}
+ 			t.Log(err)
++			// With the abort (default): no token, at most the 2 honest shares,
++			// and the 3 malicious signers are still attributed.
++			co = c.NewCoordinator(t, st, 5*time.Second, nil)
++			res, err = co.Sign(context.Background(), saClaims(t))
++			if !errors.As(err, &te) || res != nil || te.Valid > 2 {
++				t.Fatalf("abort: res=%v err=%v", res, err)
++			}
++			for _, id := range []int{1, 2, 3} {
++				if !strings.Contains(err.Error(), "signer-"+string(rune('0'+id))+": invalid signature share") {
++					t.Fatalf("abort: error does not attribute signer %d: %v", id, err)
++				}
++			}
++			t.Log("abort:", err)
+ 		})
+ 	}
+ }

@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..3cfc54c 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -516,7 +516,7 @@ collect:
+ 			if r.skipped { // strict: t shares already verified; this one is not needed
+ 				continue
+ 			}
+-			if valid[r.id] != nil || candidates[r.id] != nil {
++			if false && (valid[r.id] != nil || candidates[r.id] != nil) { // MUTATION M3a
+ 				fail(r.id, "duplicate share id") // unreachable with unique endpoints; defensive dedupe
+ 				continue
+ 			}

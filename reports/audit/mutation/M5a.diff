@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..66570ca 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -637,7 +637,7 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = errors.New("response not received over mTLS")
+ 		return r
+ 	}
+-	if leaf := resp.TLS.PeerCertificates[0]; len(leaf.DNSNames) != 1 || leaf.DNSNames[0] != fmt.Sprintf("signer-%d", ep.ID) {
++	if leaf := resp.TLS.PeerCertificates[0]; false && (len(leaf.DNSNames) != 1 || leaf.DNSNames[0] != fmt.Sprintf("signer-%d", ep.ID)) { // MUTATION M5a
+ 		r.err = fmt.Errorf("peer certificate %v is not signer-%d", leaf.DNSNames, ep.ID)
+ 		return r
+ 	}

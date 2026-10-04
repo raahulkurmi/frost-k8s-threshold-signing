@@ -1,0 +1,11 @@
+mutation X15  dir <clone>  start 2026-10-03T23:18:51Z
+unit rc=1 malicious rc=0 seconds=931
+failing tests:
+    --- FAIL: TestCoordinatorFailsClosed/TCP_without_gRPC_client_CA
+    --- FAIL: TestCoordinatorFailsClosed/TCP_without_gRPC_mTLS_cert
+--- FAIL: TestCoordinatorFailsClosed
+--- FAIL: TestNoKeyMaterialFilesInTree
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/test	276.585s
+RESULT X15 CAUGHT

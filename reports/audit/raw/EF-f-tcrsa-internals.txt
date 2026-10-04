@@ -1,0 +1,16 @@
+=== RUN   TestEFInternals
+    ef_internals_test.go:27: p 1025 bits, prime, p'=(p-1)/2 prime (safe prime)            true
+    ef_internals_test.go:27: q 1023 bits, prime, q'=(q-1)/2 prime (safe prime)            true
+    ef_internals_test.go:27: N = p*q, N.BitLen()==2048                                    true
+    ef_internals_test.go:27: e == 65537 and gcd(e, m) == 1                                true
+    ef_internals_test.go:27: v is a QR mod p and mod q (random square), gcd(v,N)=1        true
+    ef_internals_test.go:27: Jacobi(u, N) == -1                                           true
+    ef_internals_test.go:27: for all i: Id==i, s_i < m, vk_i == v^{s_i} mod N             true
+    ef_internals_test.go:27: all 10 subsets: sum(Delta*L_j(0)*s_j) == d mod m (Delta^-1 folded into shares) true
+    ef_internals_test.go:27: Join({5,2,3}) byte-identical to crypto/rsa.SignPKCS1v15 (same key) true
+    ef_internals_test.go:27: Jacobi(EM,N)=1: Join == crypto/rsa signature                 true
+    ef_internals_test.go:27: Jacobi(EM,N)=-1: Join == crypto/rsa signature                true
+--- PASS: TestEFInternals (486.55s)
+PASS
+ok  	github.com/niclabs/tcrsa	487.064s
+EXIT 0

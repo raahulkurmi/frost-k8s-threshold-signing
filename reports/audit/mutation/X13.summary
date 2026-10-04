@@ -1,0 +1,9 @@
+mutation X13  dir <clone>  start 2026-10-04T02:04:51Z
+unit rc=1 malicious rc=0 seconds=449
+failing tests:
+    --- FAIL: TestPolicyRejects/denied_namespace
+--- FAIL: TestPolicyRejects
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/policy	3.455s
+RESULT X13 CAUGHT

@@ -1,0 +1,50 @@
+mutation X16  dir <clone>  start 2026-10-03T23:34:24Z
+unit rc=1 malicious rc=1 seconds=924
+failing tests:
+    --- FAIL: TestMaliciousShareExcludedAndAttributed/optimistic
+    --- FAIL: TestMaliciousShareExcludedAndAttributed/strict
+    --- FAIL: TestMaliciousSignerExcluded/optimistic/one_malicious
+    --- FAIL: TestMaliciousSignerExcluded/optimistic/three_malicious
+    --- FAIL: TestMaliciousSignerExcluded/strict/one_malicious
+    --- FAIL: TestMaliciousSignerExcluded/strict/three_malicious
+    --- FAIL: TestQuorumImpossibleAbortsEarly/abort
+    --- FAIL: TestSignProducesStandardRS256/optimistic
+    --- FAIL: TestSignProducesStandardRS256/strict
+--- FAIL: TestAllThresholdSubsetsIdentical
+--- FAIL: TestBelowThresholdFails
+--- FAIL: TestBelowThresholdFailsWithAbort
+--- FAIL: TestBelowThresholdSigners
+--- FAIL: TestBreakerFallbackToStrict
+--- FAIL: TestBreakerRecovery
+--- FAIL: TestBreakerTripMarksSuspect
+--- FAIL: TestBreakerWorkBound
+--- FAIL: TestCoordinatorMetaIsGroupKey
+--- FAIL: TestCoordinatorSendsRemainingDeadline
+--- FAIL: TestDeadlineRespected
+--- FAIL: TestFetchKeysPKIXRoundTrip
+--- FAIL: TestHedgedBelowThresholdFails
+--- FAIL: TestHedgedContactsTPlusOneAndRotates
+--- FAIL: TestHedgedFastFailureHedgesImmediately
+--- FAIL: TestIssuedJWTVerifiesWithFetchKeysOnly
+--- FAIL: TestMaliciousShareExcludedAndAttributed
+--- FAIL: TestMaliciousSignerExcluded
+--- FAIL: TestNoKeyMaterialFilesInTree
+--- FAIL: TestOverloadedIsFastFailureInAllMode
+--- FAIL: TestPriorityRefusalNeverTripsBreaker
+--- FAIL: TestQuorumAbortOffByDefault
+--- FAIL: TestQuorumAbortReducesWastedSharesSimulation
+--- FAIL: TestQuorumAbortStillSignsWithTwoRefusals
+--- FAIL: TestQuorumImpossibleAbortsEarly
+--- FAIL: TestRetryGetsNewRequestID
+--- FAIL: TestShareIDBoundToMTLSIdentity
+--- FAIL: TestSignBelowThresholdReturnsErrorNoToken
+--- FAIL: TestSignProducesStandardRS256
+--- FAIL: TestStrictVerifiesUntilT
+--- FAIL: TestThreeMaliciousFails
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	335.901s
+FAIL	frost-k8s-threshold-signing/internal/grpcserver	167.731s
+FAIL	frost-k8s-threshold-signing/test	302.481s
+FAIL	frost-k8s-threshold-signing/test	618.093s
+RESULT X16 CAUGHT

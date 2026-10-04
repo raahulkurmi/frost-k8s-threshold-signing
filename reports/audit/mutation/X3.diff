@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..ba80299 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -282,7 +282,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
+ 	if exp <= iat {
+ 		return nil, violation("exp", "exp %d is not after iat %d", exp, iat)
+ 	}
+-	if exp-iat > p.cfg.MaxTokenSeconds {
++	if false && exp-iat > p.cfg.MaxTokenSeconds { // MUTATION X3: lifetime cap off
+ 		return nil, violation("exp", "lifetime %ds exceeds max %ds", exp-iat, p.cfg.MaxTokenSeconds)
+ 	}
+ 	skew := p.cfg.ClockSkewSeconds

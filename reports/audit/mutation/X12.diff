@@ -1,0 +1,13 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..329f282 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -432,7 +432,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 	}
+ 	// Record the allow decision before releasing the share; no audit, no share.
+ 	entry.Decision = "allow"
+-	if err := s.cfg.Audit.Write(entry); err != nil {
++	if err := s.cfg.Audit.Write(entry); false && err != nil { // MUTATION X12
+ 		s.cfg.Logger.Error("audit write failed; refusing to sign", "err", err)
+ 		return nil, reject(http.StatusInternalServerError, "internal", "audit log unavailable")
+ 	}

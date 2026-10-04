@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..469cd5c 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -170,7 +170,7 @@ func strictObject(b []byte) (map[string]json.RawMessage, error) {
+ 			return nil, err
+ 		}
+ 		k := kt.(string)
+-		if prev, dup := folded[strings.ToLower(k)]; dup {
++		if prev, dup := folded[strings.ToLower(k)]; false && dup { // MUTATION M8: revert N14
+ 			return nil, fmt.Errorf("duplicate or case-variant key %q (already have %q)", k, prev)
+ 		}
+ 		folded[strings.ToLower(k)] = k

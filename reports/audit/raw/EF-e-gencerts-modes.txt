@@ -1,0 +1,90 @@
+drwx------ .
+drwx------ ./ca
+-rw-r--r-- ./ca/ca.crt
+-rw------- ./ca/ca.key
+drwx------ ./tls
+-rw-r--r-- ./tls/ca.crt
+drwx------ ./tls/coordinator-1
+-rw-r--r-- ./tls/coordinator-1/tls.crt
+-rw------- ./tls/coordinator-1/tls.key
+drwx------ ./tls/coordinator-2
+-rw-r--r-- ./tls/coordinator-2/tls.crt
+-rw------- ./tls/coordinator-2/tls.key
+drwx------ ./tls/coordinator-3
+-rw-r--r-- ./tls/coordinator-3/tls.crt
+-rw------- ./tls/coordinator-3/tls.key
+drwx------ ./tls/coordinator-grpc
+-rw-r--r-- ./tls/coordinator-grpc/tls.crt
+-rw------- ./tls/coordinator-grpc/tls.key
+drwx------ ./tls/lb
+-rw-r--r-- ./tls/lb/tls.crt
+-rw------- ./tls/lb/tls.key
+drwx------ ./tls/signer-1
+-rw-r--r-- ./tls/signer-1/tls.crt
+-rw------- ./tls/signer-1/tls.key
+drwx------ ./tls/signer-2
+-rw-r--r-- ./tls/signer-2/tls.crt
+-rw------- ./tls/signer-2/tls.key
+drwx------ ./tls/signer-3
+-rw-r--r-- ./tls/signer-3/tls.crt
+-rw------- ./tls/signer-3/tls.key
+drwx------ ./tls/signer-4
+-rw-r--r-- ./tls/signer-4/tls.crt
+-rw------- ./tls/signer-4/tls.key
+drwx------ ./tls/signer-5
+-rw-r--r-- ./tls/signer-5/tls.crt
+-rw------- ./tls/signer-5/tls.key
+== coordinator-1
+X509v3 Basic Constraints: critical
+    CA:FALSE
+X509v3 Key Usage: critical
+    Digital Signature
+X509v3 Extended Key Usage: 
+    TLS Web Client Authentication
+X509v3 Subject Alternative Name: 
+    DNS:coordinator-1
+notBefore=Oct  3 23:29:06 2026 GMT
+notAfter=Oct  3 23:29:06 2027 GMT
+                Public-Key: (256 bit)
+== coordinator-grpc
+X509v3 Basic Constraints: critical
+    CA:FALSE
+X509v3 Key Usage: critical
+    Digital Signature
+X509v3 Extended Key Usage: 
+    TLS Web Server Authentication
+X509v3 Subject Alternative Name: 
+    DNS:coordinator-grpc
+notBefore=Oct  3 23:29:06 2026 GMT
+notAfter=Oct  3 23:29:06 2027 GMT
+                Public-Key: (256 bit)
+== lb
+X509v3 Basic Constraints: critical
+    CA:FALSE
+X509v3 Key Usage: critical
+    Digital Signature
+X509v3 Extended Key Usage: 
+    TLS Web Client Authentication
+X509v3 Subject Alternative Name: 
+    DNS:lb
+notBefore=Oct  3 23:29:06 2026 GMT
+notAfter=Oct  3 23:29:06 2027 GMT
+                Public-Key: (256 bit)
+== signer-1
+X509v3 Basic Constraints: critical
+    CA:FALSE
+X509v3 Key Usage: critical
+    Digital Signature
+X509v3 Extended Key Usage: 
+    TLS Web Server Authentication
+X509v3 Subject Alternative Name: 
+    DNS:signer-1
+notBefore=Oct  3 23:29:06 2026 GMT
+notAfter=Oct  3 23:29:06 2027 GMT
+                Public-Key: (256 bit)
+X509v3 Basic Constraints: critical
+    CA:TRUE, pathlen:0
+X509v3 Key Usage: critical
+    Certificate Sign, CRL Sign
+notBefore=Oct  3 23:29:06 2026 GMT
+notAfter=Oct  3 23:29:06 2027 GMT

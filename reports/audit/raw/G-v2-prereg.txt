@@ -1,0 +1,22 @@
+293a919 author=2026-10-03T22:02:15+05:30 commit=2026-10-03T22:02:15+05:30 Design (not implemented): priority admission v2, the single follow-up iteration; pre-registered rules R1-R5 and the QUORUM_ABORT default rule (NOTES N79)
+d07a8e7 author=2026-10-03T22:41:52+05:30 commit=2026-10-03T22:41:52+05:30 N80: priority admission v2 controller (count-and-time window, shed-fraction overload, damping), v1 kept; v2/v2nb variants; summarizer scores R1-R4 and the QUORUM_ABORT rule
+a000c9b author=2026-10-03T23:17:23+05:30 commit=2026-10-03T23:17:23+05:30 v2 AWS session: bootstrap evidence (fresh 7C cluster at d07a8e7; T-5 kid g1TN11q0..., T-same kid XQC677lh...; 6 systems smoke-checked)
+eccc5a8 author=2026-10-04T03:17:41+05:30 commit=2026-10-04T03:17:41+05:30 N81: v2 evaluation results (rules from 293a919): R1-R4 FAIL, R5 PASS; v2 not adopted; QUORUM_ABORT rule -> default off; teardown proof
+37f3c5e author=2026-10-04T03:53:03+05:30 commit=2026-10-04T03:53:03+05:30 N82: apply the pre-registered decision (QUORUM_ABORT off by default, opt-in); final defaults documented; priority admission evaluated, not recommended; PAPER_INPUTS two-iteration result
+
+293a919 is ancestor of d07a8e7
+293a919 is ancestor of a000c9b
+293a919 is ancestor of eccc5a8
+
+commits touching v2 result dirs:
+eccc5a8 2026-10-04T03:17:41+05:30 N81: v2 evaluation results (rules from 293a919): R1-R4 FAIL, R5 PASS; v2 not adopted; QUORUM_ABORT rule -> default off; teardown proof
+293a919 ancestor of eccc5a8
+
+commits between 293a919 and d07a8e7:
+d07a8e7 2026-10-03T22:41:52+05:30 N80: priority admission v2 controller (count-and-time window, shed-fraction overload, damping), v1 kept; v2/v2nb variants; summarizer scores R1-R4 and the QUORUM_ABORT rule
+
+history of PRIORITY_ADMISSION_V2.md:
+37f3c5e 2026-10-04T03:53:03+05:30 N82: apply the pre-registered decision (QUORUM_ABORT off by default, opt-in); final defaults documented; priority admission evaluated, not recommended; PAPER_INPUTS two-iteration result
+eccc5a8 2026-10-04T03:17:41+05:30 N81: v2 evaluation results (rules from 293a919): R1-R4 FAIL, R5 PASS; v2 not adopted; QUORUM_ABORT rule -> default off; teardown proof
+d07a8e7 2026-10-03T22:41:52+05:30 N80: priority admission v2 controller (count-and-time window, shed-fraction overload, damping), v1 kept; v2/v2nb variants; summarizer scores R1-R4 and the QUORUM_ABORT rule
+293a919 2026-10-03T22:02:15+05:30 Design (not implemented): priority admission v2, the single follow-up iteration; pre-registered rules R1-R5 and the QUORUM_ABORT default rule (NOTES N79)

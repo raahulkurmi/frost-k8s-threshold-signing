@@ -1,0 +1,9 @@
+mutation M13b  dir <clone>  start 2026-10-04T01:55:15Z
+unit rc=1 malicious rc=0 seconds=283
+failing tests:
+--- FAIL: TestQueueCapEnforced
+--- FAIL: TestRequestThatCannotFitIsShedImmediately
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	206.582s
+RESULT M13b CAUGHT

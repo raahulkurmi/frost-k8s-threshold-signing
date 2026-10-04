@@ -1,0 +1,9 @@
+$ (deploy.sh lines 25,39-47 extracted; COORD_VM=tk8s; SIGNERS="1:sig-a:8441 2:sig-a:8442 3:sig-a:8443 4:sig-b:8444 5:sig-c:8445")
+sig-a gets signers: 1 2 3
+sig-b gets signers: 4
+sig-c gets signers: 5
+topology guard PASSED (no per-host < t check)
+
+$ grep -n "threshold\|-ge 3\|-lt 3\|THRESH" deploy/multihost/deploy.sh deploy/multihost/setup-signer-host.sh
+deploy/multihost/setup-signer-host.sh:88:Description=frost-k8s threshold signer $id
+(exit 0)

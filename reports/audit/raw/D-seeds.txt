@@ -1,0 +1,554 @@
+=== RUN   TestPolicySeedsDifferential
+    policy_fuzz_test.go:314: seed  0 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  1 accept+agree                                     "{\"aud\":\"https://kubernetes.default.svc.cluster.local\",\"exp\":1800003600,\"iat\":1800000000,\"i"
+    policy_fuzz_test.go:314: seed  2 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\",\"vault\"],\"exp\":1800003600,\"iat\":180"
+    policy_fuzz_test.go:314: seed  3 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  4 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  5 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  6 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  7 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  8 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed  9 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 10 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 11 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 12 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 13 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 14 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 15 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 16 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 17 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 18 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 19 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 20 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 21 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 22 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 23 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 24 policy-accepts/apiserver-rejects(fail-closed)    "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":\"1800000000"
+    policy_fuzz_test.go:314: seed 25 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000."
+    policy_fuzz_test.go:314: seed 26 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1.8e9,\"iss\""
+    policy_fuzz_test.go:314: seed 27 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":18000000000"
+    policy_fuzz_test.go:314: seed 28 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600.4,\"iat\":180000000"
+    policy_fuzz_test.go:314: seed 29 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":99999999999999999999999,\"iat"
+    policy_fuzz_test.go:314: seed 30 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":9223372036854775807,\"iat\":18"
+    policy_fuzz_test.go:314: seed 31 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 32 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 33 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 34 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 35 policy-rejects                                   "{\"aud\":null,\"exp\":1800003600,\"iat\":1800000000,\"iss\":\"https://kubernetes.default.svc.cluste"
+    policy_fuzz_test.go:314: seed 36 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\",null],\"exp\":1800003600,\"iat\":180000"
+    policy_fuzz_test.go:314: seed 37 policy-rejects                                   "{\"aud\":[],\"exp\":1800003600,\"iat\":1800000000,\"iss\":\"https://kubernetes.default.svc.cluster."
+    policy_fuzz_test.go:314: seed 38 policy-rejects                                   "{\"aud\":{\"0\":\"https://kubernetes.default.svc.cluster.local\"},\"exp\":1800003600,\"iat\":1800000"
+    policy_fuzz_test.go:314: seed 39 policy-rejects                                   "{\"aud\":\"https://kubernetes.default.svc.cluster.local\",\"AUD\":[\"evil\"],\"exp\":1800003600,\"iat"
+    policy_fuzz_test.go:314: seed 40 policy-accepts/apiserver-rejects(fail-closed)    "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 41 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 42 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 43 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 44 policy-accepts/apiserver-rejects(fail-closed)    "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 45 policy-accepts/apiserver-rejects(fail-closed)    "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 46 policy-accepts/apiserver-rejects(fail-closed)    "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 47 policy-rejects                                   "\ufeff{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000"
+    policy_fuzz_test.go:314: seed 48 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 49 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 50 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 51 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 52 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 53 accept+agree                                     "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 54 policy-rejects                                   "{\"aud\":[\"https://kubernetes.default.svc.cluster.local\"],\"exp\":1800003600,\"iat\":1800000000,"
+    policy_fuzz_test.go:314: seed 55 policy-rejects                                   "{}"
+    policy_fuzz_test.go:314: seed 56 policy-rejects                                   "null"
+    policy_fuzz_test.go:314: seed 57 policy-rejects                                   "[]"
+--- PASS: TestPolicySeedsDifferential (0.22s)
+=== RUN   TestPolicyCorpusReplay
+    policy_fuzz_test.go:324: FUZZ_REPLAY_DIR not set
+--- SKIP: TestPolicyCorpusReplay (0.00s)
+=== RUN   FuzzJWTHeader
+=== RUN   FuzzJWTHeader/seed#0
+=== RUN   FuzzJWTHeader/seed#1
+=== RUN   FuzzJWTHeader/seed#2
+=== RUN   FuzzJWTHeader/seed#3
+=== RUN   FuzzJWTHeader/seed#4
+=== RUN   FuzzJWTHeader/seed#5
+=== RUN   FuzzJWTHeader/seed#6
+=== RUN   FuzzJWTHeader/seed#7
+=== RUN   FuzzJWTHeader/seed#8
+=== RUN   FuzzJWTHeader/seed#9
+=== RUN   FuzzJWTHeader/seed#10
+=== RUN   FuzzJWTHeader/seed#11
+=== RUN   FuzzJWTHeader/seed#12
+=== RUN   FuzzJWTHeader/seed#13
+=== RUN   FuzzJWTHeader/seed#14
+=== RUN   FuzzJWTHeader/seed#15
+=== RUN   FuzzJWTHeader/seed#16
+=== RUN   FuzzJWTHeader/seed#17
+=== RUN   FuzzJWTHeader/seed#18
+=== RUN   FuzzJWTHeader/seed#19
+=== RUN   FuzzJWTHeader/seed#20
+=== RUN   FuzzJWTHeader/seed#21
+--- PASS: FuzzJWTHeader (0.00s)
+    --- PASS: FuzzJWTHeader/seed#0 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#1 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#2 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#3 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#4 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#5 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#6 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#7 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#8 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#9 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#10 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#11 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#12 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#13 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#14 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#15 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#16 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#17 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#18 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#19 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#20 (0.00s)
+    --- PASS: FuzzJWTHeader/seed#21 (0.00s)
+=== RUN   FuzzSigningInput
+=== RUN   FuzzSigningInput/seed#0
+=== RUN   FuzzSigningInput/seed#1
+=== RUN   FuzzSigningInput/seed#2
+=== RUN   FuzzSigningInput/seed#3
+=== RUN   FuzzSigningInput/seed#4
+=== RUN   FuzzSigningInput/seed#5
+=== RUN   FuzzSigningInput/seed#6
+=== RUN   FuzzSigningInput/seed#7
+=== RUN   FuzzSigningInput/seed#8
+=== RUN   FuzzSigningInput/seed#9
+=== RUN   FuzzSigningInput/seed#10
+=== RUN   FuzzSigningInput/seed#11
+=== RUN   FuzzSigningInput/seed#12
+=== RUN   FuzzSigningInput/seed#13
+=== RUN   FuzzSigningInput/seed#14
+=== RUN   FuzzSigningInput/seed#15
+--- PASS: FuzzSigningInput (0.00s)
+    --- PASS: FuzzSigningInput/seed#0 (0.00s)
+    --- PASS: FuzzSigningInput/seed#1 (0.00s)
+    --- PASS: FuzzSigningInput/seed#2 (0.00s)
+    --- PASS: FuzzSigningInput/seed#3 (0.00s)
+    --- PASS: FuzzSigningInput/seed#4 (0.00s)
+    --- PASS: FuzzSigningInput/seed#5 (0.00s)
+    --- PASS: FuzzSigningInput/seed#6 (0.00s)
+    --- PASS: FuzzSigningInput/seed#7 (0.00s)
+    --- PASS: FuzzSigningInput/seed#8 (0.00s)
+    --- PASS: FuzzSigningInput/seed#9 (0.00s)
+    --- PASS: FuzzSigningInput/seed#10 (0.00s)
+    --- PASS: FuzzSigningInput/seed#11 (0.00s)
+    --- PASS: FuzzSigningInput/seed#12 (0.00s)
+    --- PASS: FuzzSigningInput/seed#13 (0.00s)
+    --- PASS: FuzzSigningInput/seed#14 (0.00s)
+    --- PASS: FuzzSigningInput/seed#15 (0.00s)
+=== RUN   FuzzKeymetaParse
+testutil: generated 2048-bit 3-of-5 key in 2m16.191s
+=== RUN   FuzzKeymetaParse/seed#0
+=== RUN   FuzzKeymetaParse/seed#1
+=== RUN   FuzzKeymetaParse/seed#2
+=== RUN   FuzzKeymetaParse/seed#3
+=== RUN   FuzzKeymetaParse/seed#4
+=== RUN   FuzzKeymetaParse/seed#5
+=== RUN   FuzzKeymetaParse/seed#6
+=== RUN   FuzzKeymetaParse/seed#7
+=== RUN   FuzzKeymetaParse/seed#8
+=== RUN   FuzzKeymetaParse/seed#9
+=== RUN   FuzzKeymetaParse/seed#10
+=== RUN   FuzzKeymetaParse/seed#11
+=== RUN   FuzzKeymetaParse/seed#12
+=== RUN   FuzzKeymetaParse/seed#13
+=== RUN   FuzzKeymetaParse/seed#14
+--- PASS: FuzzKeymetaParse (136.26s)
+    --- PASS: FuzzKeymetaParse/seed#0 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#1 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#2 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#3 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#4 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#5 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#6 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#7 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#8 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#9 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#10 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#11 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#12 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#13 (0.00s)
+    --- PASS: FuzzKeymetaParse/seed#14 (0.00s)
+=== RUN   FuzzKeyshareParse
+=== RUN   FuzzKeyshareParse/seed#0
+=== RUN   FuzzKeyshareParse/seed#1
+=== RUN   FuzzKeyshareParse/seed#2
+=== RUN   FuzzKeyshareParse/seed#3
+=== RUN   FuzzKeyshareParse/seed#4
+=== RUN   FuzzKeyshareParse/seed#5
+=== RUN   FuzzKeyshareParse/seed#6
+=== RUN   FuzzKeyshareParse/seed#7
+=== RUN   FuzzKeyshareParse/seed#8
+=== RUN   FuzzKeyshareParse/seed#9
+=== RUN   FuzzKeyshareParse/seed#10
+=== RUN   FuzzKeyshareParse/seed#11
+=== RUN   FuzzKeyshareParse/seed#12
+=== RUN   FuzzKeyshareParse/seed#13
+--- PASS: FuzzKeyshareParse (0.64s)
+    --- PASS: FuzzKeyshareParse/seed#0 (0.04s)
+    --- PASS: FuzzKeyshareParse/seed#1 (0.00s)
+    --- PASS: FuzzKeyshareParse/seed#2 (0.00s)
+    --- PASS: FuzzKeyshareParse/seed#3 (0.00s)
+    --- PASS: FuzzKeyshareParse/seed#4 (0.05s)
+    --- PASS: FuzzKeyshareParse/seed#5 (0.23s)
+    --- PASS: FuzzKeyshareParse/seed#6 (0.00s)
+    --- PASS: FuzzKeyshareParse/seed#7 (0.00s)
+    --- PASS: FuzzKeyshareParse/seed#8 (0.00s)
+    --- PASS: FuzzKeyshareParse/seed#9 (0.11s)
+    --- PASS: FuzzKeyshareParse/seed#10 (0.12s)
+    --- PASS: FuzzKeyshareParse/seed#11 (0.03s)
+    --- PASS: FuzzKeyshareParse/seed#12 (0.03s)
+    --- PASS: FuzzKeyshareParse/seed#13 (0.03s)
+=== RUN   FuzzPriorityKeyParse
+=== RUN   FuzzPriorityKeyParse/seed#0
+=== RUN   FuzzPriorityKeyParse/seed#1
+=== RUN   FuzzPriorityKeyParse/seed#2
+=== RUN   FuzzPriorityKeyParse/seed#3
+=== RUN   FuzzPriorityKeyParse/seed#4
+=== RUN   FuzzPriorityKeyParse/seed#5
+=== RUN   FuzzPriorityKeyParse/seed#6
+--- PASS: FuzzPriorityKeyParse (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#0 (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#1 (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#2 (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#3 (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#4 (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#5 (0.00s)
+    --- PASS: FuzzPriorityKeyParse/seed#6 (0.00s)
+=== RUN   FuzzTimingInterceptor
+=== RUN   FuzzTimingInterceptor/seed#0
+=== RUN   FuzzTimingInterceptor/seed#1
+=== RUN   FuzzTimingInterceptor/seed#2
+=== RUN   FuzzTimingInterceptor/seed#3
+=== RUN   FuzzTimingInterceptor/seed#4
+=== RUN   FuzzTimingInterceptor/seed#5
+=== RUN   FuzzTimingInterceptor/seed#6
+--- PASS: FuzzTimingInterceptor (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#0 (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#1 (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#2 (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#3 (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#4 (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#5 (0.00s)
+    --- PASS: FuzzTimingInterceptor/seed#6 (0.00s)
+=== RUN   FuzzPolicyEvaluate
+=== RUN   FuzzPolicyEvaluate/seed#0
+=== RUN   FuzzPolicyEvaluate/seed#1
+=== RUN   FuzzPolicyEvaluate/seed#2
+=== RUN   FuzzPolicyEvaluate/seed#3
+=== RUN   FuzzPolicyEvaluate/seed#4
+=== RUN   FuzzPolicyEvaluate/seed#5
+=== RUN   FuzzPolicyEvaluate/seed#6
+=== RUN   FuzzPolicyEvaluate/seed#7
+=== RUN   FuzzPolicyEvaluate/seed#8
+=== RUN   FuzzPolicyEvaluate/seed#9
+=== RUN   FuzzPolicyEvaluate/seed#10
+=== RUN   FuzzPolicyEvaluate/seed#11
+=== RUN   FuzzPolicyEvaluate/seed#12
+=== RUN   FuzzPolicyEvaluate/seed#13
+=== RUN   FuzzPolicyEvaluate/seed#14
+=== RUN   FuzzPolicyEvaluate/seed#15
+=== RUN   FuzzPolicyEvaluate/seed#16
+=== RUN   FuzzPolicyEvaluate/seed#17
+=== RUN   FuzzPolicyEvaluate/seed#18
+=== RUN   FuzzPolicyEvaluate/seed#19
+=== RUN   FuzzPolicyEvaluate/seed#20
+=== RUN   FuzzPolicyEvaluate/seed#21
+=== RUN   FuzzPolicyEvaluate/seed#22
+=== RUN   FuzzPolicyEvaluate/seed#23
+=== RUN   FuzzPolicyEvaluate/seed#24
+=== RUN   FuzzPolicyEvaluate/seed#25
+=== RUN   FuzzPolicyEvaluate/seed#26
+=== RUN   FuzzPolicyEvaluate/seed#27
+=== RUN   FuzzPolicyEvaluate/seed#28
+=== RUN   FuzzPolicyEvaluate/seed#29
+=== RUN   FuzzPolicyEvaluate/seed#30
+=== RUN   FuzzPolicyEvaluate/seed#31
+=== RUN   FuzzPolicyEvaluate/seed#32
+=== RUN   FuzzPolicyEvaluate/seed#33
+=== RUN   FuzzPolicyEvaluate/seed#34
+=== RUN   FuzzPolicyEvaluate/seed#35
+=== RUN   FuzzPolicyEvaluate/seed#36
+=== RUN   FuzzPolicyEvaluate/seed#37
+=== RUN   FuzzPolicyEvaluate/seed#38
+=== RUN   FuzzPolicyEvaluate/seed#39
+=== RUN   FuzzPolicyEvaluate/seed#40
+=== RUN   FuzzPolicyEvaluate/seed#41
+=== RUN   FuzzPolicyEvaluate/seed#42
+=== RUN   FuzzPolicyEvaluate/seed#43
+=== RUN   FuzzPolicyEvaluate/seed#44
+=== RUN   FuzzPolicyEvaluate/seed#45
+=== RUN   FuzzPolicyEvaluate/seed#46
+=== RUN   FuzzPolicyEvaluate/seed#47
+=== RUN   FuzzPolicyEvaluate/seed#48
+=== RUN   FuzzPolicyEvaluate/seed#49
+=== RUN   FuzzPolicyEvaluate/seed#50
+=== RUN   FuzzPolicyEvaluate/seed#51
+=== RUN   FuzzPolicyEvaluate/seed#52
+=== RUN   FuzzPolicyEvaluate/seed#53
+=== RUN   FuzzPolicyEvaluate/seed#54
+=== RUN   FuzzPolicyEvaluate/seed#55
+=== RUN   FuzzPolicyEvaluate/seed#56
+=== RUN   FuzzPolicyEvaluate/seed#57
+--- PASS: FuzzPolicyEvaluate (0.07s)
+    --- PASS: FuzzPolicyEvaluate/seed#0 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#1 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#2 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#3 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#4 (0.01s)
+    --- PASS: FuzzPolicyEvaluate/seed#5 (0.01s)
+    --- PASS: FuzzPolicyEvaluate/seed#6 (0.01s)
+    --- PASS: FuzzPolicyEvaluate/seed#7 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#8 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#9 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#10 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#11 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#12 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#13 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#14 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#15 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#16 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#17 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#18 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#19 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#20 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#21 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#22 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#23 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#24 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#25 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#26 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#27 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#28 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#29 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#30 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#31 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#32 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#33 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#34 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#35 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#36 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#37 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#38 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#39 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#40 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#41 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#42 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#43 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#44 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#45 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#46 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#47 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#48 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#49 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#50 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#51 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#52 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#53 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#54 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#55 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#56 (0.00s)
+    --- PASS: FuzzPolicyEvaluate/seed#57 (0.00s)
+=== RUN   FuzzPolicyParse
+=== RUN   FuzzPolicyParse/seed#0
+=== RUN   FuzzPolicyParse/seed#1
+=== RUN   FuzzPolicyParse/seed#2
+=== RUN   FuzzPolicyParse/seed#3
+=== RUN   FuzzPolicyParse/seed#4
+=== RUN   FuzzPolicyParse/seed#5
+=== RUN   FuzzPolicyParse/seed#6
+=== RUN   FuzzPolicyParse/seed#7
+=== RUN   FuzzPolicyParse/seed#8
+=== RUN   FuzzPolicyParse/seed#9
+=== RUN   FuzzPolicyParse/seed#10
+=== RUN   FuzzPolicyParse/seed#11
+=== RUN   FuzzPolicyParse/seed#12
+--- PASS: FuzzPolicyParse (0.00s)
+    --- PASS: FuzzPolicyParse/seed#0 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#1 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#2 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#3 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#4 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#5 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#6 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#7 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#8 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#9 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#10 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#11 (0.00s)
+    --- PASS: FuzzPolicyParse/seed#12 (0.00s)
+=== RUN   FuzzShareResponse
+=== RUN   FuzzShareResponse/seed#0
+=== RUN   FuzzShareResponse/seed#1
+=== RUN   FuzzShareResponse/seed#2
+=== RUN   FuzzShareResponse/seed#3
+=== RUN   FuzzShareResponse/seed#4
+=== RUN   FuzzShareResponse/seed#5
+=== RUN   FuzzShareResponse/seed#6
+=== RUN   FuzzShareResponse/seed#7
+=== RUN   FuzzShareResponse/seed#8
+=== RUN   FuzzShareResponse/seed#9
+=== RUN   FuzzShareResponse/seed#10
+=== RUN   FuzzShareResponse/seed#11
+=== RUN   FuzzShareResponse/seed#12
+=== RUN   FuzzShareResponse/seed#13
+=== RUN   FuzzShareResponse/seed#14
+=== RUN   FuzzShareResponse/seed#15
+=== RUN   FuzzShareResponse/seed#16
+=== RUN   FuzzShareResponse/seed#17
+=== RUN   FuzzShareResponse/seed#18
+=== RUN   FuzzShareResponse/seed#19
+=== RUN   FuzzShareResponse/seed#20
+=== RUN   FuzzShareResponse/seed#21
+=== RUN   FuzzShareResponse/seed#22
+=== RUN   FuzzShareResponse/seed#23
+=== RUN   FuzzShareResponse/seed#24
+=== RUN   FuzzShareResponse/seed#25
+=== RUN   FuzzShareResponse/seed#26
+=== RUN   FuzzShareResponse/seed#27
+=== RUN   FuzzShareResponse/seed#28
+=== RUN   FuzzShareResponse/seed#29
+=== RUN   FuzzShareResponse/seed#30
+--- PASS: FuzzShareResponse (0.52s)
+    --- PASS: FuzzShareResponse/seed#0 (0.02s)
+    --- PASS: FuzzShareResponse/seed#1 (0.06s)
+    --- PASS: FuzzShareResponse/seed#2 (0.01s)
+    --- PASS: FuzzShareResponse/seed#3 (0.03s)
+    --- PASS: FuzzShareResponse/seed#4 (0.00s)
+    --- PASS: FuzzShareResponse/seed#5 (0.02s)
+    --- PASS: FuzzShareResponse/seed#6 (0.00s)
+    --- PASS: FuzzShareResponse/seed#7 (0.01s)
+    --- PASS: FuzzShareResponse/seed#8 (0.01s)
+    --- PASS: FuzzShareResponse/seed#9 (0.01s)
+    --- PASS: FuzzShareResponse/seed#10 (0.01s)
+    --- PASS: FuzzShareResponse/seed#11 (0.04s)
+    --- PASS: FuzzShareResponse/seed#12 (0.00s)
+    --- PASS: FuzzShareResponse/seed#13 (0.00s)
+    --- PASS: FuzzShareResponse/seed#14 (0.00s)
+    --- PASS: FuzzShareResponse/seed#15 (0.00s)
+    --- PASS: FuzzShareResponse/seed#16 (0.01s)
+    --- PASS: FuzzShareResponse/seed#17 (0.05s)
+    --- PASS: FuzzShareResponse/seed#18 (0.00s)
+    --- PASS: FuzzShareResponse/seed#19 (0.03s)
+    --- PASS: FuzzShareResponse/seed#20 (0.06s)
+    --- PASS: FuzzShareResponse/seed#21 (0.00s)
+    --- PASS: FuzzShareResponse/seed#22 (0.00s)
+    --- PASS: FuzzShareResponse/seed#23 (0.00s)
+    --- PASS: FuzzShareResponse/seed#24 (0.00s)
+    --- PASS: FuzzShareResponse/seed#25 (0.00s)
+    --- PASS: FuzzShareResponse/seed#26 (0.02s)
+    --- PASS: FuzzShareResponse/seed#27 (0.03s)
+    --- PASS: FuzzShareResponse/seed#28 (0.00s)
+    --- PASS: FuzzShareResponse/seed#29 (0.00s)
+    --- PASS: FuzzShareResponse/seed#30 (0.00s)
+=== RUN   FuzzCoordinatorFetch
+=== RUN   FuzzCoordinatorFetch/seed#0
+=== RUN   FuzzCoordinatorFetch/seed#1
+=== RUN   FuzzCoordinatorFetch/seed#2
+=== RUN   FuzzCoordinatorFetch/seed#3
+=== RUN   FuzzCoordinatorFetch/seed#4
+=== RUN   FuzzCoordinatorFetch/seed#5
+=== RUN   FuzzCoordinatorFetch/seed#6
+=== RUN   FuzzCoordinatorFetch/seed#7
+=== RUN   FuzzCoordinatorFetch/seed#8
+=== RUN   FuzzCoordinatorFetch/seed#9
+=== RUN   FuzzCoordinatorFetch/seed#10
+=== RUN   FuzzCoordinatorFetch/seed#11
+=== RUN   FuzzCoordinatorFetch/seed#12
+=== RUN   FuzzCoordinatorFetch/seed#13
+=== RUN   FuzzCoordinatorFetch/seed#14
+=== RUN   FuzzCoordinatorFetch/seed#15
+=== RUN   FuzzCoordinatorFetch/seed#16
+=== RUN   FuzzCoordinatorFetch/seed#17
+=== RUN   FuzzCoordinatorFetch/seed#18
+=== RUN   FuzzCoordinatorFetch/seed#19
+=== RUN   FuzzCoordinatorFetch/seed#20
+=== RUN   FuzzCoordinatorFetch/seed#21
+=== RUN   FuzzCoordinatorFetch/seed#22
+=== RUN   FuzzCoordinatorFetch/seed#23
+=== RUN   FuzzCoordinatorFetch/seed#24
+=== RUN   FuzzCoordinatorFetch/seed#25
+--- PASS: FuzzCoordinatorFetch (0.64s)
+    --- PASS: FuzzCoordinatorFetch/seed#0 (0.04s)
+    --- PASS: FuzzCoordinatorFetch/seed#1 (0.04s)
+    --- PASS: FuzzCoordinatorFetch/seed#2 (0.03s)
+    --- PASS: FuzzCoordinatorFetch/seed#3 (0.04s)
+    --- PASS: FuzzCoordinatorFetch/seed#4 (0.01s)
+    --- PASS: FuzzCoordinatorFetch/seed#5 (0.04s)
+    --- PASS: FuzzCoordinatorFetch/seed#6 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#7 (0.04s)
+    --- PASS: FuzzCoordinatorFetch/seed#8 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#9 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#10 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#11 (0.03s)
+    --- PASS: FuzzCoordinatorFetch/seed#12 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#13 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#14 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#15 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#16 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#17 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#18 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#19 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#20 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#21 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#22 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#23 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#24 (0.02s)
+    --- PASS: FuzzCoordinatorFetch/seed#25 (0.02s)
+=== RUN   FuzzSignerHandler
+=== RUN   FuzzSignerHandler/seed#0
+=== RUN   FuzzSignerHandler/seed#1
+=== RUN   FuzzSignerHandler/seed#2
+=== RUN   FuzzSignerHandler/seed#3
+=== RUN   FuzzSignerHandler/seed#4
+=== RUN   FuzzSignerHandler/seed#5
+=== RUN   FuzzSignerHandler/seed#6
+=== RUN   FuzzSignerHandler/seed#7
+=== RUN   FuzzSignerHandler/seed#8
+=== RUN   FuzzSignerHandler/seed#9
+=== RUN   FuzzSignerHandler/seed#10
+=== RUN   FuzzSignerHandler/seed#11
+=== RUN   FuzzSignerHandler/seed#12
+=== RUN   FuzzSignerHandler/seed#13
+=== RUN   FuzzSignerHandler/seed#14
+=== RUN   FuzzSignerHandler/seed#15
+=== RUN   FuzzSignerHandler/seed#16
+=== RUN   FuzzSignerHandler/seed#17
+=== RUN   FuzzSignerHandler/seed#18
+=== RUN   FuzzSignerHandler/seed#19
+=== RUN   FuzzSignerHandler/seed#20
+=== RUN   FuzzSignerHandler/seed#21
+=== RUN   FuzzSignerHandler/seed#22
+=== RUN   FuzzSignerHandler/seed#23
+--- PASS: FuzzSignerHandler (0.54s)
+    --- PASS: FuzzSignerHandler/seed#0 (0.03s)
+    --- PASS: FuzzSignerHandler/seed#1 (0.07s)
+    --- PASS: FuzzSignerHandler/seed#2 (0.06s)
+    --- PASS: FuzzSignerHandler/seed#3 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#4 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#5 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#6 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#7 (0.14s)
+    --- PASS: FuzzSignerHandler/seed#8 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#9 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#10 (0.05s)
+    --- PASS: FuzzSignerHandler/seed#11 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#12 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#13 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#14 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#15 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#16 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#17 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#18 (0.11s)
+    --- PASS: FuzzSignerHandler/seed#19 (0.05s)
+    --- PASS: FuzzSignerHandler/seed#20 (0.03s)
+    --- PASS: FuzzSignerHandler/seed#21 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#22 (0.00s)
+    --- PASS: FuzzSignerHandler/seed#23 (0.00s)
+PASS
+ok  	frost-k8s-threshold-signing/reports/audit/fuzz	139.559s

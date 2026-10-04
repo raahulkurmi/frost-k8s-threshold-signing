@@ -1,0 +1,13 @@
+diff --git a/internal/jwtfmt/jwtfmt.go b/internal/jwtfmt/jwtfmt.go
+index 4e2c3e0..8877d1f 100644
+--- a/internal/jwtfmt/jwtfmt.go
++++ b/internal/jwtfmt/jwtfmt.go
+@@ -92,7 +92,7 @@ func CheckHeader(seg, kid string) error {
+ 	if err != nil {
+ 		return err
+ 	}
+-	if seg != want {
++	if false && seg != want { // MUTATION X1: non-canonical header accepted
+ 		return errors.New("header is not in canonical form")
+ 	}
+ 	return nil

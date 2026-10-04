@@ -1,0 +1,10 @@
+mutation M12b  dir <clone>  start 2026-10-04T00:21:57Z
+unit rc=1 malicious rc=0 seconds=365
+failing tests:
+--- FAIL: TestFetchKeysPKIXRoundTrip
+--- FAIL: TestIssuedJWTVerifiesWithFetchKeysOnly
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/grpcserver	120.493s
+FAIL	frost-k8s-threshold-signing/test	266.299s
+RESULT M12b CAUGHT

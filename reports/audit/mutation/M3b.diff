@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..afb0f6f 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -205,7 +205,7 @@ func New(cfg Config) (*Coordinator, error) {
+ 		if ep.ID < 1 || ep.ID > cfg.Meta.Parties {
+ 			return nil, fmt.Errorf("coordinator: signer id %d outside [1,%d]", ep.ID, cfg.Meta.Parties)
+ 		}
+-		if seen[ep.ID] {
++		if false && seen[ep.ID] { // MUTATION M3b
+ 			return nil, fmt.Errorf("coordinator: signer id %d configured twice", ep.ID)
+ 		}
+ 		seen[ep.ID] = true

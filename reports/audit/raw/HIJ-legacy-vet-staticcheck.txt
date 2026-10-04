@@ -1,0 +1,5 @@
+$ go vet -tags legacy ./...
+cmd/grpc-proxy/main.go:122:6: assignment copies lock value to _: sync.Mutex
+exit=1
+cmd/signer/main.go:26:2: var dkgCommitment is unused (U1000)
+exit=1

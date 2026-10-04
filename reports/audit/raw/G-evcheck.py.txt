@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Evidence existence check: extract cited paths, results dirs, commits, test names from markdown docs
+and check against git tree at a given commit."""
+import re, subprocess, sys, os, glob
+REPO = sys.argv[1]; REV = sys.argv[2]
+os.chdir(REPO)
+def git(*a):
+    return subprocess.run(['git', *a], capture_output=True, text=True)
+tree = set(git('ls-tree', '-r', '--name-only', REV).stdout.split('\n'))
+dirs = set()
+for p in tree:
+    parts = p.split('/')
+    for i in range(1, len(parts)):
+        dirs.add('/'.join(parts[:i]))
+alltree = tree | dirs
+# test functions across all go files in tree
+tests = set()
+for p in tree:
+    if p.endswith('_test.go') or p.endswith('.go'):
+        try:
+            src = git('show', f'{REV}:{p}').stdout
+        except Exception:
+            continue
+        for m in re.finditer(r'^func (Test\w+)\(', src, re.M):
+            tests.add(m.group(1))
+        # subtests t.Run("name"
+        for m in re.finditer(r't\.Run\("([^"]+)"', src):
+            tests.add('SUB:' + m.group(1))
+files = ['NOTES.md', 'README.md'] + sorted(glob.glob('docs/**/*.md', recursive=True)) + sorted(glob.glob('reports/**/*.md', recursive=True)) + sorted(glob.glob('deploy/multihost/README.md'))
+files = [f for f in files if git('cat-file', '-e', f'{REV}:{f}').returncode == 0]
+EXT = r'(?:md|go|sh|txt|log|json|jsonl|ya?ml|csv|conf|env|tmpl|py|hcl|pem|gz|out)'
+path_re = re.compile(r'(?<![\w/.:-])((?:\.{0,2}/)?(?:[\w.{},…*<>-]+/)+[\w.{},…*<>-]*|[\w.-]+\.' + EXT + r')(?::(\d+)(?:[–-]\d+)?)?')
+hash_re = re.compile(r'(?<![\w/])([0-9a-f]{7,40})(?![\w])')
+test_re = re.compile(r'\b(Test[A-Z]\w*)\b')
+runid_re = re.compile(r'\b(3\d{10})\b')
+results = []
+def expand_braces(s):
+    m = re.search(r'\{([^{}]*)\}', s)
+    if not m: return [s]
+    out = []
+    for alt in m.group(1).split(','):
+        out += expand_braces(s[:m.start()] + alt + s[m.end():])
+    return out
+def resolve(p, srcfile):
+    p = p.rstrip('.,;:)')
+    p = p.strip('`')
+    if p.startswith('./'): p = p[2:]
+    cands = []
+    for q in expand_braces(p):
+        q = q.rstrip('/')
+        if '<' in q or '*' in q:
+            pat = re.escape(q).replace(r'\*', '.*')
+            pat = re.sub(r'\\<[^>]*\\>', '[^/]+', pat)
+            rx = re.compile('^' + pat + '$')
+            ok = any(rx.match(t) for t in alltree)
+            cands.append((q, ok, 'glob'))
+            continue
+        if '…' in q:
+            tail = q.split('…', 1)[1]
+            head = q.split('…', 1)[0]
+            ok = any(t.endswith(tail) or ('/' + tail) in t for t in alltree if (t.startswith(head) or head == ''))
+            cands.append((q, ok, 'ellipsis'))
+            continue
+        if q in alltree:
+            cands.append((q, True, 'exact')); continue
+        # relative to src file dir
+        rel = os.path.normpath(os.path.join(os.path.dirname(srcfile), q))
+        if rel in alltree:
+            cands.append((q, True, 'relative')); continue
+        # bare filename: search basename anywhere
+        if '/' not in q:
+            ok = any(t.endswith('/' + q) or t == q for t in alltree)
+            cands.append((q, ok, 'basename')); continue
+        # suffix match (e.g. legacy/frost paths cited partially, or path under some dir)
+        ok = any(t.endswith('/' + q) for t in alltree)
+        cands.append((q, ok, 'suffix' if ok else 'missing'))
+    return cands
+for f in files:
+    for ln, line in enumerate(open(f, encoding='utf-8'), 1):
+        # code spans and bare
+        for m in path_re.finditer(line):
+            raw = m.group(1)
+            if raw.startswith('http') or 'github.com' in raw or raw.startswith('//'):
+                continue
+            if re.match(r'^[\d.]+$', raw): continue
+            if '/' not in raw and not re.search(r'\.' + EXT + r'$', raw): continue
+            # skip obvious non-paths
+            if re.match(r'^(k8s\.io|gopkg\.in|golang\.org|go\.dev|dl\.k8s\.io|pkgs\.k8s\.io|docs\.|arXiv|src/core|pkg/|staging/|cmd/kube|/etc|/var|/dev|/proc|/sys|/run|/usr|/tmp|~)', raw):
+                results.append((f, ln, 'path-external', raw, 'SKIP', '')); continue
+            for q, ok, how in resolve(raw, f):
+                results.append((f, ln, 'path', q + (':' + m.group(2) if m.group(2) else ''), 'OK' if ok else 'MISSING', how))
+        for m in hash_re.finditer(line):
+            h = m.group(1)
+            if not re.search(r'[a-f]', h) or not re.search(r'\d', h):
+                continue
+            t = git('cat-file', '-t', h).stdout.strip()
+            results.append((f, ln, 'hash', h, t if t else 'NOT-AN-OBJECT', ''))
+        for m in test_re.finditer(line):
+            n = m.group(1)
+            results.append((f, ln, 'test', n, 'OK' if n in tests else 'MISSING', ''))
+        for m in runid_re.finditer(line):
+            results.append((f, ln, 'runid', m.group(1), 'CHECK', ''))
+for r in results:
+    print('\t'.join(map(str, r)))

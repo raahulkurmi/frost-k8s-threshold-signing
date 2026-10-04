@@ -1,0 +1,16 @@
+mutation X14  dir <clone>  start 2026-10-04T02:12:22Z
+unit rc=1 malicious rc=0 seconds=333
+failing tests:
+    --- FAIL: TestPolicyRejects/missing_iss
+    --- FAIL: TestPolicyRejects/wrong_iss
+--- FAIL: TestPolicyRejects
+--- FAIL: TestPriorityRefusalHTTPAndAudit
+--- FAIL: TestSignerAppliesPolicy
+--- FAIL: TestSignerAuditLog
+--- FAIL: TestSignerPolicyRejectsCoordinatorBypass
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/policy	3.484s
+FAIL	frost-k8s-threshold-signing/internal/signer	172.839s
+FAIL	frost-k8s-threshold-signing/test	119.470s
+RESULT X14 CAUGHT

@@ -1,0 +1,7 @@
+=== RUN   TestEFVaultRedirectLeaksToken
+    zz_ef_vault_test.go:35: vault=http://127.0.0.1:55170 redirect-> http://localhost:55169 ; LoadFromVault err=keyshare: vault /v1/secret/data/frost-k8s/signer-1 returned HTTP 404
+    zz_ef_vault_test.go:36: redirect target host=localhost:55169 received X-Vault-Token present=true equal-to-dummy=true
+--- PASS: TestEFVaultRedirectLeaksToken (0.00s)
+PASS
+ok  	frost-k8s-threshold-signing/internal/keyshare	0.574s
+EXIT 0

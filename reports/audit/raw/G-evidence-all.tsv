@@ -1,0 +1,1425 @@
+NOTES.md	10	path	repos/kubernetes/kubernetes/commits/v1.36.5	MISSING	missing
+NOTES.md	10	hash	ad950d1cc78b0183c476bd4d3f1934c104229727	NOT-AN-OBJECT	
+NOTES.md	12	path	darwin/arm64	MISSING	missing
+NOTES.md	19	path	proxy.go	MISSING	basename
+NOTES.md	25	path-external	gopkg.in/go-jose/go-jose.v2	SKIP	
+NOTES.md	26	path-external	pkg/serviceaccount	SKIP	
+NOTES.md	26	path-external	gopkg.in/go-jose/go-jose.v2	SKIP	
+NOTES.md	26	path	.../jwt	MISSING	missing
+NOTES.md	31	path-external	pkg/serviceaccount/externaljwt/plugin/plugin.go	SKIP	
+NOTES.md	35	path	keycache.go	MISSING	basename
+NOTES.md	38	path	key.go	MISSING	basename
+NOTES.md	39	path	crypto/rand.Prime	MISSING	missing
+NOTES.md	42	test	TestTcrsaModulusIsBitSizeMinusOne	OK	
+NOTES.md	46	path	l/2	MISSING	missing
+NOTES.md	56	path	crypto/rand	MISSING	missing
+NOTES.md	59	test	TestLibraryHazards	OK	
+NOTES.md	73	hash	f8ebd8f	NOT-AN-OBJECT	
+NOTES.md	83	path-external	staging/src/k8s.io/externaljwt/apis/v1alpha1/api.proto	SKIP	
+NOTES.md	83	path	.../v1/api.proto	MISSING	missing
+NOTES.md	88	path	nohup.out	MISSING	basename
+NOTES.md	89	hash	f91807b	commit	
+NOTES.md	92	path	share/secret	MISSING	missing
+NOTES.md	93	path	reports/HISTORY_PURGE.md	OK	exact
+NOTES.md	103	path	2/4	MISSING	missing
+NOTES.md	109	path	4/7	MISSING	missing
+NOTES.md	116	path	THREAT_MODEL.md	OK	basename
+NOTES.md	118	path	spike	OK	exact
+NOTES.md	118	path	spike/gate0-output.txt	OK	exact
+NOTES.md	119	path	nohup.out	MISSING	basename
+NOTES.md	120	path	HISTORY_PURGE.md	OK	basename
+NOTES.md	125	path-external	pkg/serviceaccount/externaljwt/plugin/plugin.go	SKIP	
+NOTES.md	126	path-external	k8s.io/externaljwt/apis/v1	SKIP	
+NOTES.md	127	path-external	staging/src/k8s.io/externaljwt/apis/v1/api.proto	SKIP	
+NOTES.md	134	path	alg/kid/typ	MISSING	missing
+NOTES.md	137	path	256/384/521	MISSING	missing
+NOTES.md	143	path-external	pkg/serviceaccount/claims.go	SKIP	
+NOTES.md	157	path	cmd/signer/main.go	OK	exact
+NOTES.md	159	path	deploy/docker-compose.yml	OK	exact
+NOTES.md	159	path	scripts/vault-init.sh	OK	suffix
+NOTES.md	161	path	internal/keystore	OK	suffix
+NOTES.md	164	path	deploy	OK	exact
+NOTES.md	164	path	nginx-grpc.conf	OK	basename
+NOTES.md	164	path	deploy/nginx-grpc.conf	OK	exact
+NOTES.md	165	path	deploy/cmd/encrypt-keys	OK	suffix
+NOTES.md	165	path	deploy/internal/keystore	OK	suffix
+NOTES.md	170	path	cmd/signer	OK	exact
+NOTES.md	170	path	cmd/grpc-proxy	OK	exact
+NOTES.md	172	path	legacy/frost	OK	exact
+NOTES.md	173	path	frost-k8s-threshold-signing/legacy/frost	MISSING	missing
+NOTES.md	174	path	legacy/frost	OK	exact
+NOTES.md	174	path		OK	exact
+NOTES.md	178	path	internal/signing/ecdsa.go	OK	suffix
+NOTES.md	178	path	legacy/frost/internal/signing	OK	exact
+NOTES.md	180	path	cmd/genkey	MISSING	missing
+NOTES.md	187	path	encoding/json	MISSING	missing
+NOTES.md	192	test	TestPolicyRejects	OK	
+NOTES.md	195	path	none/ES256/other	MISSING	missing
+NOTES.md	197	path	claims.go	MISSING	basename
+NOTES.md	198	path-external	golang.org/x/time/rate	SKIP	
+NOTES.md	199	path	key_share.go	MISSING	basename
+NOTES.md	200	path	crypto/rand	MISSING	missing
+NOTES.md	205	path-external	k8s.io/externaljwt/apis/v1	SKIP	
+NOTES.md	205	path	**k8s.io/externaljwt	MISSING	glob
+NOTES.md	206	path	kubernetes/kubernetes	MISSING	missing
+NOTES.md	206	hash	ad950d1cc78b0183c476bd4d3f1934c104229727	NOT-AN-OBJECT	
+NOTES.md	207	path-external	staging/src/k8s.io/externaljwt/apis/v1/	SKIP	
+NOTES.md	208	path	kubernetes/externaljwt	MISSING	missing
+NOTES.md	208	hash	c225e1714ecbc2ffbfe9e2c7ced8347e9c194463	NOT-AN-OBJECT	
+NOTES.md	209	path	api.pb.go	OK	basename
+NOTES.md	209	path	api_grpc.pb.go	OK	basename
+NOTES.md	214	path	public-meta.json	MISSING	basename
+NOTES.md	217	path	policy.json	OK	basename
+NOTES.md	219	test	TestJoinOutOfRangeIDs	OK	
+NOTES.md	227	test	TestMaliciousShareExcludedAndAttributed	OK	
+NOTES.md	233	path	THREAT_MODEL.md	OK	basename
+NOTES.md	234	path	crypto/ecdsa	MISSING	missing
+NOTES.md	234	path	internal/testutil/testpki.go	OK	exact
+NOTES.md	236	path	reports/gates/gate4.txt	OK	exact
+NOTES.md	237	path	crypto/ecdsa	MISSING	missing
+NOTES.md	237	path	crypto/tls	MISSING	missing
+NOTES.md	238	path	crypto/x509	MISSING	missing
+NOTES.md	241	path		OK	exact
+NOTES.md	252	path	checksums.txt	MISSING	basename
+NOTES.md	253	path	linux/arm64	MISSING	missing
+NOTES.md	258	path	kindest/node	MISSING	missing
+NOTES.md	259	hash	452d707d	NOT-AN-OBJECT	
+NOTES.md	261	path	kindest/node	MISSING	missing
+NOTES.md	267	path-external	pkg/controlplane/apiserver/options/options.go	SKIP	
+NOTES.md	274	path-external	pkg/registry/core/serviceaccount/storage/token.go	SKIP	
+NOTES.md	281	path	deploy/policy.json	OK	exact
+NOTES.md	285	path-external	pkg/features/kube_features.go	SKIP	
+NOTES.md	288	path-external	pkg/kubeapiserver/options/authentication.go	SKIP	
+NOTES.md	289	path	options.go	MISSING	basename
+NOTES.md	298	path	23/24	MISSING	missing
+NOTES.md	299	path	/spec/containers/0/command/24	MISSING	missing
+NOTES.md	300	path	test/e2e/kubeadm-patches/*.json	OK	glob
+NOTES.md	304	path	kubernetes.io/service-account-token	MISSING	missing
+NOTES.md	306	path-external	/etc/kubernetes/pki/sa.{key,pub}	SKIP	
+NOTES.md	310	path-external	/etc/kubernetes/scheduler.conf	SKIP	
+NOTES.md	316	path	net/http	MISSING	missing
+NOTES.md	317	path	HTTP/1.1	MISSING	missing
+NOTES.md	317	path	net/http	MISSING	missing
+NOTES.md	324	path	REQ-a/b/c	MISSING	missing
+NOTES.md	324	hash	f077169	commit	
+NOTES.md	332	path	secrets	MISSING	basename
+NOTES.md	334	hash	ab2de56	commit	
+NOTES.md	335	test	TestNoSecretsInTree	OK	
+NOTES.md	337	path	run.sh	OK	basename
+NOTES.md	337	path	secrets	MISSING	basename
+NOTES.md	337	path	run	MISSING	basename
+NOTES.md	337	path	audit	OK	basename
+NOTES.md	339	test	TestNoKeyMaterialFilesInTree	OK	
+NOTES.md	346	path	reports/gates/gate6-e2e-run1-2e05943-patch-guard-failed-closed.log	OK	exact
+NOTES.md	346	hash	2e05943	commit	
+NOTES.md	346	hash	2e05943	commit	
+NOTES.md	347	path	REQ-a/b/c	MISSING	missing
+NOTES.md	347	path	run2-f077169-harness-hang.log	MISSING	basename
+NOTES.md	347	hash	f077169	commit	
+NOTES.md	347	hash	f077169	commit	
+NOTES.md	348	path	REQ-a/b/c	MISSING	missing
+NOTES.md	348	path	run3-2f2d7bc-harness-crash.log	MISSING	basename
+NOTES.md	348	hash	2f2d7bc	commit	
+NOTES.md	348	hash	2f2d7bc	commit	
+NOTES.md	349	path	secrets	MISSING	basename
+NOTES.md	349	path	run4-ab2de56.log	MISSING	basename
+NOTES.md	349	hash	ab2de56	commit	
+NOTES.md	349	hash	ab2de56	commit	
+NOTES.md	350	path	13/13	MISSING	missing
+NOTES.md	350	path	reports/gates/gate6-final-152941b.log	OK	exact
+NOTES.md	350	path	gate6-e2e-final-152941b.log	OK	basename
+NOTES.md	350	path	gate6-test-suite-T1-T12-152941b.log	OK	basename
+NOTES.md	350	hash	152941b	commit	
+NOTES.md	350	hash	152941b	commit	
+NOTES.md	350	hash	152941b	commit	
+NOTES.md	350	hash	152941b	commit	
+NOTES.md	361	path	THREAT_MODEL.md	OK	basename
+NOTES.md	372	hash	152941b	commit	
+NOTES.md	380	path	internal/grpcserver	OK	exact
+NOTES.md	383	test	TestSignErrorIsGeneric	OK	
+NOTES.md	412	path	test/e2e/probe	OK	exact
+NOTES.md	412	path	test/e2e/Dockerfile.probe	OK	exact
+NOTES.md	419	path	run/signer.sock	MISSING	missing
+NOTES.md	421	hash	b2179f0	commit	
+NOTES.md	422	path-external	src/core/ngx_connection.c	SKIP	
+NOTES.md	425	path	run	MISSING	basename
+NOTES.md	431	path	80/tcp	MISSING	missing
+NOTES.md	437	hash	c8abdf3	commit	
+NOTES.md	438	path	reports/gates/gate6.5-attempt1-b2179f0-N2-fail.log	OK	exact
+NOTES.md	438	hash	b2179f0	commit	
+NOTES.md	438	hash	b2179f0	commit	
+NOTES.md	439	path	19/19	MISSING	missing
+NOTES.md	439	path	reports/gates/gate6.5-final-468cd1c.log	OK	exact
+NOTES.md	439	path	gate6.5-e2e-final-468cd1c.log	OK	basename
+NOTES.md	439	hash	468cd1c	commit	
+NOTES.md	439	hash	468cd1c	commit	
+NOTES.md	439	hash	468cd1c	commit	
+NOTES.md	448	path-external	/etc/frost-signer-2/share.json	SKIP	
+NOTES.md	457	path	share-1.json	MISSING	basename
+NOTES.md	458	path-external	/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/{46,47}/	SKIP	
+NOTES.md	466	hash	f39dd68	commit	
+NOTES.md	466	hash	90a01bb	commit	
+NOTES.md	470	path	kindest/node	MISSING	missing
+NOTES.md	475	hash	2c8e428b	NOT-AN-OBJECT	
+NOTES.md	484	path	benchmark/multihost/run.sh	OK	exact
+NOTES.md	486	path	env.json	OK	basename
+NOTES.md	487	path	summary.md	OK	basename
+NOTES.md	498	path-external	/dev/null	SKIP	
+NOTES.md	500	path-external	/dev/null	SKIP	
+NOTES.md	502	path-external	/dev/null	SKIP	
+NOTES.md	502	path	>/dev/null	MISSING	missing
+NOTES.md	503	path	L1/L2	MISSING	missing
+NOTES.md	503	hash	45dfe68	commit	
+NOTES.md	505	path	deploy.sh	OK	basename
+NOTES.md	505	path	teardown.sh	OK	basename
+NOTES.md	505	path	test/e2e/multihost.sh	OK	exact
+NOTES.md	506	path	benchmark/multihost/run.sh	OK	exact
+NOTES.md	508	path	/bin/bash	MISSING	missing
+NOTES.md	508	path	>/dev/null	MISSING	missing
+NOTES.md	525	path	net/http	MISSING	missing
+NOTES.md	525	path	and/or	MISSING	missing
+NOTES.md	536	path	NTP/chrony	MISSING	missing
+NOTES.md	549	path	n/a	MISSING	missing
+NOTES.md	550	path	n/a	MISSING	missing
+NOTES.md	550	path	n/a	MISSING	missing
+NOTES.md	554	path	sig-b/sig-c	MISSING	missing
+NOTES.md	555	path	80/100	MISSING	missing
+NOTES.md	559	path	Multipass/Virtualization.framework	MISSING	missing
+NOTES.md	566	path	label/x-axis	MISSING	missing
+NOTES.md	581	path	net/http	MISSING	missing
+NOTES.md	582	path	HTTP/2	MISSING	missing
+NOTES.md	582	path	HTTP/1.1	MISSING	missing
+NOTES.md	583	test	TestCancelledRequestComputesNoShare	OK	
+NOTES.md	584	test	TestCancelledDuringSigningDiscardsShare	OK	
+NOTES.md	589	test	TestAdmissionControlShedsImmediately	MISSING	
+NOTES.md	592	test	TestOverloadedIsFastFailureInAllMode	OK	
+NOTES.md	596	test	TestHedgedContactsTPlusOneAndRotates	OK	
+NOTES.md	598	test	TestHedgedFastFailureHedgesImmediately	OK	
+NOTES.md	599	test	TestHedgedBelowThresholdFails	OK	
+NOTES.md	607	path	benchmark/results/20260925T103202Z-2a75c2f-multihost-L1	OK	exact
+NOTES.md	607	hash	2a75c2f	commit	
+NOTES.md	608	path	12/24	MISSING	missing
+NOTES.md	610	path	summary.md	OK	basename
+NOTES.md	634	path	tk8s/kind	MISSING	missing
+NOTES.md	639	path	internal/wire	OK	exact
+NOTES.md	651	path	internal/signer/admission_test.go	OK	exact
+NOTES.md	651	path	internal/coordinator/fanout_test.go	OK	exact
+NOTES.md	663	path	tokens/s**	MISSING	glob
+NOTES.md	665	path	tokens/s	MISSING	missing
+NOTES.md	666	path	1/s	MISSING	missing
+NOTES.md	670	path	summary.md	OK	basename
+NOTES.md	674	path	1/10/50	MISSING	missing
+NOTES.md	677	path	deploy/multihost/clock-check.sh	OK	exact
+NOTES.md	677	path	deploy.sh	OK	basename
+NOTES.md	677	path	test/e2e/multihost.sh	OK	exact
+NOTES.md	678	path	benchmark/multihost/run.sh	OK	exact
+NOTES.md	690	path	1/10/50	MISSING	missing
+NOTES.md	692	path	unit/integration	MISSING	missing
+NOTES.md	693	path	sig-a/b/c	MISSING	missing
+NOTES.md	695	hash	aa223ca	commit	
+NOTES.md	697	path	reports/gates/e2e-single-host-6GiB-aa223ca.log	OK	exact
+NOTES.md	697	hash	aa223ca	commit	
+NOTES.md	702	path	google.golang.org/grpc	MISSING	missing
+NOTES.md	702	path	HTTP/2	MISSING	missing
+NOTES.md	704	hash	93e31b48545e	NOT-AN-OBJECT	
+NOTES.md	708	path	reports/ci/govulncheck-accepted.txt	OK	exact
+NOTES.md	709	path	scripts/govulncheck.sh	OK	exact
+NOTES.md	715	path	.github/workflows/repro.yml	OK	exact
+NOTES.md	716	path	reports/REPRO.md	OK	exact
+NOTES.md	717	path	scripts/repro.sh	OK	exact
+NOTES.md	718	path	REPRO.md	OK	basename
+NOTES.md	721	path	repro.yml	OK	basename
+NOTES.md	722	path	repro.yml	OK	basename
+NOTES.md	722	path	scripts/repro.sh	OK	exact
+NOTES.md	725	path	REPRO.md	OK	basename
+NOTES.md	730	path	benchmark/b1signer	OK	exact
+NOTES.md	732	path	benchmark	OK	exact
+NOTES.md	732	path	frost-k8s/b1signer	MISSING	missing
+NOTES.md	733	path	benchmark/single/docker-compose.b1.yml	OK	exact
+NOTES.md	734	path	cmd	OK	exact
+NOTES.md	734	path	deploy	OK	exact
+NOTES.md	736	path	header/claims	MISSING	missing
+NOTES.md	740	path	secrets/b1/key.pem	MISSING	missing
+NOTES.md	744	path	scripts/repro.sh	OK	exact
+NOTES.md	745	path	scripts/repro.sh	OK	exact
+NOTES.md	745	path	REPRO.md	OK	basename
+NOTES.md	748	path	HTTP/2	MISSING	missing
+NOTES.md	749	path	HTTP/2	MISSING	missing
+NOTES.md	750	path	HTTP/1.1	MISSING	missing
+NOTES.md	751	path	scripts/repro.sh	OK	exact
+NOTES.md	752	path	HTTP/1.1	MISSING	missing
+NOTES.md	754	hash	c46daba	commit	
+NOTES.md	758	test	TestHedgedContactsTPlusOneAndRotates	OK	
+NOTES.md	769	path	reports/aws/REPRO-attempt1-FAIL.md	OK	exact
+NOTES.md	772	path	deploy/aws/provision.sh	OK	exact
+NOTES.md	773	path	tcp/22	MISSING	missing
+NOTES.md	774	path	deploy/aws/state/sg-rules.txt	MISSING	missing
+NOTES.md	776	path	tcp/22	MISSING	missing
+NOTES.md	778	path	L1/L2	MISSING	missing
+NOTES.md	782	path	deploy/multihost/transport.sh	OK	exact
+NOTES.md	789	path	SYN/SYN-ACK	MISSING	missing
+NOTES.md	790	path	benchmark/multihost/rtt_sampler.py	OK	exact
+NOTES.md	794	path	clock-check.sh	OK	basename
+NOTES.md	799	path	B0/B1	MISSING	missing
+NOTES.md	801	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+NOTES.md	801	hash	8ebb806	commit	
+NOTES.md	811	path	test/e2e/multihost.sh	OK	exact
+NOTES.md	820	path	reports/multihost/e2e-20260926T191044Z-b2f63ca	OK	exact
+NOTES.md	820	hash	b2f63ca	commit	
+NOTES.md	822	path	reports/multihost/l2-recheck-20260926T194211Z-ebabdb1	OK	exact
+NOTES.md	822	hash	ebabdb1	commit	
+NOTES.md	826	path	clock-check.sh	OK	basename
+NOTES.md	833	path	benchmark/multihost/run-l2.sh	OK	exact
+NOTES.md	835	path	ssh/scp	MISSING	missing
+NOTES.md	836	path	invalid	MISSING	basename
+NOTES.md	837	path	invalid-events.json	MISSING	basename
+NOTES.md	838	path	summary.md	OK	basename
+NOTES.md	842	path	.coord.json	MISSING	basename
+NOTES.md	843	path	benchmark/multihost/scale-remote.sh	OK	exact
+NOTES.md	844	path	scale-lib.sh	OK	basename
+NOTES.md	867	path	7A/7B	MISSING	missing
+NOTES.md	867	path	reports/aws/teardown-proof.txt	OK	exact
+NOTES.md	868	path	root-volume/ENI	MISSING	missing
+NOTES.md	869	path	teardown.sh	OK	basename
+NOTES.md	874	path	B0/B1	MISSING	missing
+NOTES.md	879	path	tokens/s	MISSING	missing
+NOTES.md	882	path	tokens/s	MISSING	missing
+NOTES.md	898	path	tokens/s	MISSING	missing
+NOTES.md	903	path	deploy/nginx-grpc.conf	OK	exact
+NOTES.md	907	path	internal/grpcserver/timing.go	OK	exact
+NOTES.md	914	test	TestTimingInterceptor	OK	
+NOTES.md	917	path	benchmark/single/timing-breakdown.sh	OK	exact
+NOTES.md	918	path	1/10/50	MISSING	missing
+NOTES.md	927	test	TestStrictVerifiesUntilT	OK	
+NOTES.md	932	path	cmd/grpc-proxy	OK	exact
+NOTES.md	933	path	test/e2e/run.sh	OK	exact
+NOTES.md	934	path	internal/coordinator/breaker.go	OK	exact
+NOTES.md	943	test	TestBreakerWorkBound	OK	
+NOTES.md	972	test	TestBreakerTripMarksSuspect	OK	
+NOTES.md	972	test	TestBreakerWorkBound	OK	
+NOTES.md	972	test	TestBreakerRecovery	OK	
+NOTES.md	973	test	TestBreakerFallbackToStrict	OK	
+NOTES.md	974	test	TestBreakerSuspectCooldown	OK	
+NOTES.md	974	test	TestBreakerFallbackWindow	OK	
+NOTES.md	975	test	TestBreakerConfigValidation	OK	
+NOTES.md	975	test	TestVerifyGate	OK	
+NOTES.md	977	path	reports/gates/overload-fix-make-test-local-bfab4d9.log	OK	exact
+NOTES.md	977	hash	bfab4d9	commit	
+NOTES.md	979	runid	36275189321	CHECK	
+NOTES.md	980	path	18/18	MISSING	missing
+NOTES.md	980	hash	bfab4d9	commit	
+NOTES.md	981	path	71/72	MISSING	missing
+NOTES.md	982	path	reports/gates/overload-fix-ci-e2e-run36275189321-bfab4d9.log	OK	exact
+NOTES.md	982	hash	bfab4d9	commit	
+NOTES.md	983	path	1/10/50	MISSING	missing
+NOTES.md	1002	path	deploy/aws/provision-7c.sh	OK	exact
+NOTES.md	1014	path	deploy/aws/7c/versions.env	OK	exact
+NOTES.md	1015	path	1b/1c	MISSING	missing
+NOTES.md	1019	path-external	pkg/serviceaccount/externaljwt/plugin/plugin.go	SKIP	
+NOTES.md	1020	path	deploy/aws/7c/frost-nginx.yaml	OK	exact
+NOTES.md	1025	path	deploy/aws/7c/switch.sh	OK	exact
+NOTES.md	1025	path	benchmark/k8s7c	OK	exact
+NOTES.md	1026	path	B1/T	MISSING	missing
+NOTES.md	1027	path-external	pkg/kubeapiserver/options/authentication.go	SKIP	
+NOTES.md	1032	path	check.sh	OK	basename
+NOTES.md	1037	path	deploy.sh	OK	basename
+NOTES.md	1038	path	deploy.sh	OK	basename
+NOTES.md	1040	path	1/2	MISSING	missing
+NOTES.md	1041	path	benchmark/k8s7c/run.sh	OK	exact
+NOTES.md	1047	test	TestSevenCSummary	OK	
+NOTES.md	1064	path	env.json	OK	basename
+NOTES.md	1065	hash	0dd3fa23	NOT-AN-OBJECT	
+NOTES.md	1066	path	cmd/signer	OK	exact
+NOTES.md	1066	hash	1f744909	NOT-AN-OBJECT	
+NOTES.md	1068	path	reports/aws/7c/bootstrap-checks.jsonl	OK	exact
+NOTES.md	1071	path	B1/T	MISSING	missing
+NOTES.md	1072	path	20/20	MISSING	missing
+NOTES.md	1073	path	benchmark/results/20260927T123218Z-7faa09c-7C	MISSING	missing
+NOTES.md	1073	hash	7faa09c	commit	
+NOTES.md	1076	path	benchmark/results/20260927T131349Z-73be90f-7C	OK	exact
+NOTES.md	1076	path	1/10/20/50	MISSING	missing
+NOTES.md	1076	hash	73be90f	commit	
+NOTES.md	1077	hash	73be90f	commit	
+NOTES.md	1079	hash	7faa09c	commit	
+NOTES.md	1080	path	B0/B1	MISSING	missing
+NOTES.md	1084	path	tokens/s	MISSING	missing
+NOTES.md	1084	path	20/50	MISSING	missing
+NOTES.md	1085	path	49/s	MISSING	missing
+NOTES.md	1094	path	124/339	MISSING	missing
+NOTES.md	1094	path	median/p95	MISSING	missing
+NOTES.md	1094	path	130/377	MISSING	missing
+NOTES.md	1108	path	check.sh	OK	basename
+NOTES.md	1109	path	POSTPROCESSING.md	OK	basename
+NOTES.md	1110	hash	a0173b4	commit	
+NOTES.md	1110	hash	73be90f	commit	
+NOTES.md	1111	path	reports/aws/7c/bootstrap-checks.jsonl	OK	exact
+NOTES.md	1114	path	reports/aws/7c/POSTPROCESSING.md	OK	exact
+NOTES.md	1118	path	tokens/s	MISSING	missing
+NOTES.md	1123	path	tokens/s	MISSING	missing
+NOTES.md	1129	path	0.log	MISSING	basename
+NOTES.md	1130	path	deploy/aws/7c/nginx-lines.sh	OK	exact
+NOTES.md	1132	path	reports/aws/7c/nginx-capture-verify.txt	OK	exact
+NOTES.md	1141	path	10/25/50/100/150/200	MISSING	missing
+NOTES.md	1143	path	internal/signer/signer.go	OK	exact
+NOTES.md	1152	path	scale-rep.sh	OK	basename
+NOTES.md	1156	path	benchmark/results/20260927T131349Z-73be90f-7C-scale-ABORTED-fitcheck	MISSING	missing
+NOTES.md	1156	hash	73be90f	commit	
+NOTES.md	1160	path	benchmark/results/20260927T185001Z-6b2f6bb-7C-lever	OK	exact
+NOTES.md	1160	hash	6b2f6bb	commit	
+NOTES.md	1177	path	tokens/s	MISSING	missing
+NOTES.md	1182	path	N69/N70	MISSING	missing
+NOTES.md	1185	path	benchmark/results/20260927T191742Z-bc0ff05-7C-stress	OK	exact
+NOTES.md	1185	hash	bc0ff05	commit	
+NOTES.md	1187	path	10/25/50/100/150/200	MISSING	missing
+NOTES.md	1202	path	ms/s	MISSING	missing
+NOTES.md	1202	path	shares/s	MISSING	missing
+NOTES.md	1203	path	tokens/s	MISSING	missing
+NOTES.md	1204	path	13.4/s	MISSING	missing
+NOTES.md	1217	path	req/s	MISSING	missing
+NOTES.md	1227	path	B0/B1/T	MISSING	missing
+NOTES.md	1228	hash	73be90f	commit	
+NOTES.md	1235	path	reports/aws/TEARDOWN-7C-20260927T194900Z.md	OK	exact
+NOTES.md	1239	path	docs/PRIORITY_ADMISSION.md	OK	exact
+NOTES.md	1256	path	2/4/8	MISSING	missing
+NOTES.md	1269	path	docs/PRIORITY_ADMISSION.md	OK	exact
+NOTES.md	1277	test	TestQuorumImpossibleAbortsEarly	OK	
+NOTES.md	1279	test	TestQueuedRequestCancelledByCallerComputesNoShare	OK	
+NOTES.md	1280	test	TestQuorumAbortReducesWastedSharesSimulation	OK	
+NOTES.md	1284	test	TestThreeMaliciousFails	OK	
+NOTES.md	1284	test	TestBelowThresholdSigners	OK	
+NOTES.md	1285	test	TestHedgedBelowThresholdFails	OK	
+NOTES.md	1285	test	TestBelowThresholdFails	OK	
+NOTES.md	1287	test	TestBelowThresholdFailsWithAbort	OK	
+NOTES.md	1291	test	TestEpochBoundarySignersAgree	OK	
+NOTES.md	1292	path	120/120	MISSING	missing
+NOTES.md	1296	test	TestNestedAdmissionSetsAcrossSigners	OK	
+NOTES.md	1297	test	TestAdmissionLevelAdapts	OK	
+NOTES.md	1298	test	TestPriorityRefusalHTTPAndAudit	OK	
+NOTES.md	1300	test	TestPriorityRefusalNeverTripsBreaker	OK	
+NOTES.md	1303	test	TestRetryGetsNewRequestID	OK	
+NOTES.md	1303	test	TestRefusedRequestsAreNotStarved	OK	
+NOTES.md	1306	path	frost-k8s/priority-key	MISSING	missing
+NOTES.md	1306	path	internal/prioritykey	OK	exact
+NOTES.md	1309	path	deploy.sh	OK	basename
+NOTES.md	1309	path	setup-signer-host.sh	OK	basename
+NOTES.md	1310	path	deploy.sh	OK	basename
+NOTES.md	1316	test	TestFairShareCapsAFloodingClient	OK	
+NOTES.md	1317	test	TestDeadlineHeaderIsCapped	OK	
+NOTES.md	1327	path	benchmark/k8s7c/run.sh	OK	exact
+NOTES.md	1330	path	deploy/aws/7c/signer-config.sh	OK	exact
+NOTES.md	1331	test	TestEvalSection	OK	
+NOTES.md	1332	path	signer-config.sh	OK	basename
+NOTES.md	1332	path	signer-sampler.sh	OK	basename
+NOTES.md	1337	path	docs/PRIORITY_ADMISSION.md	OK	exact
+NOTES.md	1350	test	TestAdmissionLevelAdapts	OK	
+NOTES.md	1356	path	iat/E	MISSING	missing
+NOTES.md	1356	path	16/R	MISSING	missing
+NOTES.md	1357	test	TestStablePriorityKeptAcrossRetries	OK	
+NOTES.md	1358	path	R/2	MISSING	missing
+NOTES.md	1361	path	1/floor	MISSING	missing
+NOTES.md	1363	test	TestStableWorstCaseWait	OK	
+NOTES.md	1365	path-external	pkg/util/goroutinemap/exponentialbackoff	SKIP	
+NOTES.md	1370	path	run.sh	OK	basename
+NOTES.md	1388	path	cmd/signer	OK	exact
+NOTES.md	1390	path	N76/N77	MISSING	missing
+NOTES.md	1391	hash	18ac3ac	commit	
+NOTES.md	1392	hash	f745ae2	commit	
+NOTES.md	1393	path	reports/aws/7c/bootstrap-checks.jsonl	OK	exact
+NOTES.md	1393	hash	f07f701f	NOT-AN-OBJECT	
+NOTES.md	1395	path	reports/aws/TEARDOWN-N76-20261003T154358Z.md	OK	exact
+NOTES.md	1405	path	70/s	MISSING	missing
+NOTES.md	1413	path	before/after**	MISSING	glob
+NOTES.md	1417	path	50/100/150/200	MISSING	missing
+NOTES.md	1421	path	50/100	MISSING	missing
+NOTES.md	1422	path	150/200	MISSING	missing
+NOTES.md	1423	path	requests/s	MISSING	missing
+NOTES.md	1456	path	docs/PRIORITY_ADMISSION_V2.md	OK	exact
+NOTES.md	1457	path	N76/N77/N78	MISSING	missing
+NOTES.md	1461	path	req/s	MISSING	missing
+NOTES.md	1461	path	70/s	MISSING	missing
+NOTES.md	1462	path	340/s	MISSING	missing
+NOTES.md	1485	path	goodput/peak	MISSING	missing
+NOTES.md	1502	test	TestV2WindowNeedsTimeAndArrivals	OK	
+NOTES.md	1503	test	TestV2OverloadIsShedFraction	OK	
+NOTES.md	1505	test	TestV2Damping	OK	
+NOTES.md	1507	test	TestControllerSelection	OK	
+NOTES.md	1510	path	ab/abs	MISSING	missing
+NOTES.md	1512	path	run.sh	OK	basename
+NOTES.md	1515	test	TestV2RulesSection	OK	
+NOTES.md	1519	hash	293a919	commit	
+NOTES.md	1520	hash	d07a8e7	commit	
+NOTES.md	1520	runid	37139624877	CHECK	
+NOTES.md	1522	hash	eb324efc	NOT-AN-OBJECT	
+NOTES.md	1523	path	benchmark/results/20261003T174726Z-a000c9b-v2-stress-storm	OK	exact
+NOTES.md	1523	hash	a000c9b	commit	
+NOTES.md	1524	hash	a000c9b	commit	
+NOTES.md	1525	path	reports/aws/TEARDOWN-v2-20261003T214235Z.md	OK	exact
+NOTES.md	1527	path	goodput/peak	MISSING	missing
+NOTES.md	1527	path	50/100/150/200	MISSING	missing
+NOTES.md	1533	path	10/25	MISSING	missing
+NOTES.md	1555	path	goodput/peak	MISSING	missing
+NOTES.md	1562	path	…v2-noregress/POSTPROCESSING.md	OK	ellipsis
+NOTES.md	1574	test	TestThreeMaliciousFails	OK	
+NOTES.md	1575	test	TestBelowThresholdSigners	OK	
+NOTES.md	1575	test	TestHedgedBelowThresholdFails	OK	
+NOTES.md	1576	test	TestBelowThresholdFailsWithAbort	OK	
+NOTES.md	1577	test	TestQuorumAbortStillSignsWithTwoRefusals	OK	
+NOTES.md	1577	test	TestPriorityRefusalNeverTripsBreaker	OK	
+NOTES.md	1578	test	TestQuorumImpossibleAbortsEarly	OK	
+NOTES.md	1581	test	TestQuorumAbortOffByDefault	OK	
+NOTES.md	1587	path	cmd/signer	OK	exact
+README.md	14	path	niclabs/tcrsa	MISSING	missing
+README.md	15	path	docs/THREAT_MODEL.md	OK	exact
+README.md	15	path	docs/THREAT_MODEL.md	OK	exact
+README.md	19	path	RS256/ES256/ES384/ES512	MISSING	missing
+README.md	21	path	legacy/frost	OK	exact
+README.md	21	path	legacy/frost/README.md	OK	exact
+README.md	23	path	reports/HISTORY_PURGE.md	OK	exact
+README.md	23	path	reports/HISTORY_PURGE.md	OK	exact
+README.md	33	path	cmd/dealer	OK	exact
+README.md	34	path	public-meta.json	MISSING	basename
+README.md	36	path	docs/KEY_CEREMONY.md	OK	exact
+README.md	36	path	docs/KEY_CEREMONY.md	OK	exact
+README.md	37	path	cmd/signer	OK	exact
+README.md	42	path	cmd/grpc-proxy	OK	exact
+README.md	47	path	/openid/v1/jwks	MISSING	missing
+README.md	59	path	reports/INDEPENDENCE.md	OK	exact
+README.md	59	path	reports/INDEPENDENCE.md	OK	exact
+README.md	65	path	niclabs/tcrsa	MISSING	missing
+README.md	66	path	docs/THREAT_MODEL.md	OK	exact
+README.md	73	path	NOTES.md	OK	exact
+README.md	73	path	NOTES.md	OK	exact
+README.md	74	path	kindest/node	MISSING	missing
+README.md	85	path	deploy/docker-compose.yml	OK	exact
+README.md	87	path	test/e2e/results/<UTC>-<sha>/e2e.log	MISSING	glob
+README.md	90	path	deploy/multihost/README.md	OK	exact
+README.md	90	path	deploy/multihost/README.md	OK	exact
+README.md	91	path	test/e2e/multihost.sh	OK	exact
+README.md	97	path	test	OK	exact
+README.md	97	path	internal/*/..._test.go	MISSING	glob
+README.md	98	path	reports/gates/gate6-t13-negative-control.txt	OK	exact
+README.md	99	path	reports/gates/gate6*.log	OK	glob
+README.md	100	path	test/e2e/multihost.sh	OK	exact
+README.md	100	path	reports/multihost/e2e-*	OK	glob
+README.md	101	path	benchmark/multihost/run.sh	OK	exact
+README.md	101	path	benchmark/results/*/summary.md	OK	glob
+README.md	102	path	reports/CLAIMS_AUDIT.md	OK	exact
+README.md	102	path	reports/CLAIMS_AUDIT.md	OK	exact
+README.md	103	path	NOTES.md	OK	exact
+README.md	103	path	NOTES.md	OK	exact
+README.md	107	path	summary.md	OK	basename
+README.md	126	path	NOTES.md	OK	exact
+README.md	126	path	NOTES.md	OK	exact
+README.md	126	path	docs/PRIORITY_ADMISSION.md	OK	exact
+README.md	126	path	docs/PRIORITY_ADMISSION_V2.md	OK	exact
+README.md	133	path	chrony/NTP	MISSING	missing
+README.md	135	path	docs/THREAT_MODEL.md	OK	exact
+README.md	147	path	benchmark/single/timing-breakdown.sh	OK	exact
+README.md	155	path	docs/THREAT_MODEL.md	OK	exact
+README.md	163	path	cmd/dealer	OK	exact
+README.md	163	path	cmd/signer	OK	exact
+README.md	163	path	cmd/grpc-proxy	OK	exact
+README.md	164	path	internal	OK	exact
+README.md	165	path	deploy	OK	exact
+README.md	166	path	test	OK	exact
+README.md	166	path	test/e2e	OK	exact
+README.md	167	path	benchmark	OK	exact
+README.md	168	path	spike	OK	exact
+README.md	169	path	legacy/frost	OK	exact
+README.md	170	path	docs	OK	exact
+README.md	170	path	reports	OK	exact
+docs/KEY_CEREMONY.md	9	path	cmd/dealer	OK	exact
+docs/KEY_CEREMONY.md	17	path	public-meta.json	MISSING	basename
+docs/KEY_CEREMONY.md	26	path	out/public-meta.json	MISSING	missing
+docs/KEY_CEREMONY.md	27	path	out/share-<i>.json	MISSING	glob
+docs/KEY_CEREMONY.md	28	path	out/priority.key	MISSING	missing
+docs/KEY_CEREMONY.md	28	path	docs/PRIORITY_ADMISSION.md	OK	exact
+docs/KEY_CEREMONY.md	44	path	cmd/dealer	OK	exact
+docs/KEY_CEREMONY.md	49	path	dealer	OK	basename
+docs/KEY_CEREMONY.md	49	path	out	MISSING	basename
+docs/KEY_CEREMONY.md	52	path	dealer	OK	basename
+docs/KEY_CEREMONY.md	52	path	out	MISSING	basename
+docs/KEY_CEREMONY.md	53	path	secret/frost-k8s/signer-<i>	MISSING	glob
+docs/KEY_CEREMONY.md	53	path	secret/frost-k8s/priority-key	MISSING	missing
+docs/KEY_CEREMONY.md	54	path	public-meta.json	MISSING	basename
+docs/KEY_CEREMONY.md	59	path	public-meta.json	MISSING	basename
+docs/KEY_CEREMONY.md	63	path	out	MISSING	basename
+docs/KEY_CEREMONY.md	63	path	out/share-*.json	MISSING	glob
+docs/KEY_CEREMONY.md	63	path	out/priority.key	MISSING	missing
+docs/KEY_CEREMONY.md	67	path	/openid/v1/jwks	MISSING	missing
+docs/KEY_CEREMONY.md	75	path	NOTES.md	OK	exact
+docs/PRIORITY_ADMISSION.md	5	path	docs/PRIORITY_ADMISSION_V2.md	OK	exact
+docs/PRIORITY_ADMISSION.md	55	path	15/32	MISSING	missing
+docs/PRIORITY_ADMISSION.md	63	path	internal/coordinator/coordinator.go	OK	exact
+docs/PRIORITY_ADMISSION.md	74	path	frost-k8s/priority/v1	MISSING	missing
+docs/PRIORITY_ADMISSION.md	77	path	crypto/rand	MISSING	missing
+docs/PRIORITY_ADMISSION.md	82	path	public-meta.json	MISSING	basename
+docs/PRIORITY_ADMISSION.md	96	path	stable/v1	MISSING	missing
+docs/PRIORITY_ADMISSION.md	96	path	16/R	MISSING	missing
+docs/PRIORITY_ADMISSION.md	101	test	TestEpochBoundarySignersAgree	OK	
+docs/PRIORITY_ADMISSION.md	103	test	TestStablePriorityKeptAcrossRetries	OK	
+docs/PRIORITY_ADMISSION.md	106	path	16/R	MISSING	missing
+docs/PRIORITY_ADMISSION.md	109	path	R/2	MISSING	missing
+docs/PRIORITY_ADMISSION.md	110	path	16/R	MISSING	missing
+docs/PRIORITY_ADMISSION.md	114	test	TestStableWorstCaseWait	OK	
+docs/PRIORITY_ADMISSION.md	148	test	TestEpochBoundarySignersAgree	OK	
+docs/PRIORITY_ADMISSION.md	162	path	1/f	MISSING	missing
+docs/PRIORITY_ADMISSION.md	163	test	TestRetryGetsNewRequestID	OK	
+docs/PRIORITY_ADMISSION.md	164	test	TestRefusedRequestsAreNotStarved	OK	
+docs/PRIORITY_ADMISSION.md	186	path	requests/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	203	test	TestAdmissionLevelAdapts	OK	
+docs/PRIORITY_ADMISSION.md	219	path	internal/signer/signer.go	OK	exact
+docs/PRIORITY_ADMISSION.md	229	test	TestPriorityRefusalHTTPAndAudit	OK	
+docs/PRIORITY_ADMISSION.md	242	path	N46/N48	MISSING	missing
+docs/PRIORITY_ADMISSION.md	280	path	200/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	280	path	internal/signer/signer.go	OK	exact
+docs/PRIORITY_ADMISSION.md	301	path	1/f	MISSING	missing
+docs/PRIORITY_ADMISSION.md	307	path	200/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	311	test	TestDeadlineHeaderIsCapped	OK	
+docs/PRIORITY_ADMISSION.md	315	path	scripts/gen-certs.sh	OK	exact
+docs/PRIORITY_ADMISSION.md	316	path	deploy.sh	OK	basename
+docs/PRIORITY_ADMISSION.md	319	test	TestTLSRejectsClientWithoutCoordinatorSAN	OK	
+docs/PRIORITY_ADMISSION.md	324	test	TestFairShareCapsAFloodingClient	OK	
+docs/PRIORITY_ADMISSION.md	325	path	1.25/k	MISSING	missing
+docs/PRIORITY_ADMISSION.md	360	path	200/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	371	path	0.57/h	MISSING	missing
+docs/PRIORITY_ADMISSION.md	385	path	10/25/50/100/150/200	MISSING	missing
+docs/PRIORITY_ADMISSION.md	387	path	storm/pod-<i	MISSING	glob
+docs/PRIORITY_ADMISSION.md	393	path	f/L	MISSING	missing
+docs/PRIORITY_ADMISSION.md	401	path	1/10/20/50	MISSING	missing
+docs/PRIORITY_ADMISSION.md	412	path	tokens/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	413	path	A/B	MISSING	missing
+docs/PRIORITY_ADMISSION.md	416	path	70/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	418	path	shares/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	418	path	tokens/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	438	path	pass/fail	MISSING	missing
+docs/PRIORITY_ADMISSION.md	481	path	requests/s	MISSING	missing
+docs/PRIORITY_ADMISSION.md	490	path	N73/N75	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	11	path	N76/N77	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	13	path	N76/N77	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	18	path	docs/PRIORITY_ADMISSION.md	OK	exact
+docs/PRIORITY_ADMISSION_V2.md	29	path	requests/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	52	path	1/α	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	59	path	req/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	60	path	req/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	61	path	req/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	71	path	req/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	90	path	RSA_est/budget	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	120	path	243/32	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	121	path	req/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	125	path	243/8	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	161	path	13.8/s	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	178	path	10/25/50/100/150/200	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	181	path	1/10/20/50	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	186	path	0.57/h	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	224	path	goodput/peak	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	224	path	goodput/peak	MISSING	missing
+docs/PRIORITY_ADMISSION_V2.md	232	hash	293a919	commit	
+docs/PRIORITY_ADMISSION_V2.md	236	path	goodput/peak	MISSING	missing
+docs/THREAT_MODEL.md	4	path	cmd/grpc-proxy	OK	exact
+docs/THREAT_MODEL.md	4	path	cmd/signer	OK	exact
+docs/THREAT_MODEL.md	4	path	cmd/dealer	OK	exact
+docs/THREAT_MODEL.md	5	path	legacy/frost	OK	exact
+docs/THREAT_MODEL.md	6	path	test	OK	exact
+docs/THREAT_MODEL.md	6	path	internal/*/…_test.go	MISSING	glob
+docs/THREAT_MODEL.md	6	path	test/e2e/run.sh	OK	exact
+docs/THREAT_MODEL.md	7	path	test/e2e/multihost.sh	OK	exact
+docs/THREAT_MODEL.md	15	path	public-meta.json	MISSING	basename
+docs/THREAT_MODEL.md	20	path	dealer/operator	MISSING	missing
+docs/THREAT_MODEL.md	29	path	deploy/docker-compose.yml	OK	exact
+docs/THREAT_MODEL.md	33	path	run/signer.sock	MISSING	missing
+docs/THREAT_MODEL.md	33	path-external	/var/run/frost-k8s/signer.sock	SKIP	
+docs/THREAT_MODEL.md	33	path	run	MISSING	basename
+docs/THREAT_MODEL.md	33	path-external	src/core/ngx_connection.c	SKIP	
+docs/THREAT_MODEL.md	33	path	deploy/nginx-grpc.conf	OK	exact
+docs/THREAT_MODEL.md	34	path	172.30.1.0/24	MISSING	missing
+docs/THREAT_MODEL.md	34	test	TestTCPListenerRequiresLBClientCert	OK	
+docs/THREAT_MODEL.md	35	path	172.30.2.0/24	MISSING	missing
+docs/THREAT_MODEL.md	35	test	TestTLSRejectsClientWithoutCoordinatorSAN	OK	
+docs/THREAT_MODEL.md	35	test	TestShareIDBoundToMTLSIdentity	OK	
+docs/THREAT_MODEL.md	36	path	n/a	MISSING	missing
+docs/THREAT_MODEL.md	66	path	internal/grpcserver/server.go	OK	exact
+docs/THREAT_MODEL.md	79	test	TestSignErrorIsGeneric	OK	
+docs/THREAT_MODEL.md	97	path	start/resume	MISSING	missing
+docs/THREAT_MODEL.md	107	test	TestBelowThresholdFails	OK	
+docs/THREAT_MODEL.md	118	test	TestPolicyRejects	OK	
+docs/THREAT_MODEL.md	121	test	TestMaliciousShareExcludedAndAttributed	OK	
+docs/THREAT_MODEL.md	131	path	docs/KEY_CEREMONY.md	OK	exact
+docs/THREAT_MODEL.md	142	path	niclabs/tcrsa	MISSING	missing
+docs/THREAT_MODEL.md	150	test	TestLibraryHazards	OK	
+docs/THREAT_MODEL.md	150	test	TestJoinOutOfRangeIDs	OK	
+docs/THREAT_MODEL.md	150	test	TestShareIDBoundToMTLSIdentity	OK	
+docs/THREAT_MODEL.md	151	test	TestLibraryHazards	OK	
+docs/THREAT_MODEL.md	152	test	TestTamperedShareRejected	OK	
+docs/THREAT_MODEL.md	152	test	TestBreakerTripMarksSuspect	OK	
+docs/THREAT_MODEL.md	152	test	TestBreakerWorkBound	OK	
+docs/THREAT_MODEL.md	152	test	TestBreakerRecovery	OK	
+docs/THREAT_MODEL.md	152	test	TestBreakerFallbackToStrict	OK	
+docs/THREAT_MODEL.md	153	test	TestJoinOutOfRangeIDs	OK	
+docs/THREAT_MODEL.md	154	test	TestTcrsaModulusIsBitSizeMinusOne	OK	
+docs/THREAT_MODEL.md	155	path	key_share.go	MISSING	basename
+docs/THREAT_MODEL.md	156	path	signature_share.go	MISSING	basename
+docs/THREAT_MODEL.md	157	test	TestWrongShareIndexRejected	OK	
+docs/THREAT_MODEL.md	157	test	TestWrongKidRejected	OK	
+docs/THREAT_MODEL.md	165	path	test/e2e/multihost.sh	OK	exact
+docs/THREAT_MODEL.md	165	path	reports/INDEPENDENCE.md	OK	exact
+docs/THREAT_MODEL.md	165	path	../reports/INDEPENDENCE.md	OK	relative
+docs/THREAT_MODEL.md	166	path	regions/providers	MISSING	missing
+docs/THREAT_MODEL.md	171	path	8/10	MISSING	missing
+docs/THREAT_MODEL.md	172	path	test	OK	exact
+docs/THREAT_MODEL.md	172	path	scripts/check-images.sh	OK	exact
+docs/THREAT_MODEL.md	173	path	test/e2e/run.sh	OK	exact
+docs/THREAT_MODEL.md	173	path	test/e2e/multihost.sh	OK	exact
+docs/THREAT_MODEL.md	174	path	internal/…/*_test.go	MISSING	glob
+docs/THREAT_MODEL.md	174	path	test/*_test.go	OK	glob
+docs/THREAT_MODEL.md	181	path	coordinator/apiserver	MISSING	missing
+docs/THREAT_MODEL.md	181	path	E1/E2	MISSING	missing
+docs/THREAT_MODEL.md	181	test	TestPolicyRejects	OK	
+docs/THREAT_MODEL.md	183	path	T1/E2	MISSING	missing
+docs/THREAT_MODEL.md	184	test	TestPolicyRejects	OK	
+docs/THREAT_MODEL.md	185	test	TestSignerRateLimit	OK	
+docs/THREAT_MODEL.md	186	path	Docker/VM	MISSING	missing
+docs/THREAT_MODEL.md	186	test	TestTLSRejectsClientWithoutCoordinatorSAN	OK	
+docs/THREAT_MODEL.md	186	test	TestTCPListenerRequiresLBClientCert	OK	
+docs/THREAT_MODEL.md	188	path	docs/KEY_CEREMONY.md	OK	exact
+docs/THREAT_MODEL.md	194	test	TestMaliciousSignerExcluded	OK	
+docs/THREAT_MODEL.md	194	test	TestMaliciousShareExcludedAndAttributed	OK	
+docs/THREAT_MODEL.md	194	test	TestThreeMaliciousFails	OK	
+docs/THREAT_MODEL.md	194	test	TestTamperedShareRejected	OK	
+docs/THREAT_MODEL.md	195	test	TestTamperedShareRejected	OK	
+docs/THREAT_MODEL.md	196	test	TestShareIDBoundToMTLSIdentity	OK	
+docs/THREAT_MODEL.md	196	test	TestJoinOutOfRangeIDs	OK	
+docs/THREAT_MODEL.md	196	test	TestNewRejectsBadEndpoints	OK	
+docs/THREAT_MODEL.md	197	path	internal/coordinator/coordinator.go:485	OK	exact
+docs/THREAT_MODEL.md	198	path	test	OK	exact
+docs/THREAT_MODEL.md	198	path	internal/coordinator	OK	exact
+docs/THREAT_MODEL.md	198	test	TestDeadlineRespected	OK	
+docs/THREAT_MODEL.md	198	test	TestDeadlineRespected	OK	
+docs/THREAT_MODEL.md	205	test	TestSignerPolicyRejectsCoordinatorBypass	OK	
+docs/THREAT_MODEL.md	206	path	**0/5	MISSING	glob
+docs/THREAT_MODEL.md	207	test	TestSignerAppliesPolicy	OK	
+docs/THREAT_MODEL.md	207	test	TestPolicyRejects	OK	
+docs/THREAT_MODEL.md	208	path	wrong/missing	MISSING	missing
+docs/THREAT_MODEL.md	209	path	node/user	MISSING	missing
+docs/THREAT_MODEL.md	211	test	TestSignerPolicyRejectsWrongHeaderDirect	OK	
+docs/THREAT_MODEL.md	212	test	TestSignerRejectsPrehashedInput	OK	
+docs/THREAT_MODEL.md	227	test	TestAllThresholdSubsetsIdentical	OK	
+docs/THREAT_MODEL.md	228	path	T1/E2	MISSING	missing
+docs/THREAT_MODEL.md	234	test	TestCoordinatorHasNoSecretTypes	OK	
+docs/THREAT_MODEL.md	235	path	scripts/check-images.sh	OK	exact
+docs/THREAT_MODEL.md	237	path	reports/gates/gate6-t13-negative-control.txt	OK	exact
+docs/THREAT_MODEL.md	246	test	TestTwoSharesCannotForge	OK	
+docs/THREAT_MODEL.md	249	path	spike/gate0-output.txt	OK	exact
+docs/THREAT_MODEL.md	256	test	TestPolicyRejects	OK	
+docs/THREAT_MODEL.md	258	path	deploy/policy.json	OK	exact
+docs/THREAT_MODEL.md	265	test	TestSignerRateLimit	OK	
+docs/THREAT_MODEL.md	266	test	TestRequestThatCannotFitIsShedImmediately	OK	
+docs/THREAT_MODEL.md	266	test	TestQueueCapEnforced	OK	
+docs/THREAT_MODEL.md	267	test	TestExpiredDeadlineNeverComputesShare	OK	
+docs/THREAT_MODEL.md	267	test	TestCancelledRequestComputesNoShare	OK	
+docs/THREAT_MODEL.md	268	path	deploy/policy.json	OK	exact
+docs/THREAT_MODEL.md	268	path	requests/s	MISSING	missing
+docs/THREAT_MODEL.md	272	path	req/s	MISSING	missing
+docs/THREAT_MODEL.md	278	test	TestTLSRejectsClientWithoutCoordinatorSAN	OK	
+docs/THREAT_MODEL.md	279	test	TestDeadlineHeaderIsCapped	OK	
+docs/THREAT_MODEL.md	281	test	TestFairShareCapsAFloodingClient	OK	
+docs/THREAT_MODEL.md	283	path	docs/PRIORITY_ADMISSION.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	3	path	CLAUDE_CODE_PROMPT_frost-k8s-fix.md	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	3	path	NOTES.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	32	path	deploy/docker-compose.yml	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	34	path	NOTES.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	44	path	THREAT_MODEL.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	50	path	1/10/20/50	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	50	path	median/p95/p99/mean/stddev/throughput	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	50	path	env.json	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	50	path	summary.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	57	path	summary.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	57	path	summary.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	59	path	env.json	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	59	path	summary.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	71	path	deploy/multihost	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	74	path	1/10/50	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	75	path	reports/INDEPENDENCE.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	75	path	region/provider	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	77	path	INDEPENDENCE.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	87	path	crash/stop	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	97	path	THREAT_MODEL.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	103	path	reports/REPRO.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	103	path	pass/fail	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	107	path	nohup.out	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	115	path	reports/REVIEW_RESPONSE.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	120	path	ecdsa-signing.pem	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	124	path	1	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	139	path	reports/PAPER_INPUTS.md	OK	exact
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	147	path	reports/AUDIT.md	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	147	path	reports/DEFENSE_BRIEF.md	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	149	path	AUDIT.md	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	151	path	critical/high	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	151	path	medium/low	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	158	path	experimental	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	161	path	plugin.go	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	161	path	serviceaccount/jwt.go	MISSING	missing
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	169	path	REVIEW_RESPONSE.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	169	path	INDEPENDENCE.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	169	path	REPRO.md	OK	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	169	path	AUDIT.md	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	169	path	DEFENSE_BRIEF.md	MISSING	basename
+docs/instructions/CLAUDE_CODE_ADDENDUM_make-it-solid.md	169	path	PAPER_INPUTS.md	OK	basename
+reports/CLAIMS_AUDIT.md	5	path	legacy/frost	OK	exact
+reports/CLAIMS_AUDIT.md	5	hash	7692d5a	commit	
+reports/CLAIMS_AUDIT.md	6	path	fix/threshold-rsa	MISSING	missing
+reports/CLAIMS_AUDIT.md	10	path	legacy/frost/…	OK	ellipsis
+reports/CLAIMS_AUDIT.md	11	path	legacy/frost/>	MISSING	missing
+reports/CLAIMS_AUDIT.md	11	hash	7692d5a	commit	
+reports/CLAIMS_AUDIT.md	15	path	legacy/frost/cmd/grpc-proxy/main.go:228	OK	exact
+reports/CLAIMS_AUDIT.md	15	path	ecdsa-signing.pem	MISSING	basename
+reports/CLAIMS_AUDIT.md	15	path	frost-keys.json	MISSING	basename
+reports/CLAIMS_AUDIT.md	15	path	public-meta.json	MISSING	basename
+reports/CLAIMS_AUDIT.md	15	path	scripts/check-images.sh	OK	exact
+reports/CLAIMS_AUDIT.md	15	hash	7692d5a	commit	
+reports/CLAIMS_AUDIT.md	15	hash	7692d5a	commit	
+reports/CLAIMS_AUDIT.md	15	test	TestCoordinatorHasNoSecretTypes	OK	
+reports/CLAIMS_AUDIT.md	16	path	legacy/frost/README.md	OK	exact
+reports/CLAIMS_AUDIT.md	16	path	legacy/frost/internal/signing/ecdsa.go:61	OK	exact
+reports/CLAIMS_AUDIT.md	16	path	legacy/frost/cmd/grpc-proxy/main.go:198	OK	exact
+reports/CLAIMS_AUDIT.md	17	path	ecdsa-signing.pem	MISSING	basename
+reports/CLAIMS_AUDIT.md	17	path	ecdsa-signing.pem	MISSING	basename
+reports/CLAIMS_AUDIT.md	17	path	NOTES/Phase	MISSING	missing
+reports/CLAIMS_AUDIT.md	17	path	legacy/frost/cmd/grpc-proxy/main.go:234	OK	exact
+reports/CLAIMS_AUDIT.md	17	path	legacy/frost/cmd/keygen/main.go:19	OK	exact
+reports/CLAIMS_AUDIT.md	17	path	/openid/v1/jwks	MISSING	missing
+reports/CLAIMS_AUDIT.md	17	hash	93f0dc5	commit	
+reports/CLAIMS_AUDIT.md	17	hash	496ce83	commit	
+reports/CLAIMS_AUDIT.md	17	test	TestIssuedJWTVerifiesWithFetchKeysOnly	OK	
+reports/CLAIMS_AUDIT.md	17	test	TestFetchKeysPKIXRoundTrip	OK	
+reports/CLAIMS_AUDIT.md	18	path	ecdsa-signing.pem	MISSING	basename
+reports/CLAIMS_AUDIT.md	18	path	reports/HISTORY_PURGE.md	OK	exact
+reports/CLAIMS_AUDIT.md	18	path	docs/THREAT_MODEL.md	OK	exact
+reports/CLAIMS_AUDIT.md	19	path	0/5	MISSING	missing
+reports/CLAIMS_AUDIT.md	19	hash	7692d5a	commit	
+reports/CLAIMS_AUDIT.md	19	test	TestSignerPolicyRejectsCoordinatorBypass	OK	
+reports/CLAIMS_AUDIT.md	20	path	legacy/frost/cmd/grpc-proxy/main.go:180	OK	exact
+reports/CLAIMS_AUDIT.md	20	path	legacy/frost/README.md	OK	exact
+reports/CLAIMS_AUDIT.md	21	path	RS256/ES256/ES384/ES512	MISSING	missing
+reports/CLAIMS_AUDIT.md	21	path-external	pkg/serviceaccount/externaljwt/plugin/plugin.go	SKIP	
+reports/CLAIMS_AUDIT.md	21	path	taurusgroup/multi-party-sig	MISSING	missing
+reports/CLAIMS_AUDIT.md	22	path	1	MISSING	basename
+reports/CLAIMS_AUDIT.md	22	path	docs/THREAT_MODEL.md	OK	exact
+reports/CLAIMS_AUDIT.md	23	path-external	staging/src/k8s.io/externaljwt/apis/v1/api.proto	SKIP	
+reports/CLAIMS_AUDIT.md	23	hash	ad950d1cc78b0183c476bd4d3f1934c104229727	NOT-AN-OBJECT	
+reports/CLAIMS_AUDIT.md	23	hash	71792b894080db4ff05f9f73879dea6e624e62a1	NOT-AN-OBJECT	
+reports/CLAIMS_AUDIT.md	23	hash	693b7b3db83a	NOT-AN-OBJECT	
+reports/CLAIMS_AUDIT.md	25	path	latency/overhead	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	gRPC/nginx/socat	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	legacy/frost/benchmark/results/baseline_benchmark_20260619_201519.txt	OK	exact
+reports/CLAIMS_AUDIT.md	25	path	frost_benchmark_20260619_200532.txt:37	OK	basename
+reports/CLAIMS_AUDIT.md	25	path	benchmark_20260608_224047.txt:44	OK	basename
+reports/CLAIMS_AUDIT.md	25	path	3/5	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+reports/CLAIMS_AUDIT.md	25	path	B1/B0	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	T/B1	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	tokens/s	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2/summary.md	OK	exact
+reports/CLAIMS_AUDIT.md	25	path	B0/B1**	MISSING	glob
+reports/CLAIMS_AUDIT.md	25	path	B0/B1/T	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	benchmark/results/20260927T131349Z-73be90f-7C/summary.md	OK	exact
+reports/CLAIMS_AUDIT.md	25	path	tokens/s	MISSING	missing
+reports/CLAIMS_AUDIT.md	25	path	benchmark/results/20260927T185001Z-6b2f6bb-7C-lever/summary.md	OK	exact
+reports/CLAIMS_AUDIT.md	25	path	benchmark/results/20260927T191742Z-bc0ff05-7C-stress/summary.md	OK	exact
+reports/CLAIMS_AUDIT.md	25	hash	8ebb806	commit	
+reports/CLAIMS_AUDIT.md	25	hash	8be7ca6	commit	
+reports/CLAIMS_AUDIT.md	25	hash	73be90f	commit	
+reports/CLAIMS_AUDIT.md	25	hash	6b2f6bb	commit	
+reports/CLAIMS_AUDIT.md	25	hash	bc0ff05	commit	
+reports/CLAIMS_AUDIT.md	31	path	reports/HISTORY_PURGE.md	OK	exact
+reports/CLAIMS_AUDIT.md	31	hash	7692d5a	commit	
+reports/CLAIMS_AUDIT.md	32	test	TestTLSRejectsClientWithoutCoordinatorSAN	OK	
+reports/CLAIMS_AUDIT.md	32	test	TestTCPListenerRequiresLBClientCert	OK	
+reports/CLAIMS_AUDIT.md	33	path	reports/INDEPENDENCE.md	OK	exact
+reports/HISTORY_PURGE.md	3	path	fix/threshold-rsa	MISSING	missing
+reports/HISTORY_PURGE.md	14	path	data/frost-keys.json	MISSING	missing
+reports/HISTORY_PURGE.md	14	hash	801b7ef	commit	
+reports/HISTORY_PURGE.md	14	hash	93f0dc5	commit	
+reports/HISTORY_PURGE.md	14	hash	496ce83	commit	
+reports/HISTORY_PURGE.md	15	path	data/frost-keys.enc	MISSING	missing
+reports/HISTORY_PURGE.md	15	hash	3946ea0	commit	
+reports/HISTORY_PURGE.md	15	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	15	hash	3946ea0	commit	
+reports/HISTORY_PURGE.md	15	hash	d8e9894	commit	
+reports/HISTORY_PURGE.md	16	path	data/ecdsa-signing.pem	MISSING	missing
+reports/HISTORY_PURGE.md	16	hash	93f0dc5	commit	
+reports/HISTORY_PURGE.md	16	hash	496ce83	commit	
+reports/HISTORY_PURGE.md	17	path	certs/ca.key	MISSING	missing
+reports/HISTORY_PURGE.md	17	hash	bfec86c	commit	
+reports/HISTORY_PURGE.md	17	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	18	path	certs/proxy.key	MISSING	missing
+reports/HISTORY_PURGE.md	18	hash	bfec86c	commit	
+reports/HISTORY_PURGE.md	18	hash	fd12b6c	commit	
+reports/HISTORY_PURGE.md	18	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	19	path	certs/signer.key	MISSING	missing
+reports/HISTORY_PURGE.md	19	hash	bfec86c	commit	
+reports/HISTORY_PURGE.md	19	hash	9b412e3	commit	
+reports/HISTORY_PURGE.md	19	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	20	path	deploy/docker-compose.yml	OK	exact
+reports/HISTORY_PURGE.md	20	path	scripts/vault-init.sh	OK	suffix
+reports/HISTORY_PURGE.md	20	path	README.md	OK	exact
+reports/HISTORY_PURGE.md	20	hash	9b412e3	commit	
+reports/HISTORY_PURGE.md	20	hash	3946ea0	commit	
+reports/HISTORY_PURGE.md	20	hash	d8e9894	commit	
+reports/HISTORY_PURGE.md	20	hash	7692d5a	commit	
+reports/HISTORY_PURGE.md	21	path	internal/froststate/bootstrap.go	OK	suffix
+reports/HISTORY_PURGE.md	21	path	cmd/encrypt-keys/main.go	OK	suffix
+reports/HISTORY_PURGE.md	21	path	deploy/cmd/encrypt-keys/main.go	OK	suffix
+reports/HISTORY_PURGE.md	21	path	README.md	OK	exact
+reports/HISTORY_PURGE.md	21	hash	3946ea0	commit	
+reports/HISTORY_PURGE.md	21	hash	d8e9894	commit	
+reports/HISTORY_PURGE.md	25	path	scripts/gen-certs.sh	OK	exact
+reports/HISTORY_PURGE.md	27	path	reports/gitleaks-history.json	OK	exact
+reports/HISTORY_PURGE.md	28	path	certs/*.key	MISSING	glob
+reports/HISTORY_PURGE.md	28	path	data/ecdsa-signing.pem	MISSING	missing
+reports/HISTORY_PURGE.md	36	path	nohup.out	MISSING	basename
+reports/HISTORY_PURGE.md	36	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	37	hash	562590e	commit	
+reports/HISTORY_PURGE.md	37	hash	93f0dc5	commit	
+reports/HISTORY_PURGE.md	37	hash	ecfc0f5	commit	
+reports/HISTORY_PURGE.md	37	hash	bfec86c	commit	
+reports/HISTORY_PURGE.md	38	path	deploy	OK	exact
+reports/HISTORY_PURGE.md	38	path	nginx-grpc.conf	OK	basename
+reports/HISTORY_PURGE.md	38	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	39	path	benchmark/results/20260925T094221Z-4385a48-multihost-L1/.summarize	MISSING	missing
+reports/HISTORY_PURGE.md	39	path	benchmark/summarize	OK	exact
+reports/HISTORY_PURGE.md	39	hash	4385a48	commit	
+reports/HISTORY_PURGE.md	39	hash	dc9b396	commit	
+reports/HISTORY_PURGE.md	40	path	certs/*.crt	MISSING	glob
+reports/HISTORY_PURGE.md	40	path	certs/*.csr	MISSING	glob
+reports/HISTORY_PURGE.md	40	path	certs/ca.srl	MISSING	missing
+reports/HISTORY_PURGE.md	40	path	certs/*.cnf	MISSING	glob
+reports/HISTORY_PURGE.md	40	hash	bfec86c	commit	
+reports/HISTORY_PURGE.md	40	hash	fd12b6c	commit	
+reports/HISTORY_PURGE.md	40	hash	9b412e3	commit	
+reports/HISTORY_PURGE.md	40	hash	f91807b	commit	
+reports/HISTORY_PURGE.md	54	path	data/frost-keys.json	MISSING	missing
+reports/HISTORY_PURGE.md	55	path	data/frost-keys.enc	MISSING	missing
+reports/HISTORY_PURGE.md	56	path	data/ecdsa-signing.pem	MISSING	missing
+reports/HISTORY_PURGE.md	57	path	certs	MISSING	basename
+reports/HISTORY_PURGE.md	58	path	nohup.out	MISSING	basename
+reports/HISTORY_PURGE.md	61	path	deploy	OK	exact
+reports/HISTORY_PURGE.md	61	path	nginx-grpc.conf	OK	basename
+reports/HISTORY_PURGE.md	62	path	benchmark/results/20260925T094221Z-4385a48-multihost-L1/.summarize	MISSING	missing
+reports/HISTORY_PURGE.md	62	hash	4385a48	commit	
+reports/HISTORY_PURGE.md	65	path	../replacements.txt	MISSING	missing
+reports/HISTORY_PURGE.md	69	path	../replacements.txt	MISSING	missing
+reports/HISTORY_PURGE.md	72	path	data/frost-keys.json	MISSING	missing
+reports/HISTORY_PURGE.md	72	path	data/frost-keys.enc	MISSING	missing
+reports/HISTORY_PURGE.md	72	path	data/ecdsa-signing.pem	MISSING	missing
+reports/HISTORY_PURGE.md	72	path	nohup.out	MISSING	basename
+reports/HISTORY_PURGE.md	77	path	fix/threshold-rsa	MISSING	missing
+reports/HISTORY_PURGE.md	85	path	fix/threshold-rsa	MISSING	missing
+reports/HISTORY_PURGE.md	89	path	certs	MISSING	basename
+reports/HISTORY_PURGE.md	90	path	scripts/gen-certs.sh	OK	exact
+reports/HISTORY_PURGE.md	90	path	secrets	MISSING	basename
+reports/HISTORY_PURGE.md	92	path	fix/threshold-rsa	MISSING	missing
+reports/HISTORY_PURGE.md	97	path	data/ecdsa-signing.pem	MISSING	missing
+reports/HISTORY_PURGE.md	97	path	data/frost-keys.json	MISSING	missing
+reports/HISTORY_PURGE.md	99	path	/frost-k8s-burned-keys-20260924	MISSING	missing
+reports/HISTORY_PURGE.md	102	path	/frost-k8s-burned-keys-20260924/*	MISSING	glob
+reports/INDEPENDENCE.md	7	hash	b91bf19	commit	
+reports/INDEPENDENCE.md	9	path	deploy/multihost/gen-independence.sh	OK	exact
+reports/INDEPENDENCE.md	10	path	reports/multihost/deploy-manifest.json	OK	exact
+reports/INDEPENDENCE.md	10	hash	b2f63caba51508112366d98612d147975cd6940e	commit	
+reports/INDEPENDENCE.md	11	path	reports/multihost/e2e-20260926T191044Z-b2f63ca	OK	exact
+reports/INDEPENDENCE.md	11	hash	b2f63ca	commit	
+reports/INDEPENDENCE.md	12	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2	OK	exact
+reports/INDEPENDENCE.md	12	hash	8be7ca6	commit	
+reports/INDEPENDENCE.md	25	path	public-meta.json	MISSING	basename
+reports/INDEPENDENCE.md	28	path	linux/amd64	MISSING	missing
+reports/INDEPENDENCE.md	34	path	tcp/22	MISSING	missing
+reports/INDEPENDENCE.md	36	path	deploy/aws/provision.sh	OK	exact
+reports/INDEPENDENCE.md	37	path	reports/aws/sg-rules.txt	OK	exact
+reports/INDEPENDENCE.md	129	path	reports/multihost/e2e-20260926T191044Z-b2f63ca/multihost-e2e.log	OK	exact
+reports/INDEPENDENCE.md	129	hash	b2f63ca	commit	
+reports/INDEPENDENCE.md	134	path	reports/multihost/l2-recheck-20260926T194211Z-ebabdb1	OK	exact
+reports/INDEPENDENCE.md	134	hash	ebabdb1	commit	
+reports/INDEPENDENCE.md	149	path	docs/KEY_CEREMONY.md	OK	exact
+reports/INDEPENDENCE.md	161	path	gen-independence.sh	OK	basename
+reports/INDEPENDENCE.md	163	path	reports/aws/7c/deploy-manifest-t5.json	OK	exact
+reports/INDEPENDENCE.md	163	path	reports/aws/7c/deploy-manifest-tsame.json	OK	exact
+reports/INDEPENDENCE.md	164	path	deploy/multihost/deploy.sh	OK	exact
+reports/INDEPENDENCE.md	164	hash	02ae373	commit	
+reports/INDEPENDENCE.md	165	path	reports/aws/7c/bootstrap-checks.jsonl	OK	exact
+reports/INDEPENDENCE.md	166	path	deploy/aws/state/sg-rules.txt	MISSING	missing
+reports/INDEPENDENCE.md	177	path	deploy.sh	OK	basename
+reports/INDEPENDENCE.md	180	hash	0dd3fa23	NOT-AN-OBJECT	
+reports/INDEPENDENCE.md	181	path	cmd/signer	OK	exact
+reports/INDEPENDENCE.md	181	hash	1f744909	NOT-AN-OBJECT	
+reports/PAPER_INPUTS.md	5	path	reports/CLAIMS_AUDIT.md	OK	exact
+reports/PAPER_INPUTS.md	6	path	docs/THREAT_MODEL.md	OK	exact
+reports/PAPER_INPUTS.md	14	path	docs/KEY_CEREMONY.md	OK	exact
+reports/PAPER_INPUTS.md	15	path	test/e2e/kubeadm-patches	OK	exact
+reports/PAPER_INPUTS.md	15	runid	36154065231	CHECK	
+reports/PAPER_INPUTS.md	16	test	TestShareFilesEachHoldExactlyOneShare	OK	
+reports/PAPER_INPUTS.md	17	path	legacy/frost/cmd/grpc-proxy/main.go:198	OK	exact
+reports/PAPER_INPUTS.md	18	path	reports/HISTORY_PURGE.md	OK	exact
+reports/PAPER_INPUTS.md	19	path	RS256/ES256/ES384/ES512	MISSING	missing
+reports/PAPER_INPUTS.md	19	path-external	pkg/serviceaccount/externaljwt/plugin/plugin.go	SKIP	
+reports/PAPER_INPUTS.md	21	path	B0/B1/T	MISSING	missing
+reports/PAPER_INPUTS.md	21	path	B0/B1	MISSING	missing
+reports/PAPER_INPUTS.md	21	path	benchmark/results/20260927T131349Z-73be90f-7C/summary.md	OK	exact
+reports/PAPER_INPUTS.md	21	path	benchmark/results/20260927T185001Z-6b2f6bb-7C-lever/summary.md	OK	exact
+reports/PAPER_INPUTS.md	21	path	benchmark/results/20260927T191742Z-bc0ff05-7C-stress/summary.md	OK	exact
+reports/PAPER_INPUTS.md	21	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+reports/PAPER_INPUTS.md	21	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2/summary.md	OK	exact
+reports/PAPER_INPUTS.md	21	hash	73be90f	commit	
+reports/PAPER_INPUTS.md	21	hash	6b2f6bb	commit	
+reports/PAPER_INPUTS.md	21	hash	bc0ff05	commit	
+reports/PAPER_INPUTS.md	21	hash	8ebb806	commit	
+reports/PAPER_INPUTS.md	21	hash	8be7ca6	commit	
+reports/PAPER_INPUTS.md	22	path	N55/N56	MISSING	missing
+reports/PAPER_INPUTS.md	22	path	reports/REPRO.md	OK	exact
+reports/PAPER_INPUTS.md	22	path	reports/aws/REPRO-*.md	OK	glob
+reports/PAPER_INPUTS.md	22	path	.github/workflows/ci.yml	OK	exact
+reports/PAPER_INPUTS.md	22	path	.github/workflows/repro.yml	OK	exact
+reports/PAPER_INPUTS.md	29	path	legacy/frost/docs/README-prototype.md:819	OK	exact
+reports/PAPER_INPUTS.md	30	path	legacy/frost/docs/README-prototype.md:916	OK	exact
+reports/PAPER_INPUTS.md	31	path	1	MISSING	basename
+reports/PAPER_INPUTS.md	31	path	**1	OK	glob
+reports/PAPER_INPUTS.md	31	path	reports/INDEPENDENCE.md	OK	exact
+reports/PAPER_INPUTS.md	34	path	E1/E2	MISSING	missing
+reports/PAPER_INPUTS.md	34	path	0/5	MISSING	missing
+reports/PAPER_INPUTS.md	35	path	Stop/crash	MISSING	missing
+reports/PAPER_INPUTS.md	35	path	0/15	MISSING	missing
+reports/PAPER_INPUTS.md	35	runid	36151825518	CHECK	
+reports/PAPER_INPUTS.md	36	path	T1/E2	MISSING	missing
+reports/PAPER_INPUTS.md	37	test	TestMaliciousShareExcludedAndAttributed	OK	
+reports/PAPER_INPUTS.md	37	test	TestShareIDBoundToMTLSIdentity	OK	
+reports/PAPER_INPUTS.md	37	test	TestJoinOutOfRangeIDs	OK	
+reports/PAPER_INPUTS.md	37	test	TestTamperedShareRejected	OK	
+reports/PAPER_INPUTS.md	38	test	TestPolicyRejects	OK	
+reports/PAPER_INPUTS.md	39	path	req/s	MISSING	missing
+reports/PAPER_INPUTS.md	39	path	deploy/policy.json	OK	exact
+reports/PAPER_INPUTS.md	39	path	benchmark/results/20260927T191742Z-bc0ff05-7C-stress/summary.md	OK	exact
+reports/PAPER_INPUTS.md	39	hash	bc0ff05	commit	
+reports/PAPER_INPUTS.md	40	path	ecdsa-signing.pem	MISSING	basename
+reports/PAPER_INPUTS.md	40	test	TestFetchKeysPKIXRoundTrip	OK	
+reports/PAPER_INPUTS.md	41	path	reports/INDEPENDENCE.md	OK	exact
+reports/PAPER_INPUTS.md	42	path	legacy/frost/benchmark/results/baseline_benchmark_20260619_201519.txt	OK	exact
+reports/PAPER_INPUTS.md	42	path	frost_benchmark_20260619_200532.txt:37	OK	basename
+reports/PAPER_INPUTS.md	42	path	benchmark_20260608_224047.txt:44	OK	basename
+reports/PAPER_INPUTS.md	43	path	1/10/20/50	MISSING	missing
+reports/PAPER_INPUTS.md	43	path	B1/B0	MISSING	missing
+reports/PAPER_INPUTS.md	43	path	T/B1	MISSING	missing
+reports/PAPER_INPUTS.md	43	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+reports/PAPER_INPUTS.md	43	hash	8ebb806	commit	
+reports/PAPER_INPUTS.md	44	path	benchmark/results/20260927T131349Z-73be90f-7C/summary.md	OK	exact
+reports/PAPER_INPUTS.md	44	path	tokens/s	MISSING	missing
+reports/PAPER_INPUTS.md	44	path	1096/1100	MISSING	missing
+reports/PAPER_INPUTS.md	44	path	124/339	MISSING	missing
+reports/PAPER_INPUTS.md	44	path	benchmark/results/20260927T131349Z-73be90f-7C/summary.md	OK	exact
+reports/PAPER_INPUTS.md	44	path	benchmark/results/20260927T185001Z-6b2f6bb-7C-lever/summary.md	OK	exact
+reports/PAPER_INPUTS.md	44	path	benchmark/results/20261003T101319Z-18ac3ac-N76-slots/summary.md	OK	exact
+reports/PAPER_INPUTS.md	44	hash	73be90f	commit	
+reports/PAPER_INPUTS.md	44	hash	73be90f	commit	
+reports/PAPER_INPUTS.md	44	hash	6b2f6bb	commit	
+reports/PAPER_INPUTS.md	44	hash	18ac3ac	commit	
+reports/PAPER_INPUTS.md	45	path	reports/INDEPENDENCE.md	OK	exact
+reports/PAPER_INPUTS.md	45	path	reports/aws/7c/deploy-manifest-t5.json	OK	exact
+reports/PAPER_INPUTS.md	45	path	reports/aws/7c/deploy-manifest-tsame.json	OK	exact
+reports/PAPER_INPUTS.md	45	path	reports/multihost/e2e-20260926T191044Z-b2f63ca	OK	exact
+reports/PAPER_INPUTS.md	45	path	reports/multihost/l2-recheck-20260926T194211Z-ebabdb1	OK	exact
+reports/PAPER_INPUTS.md	45	hash	b2f63ca	commit	
+reports/PAPER_INPUTS.md	45	hash	ebabdb1	commit	
+reports/PAPER_INPUTS.md	46	path	tokens/s	MISSING	missing
+reports/PAPER_INPUTS.md	46	path	tokens/s	MISSING	missing
+reports/PAPER_INPUTS.md	46	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2/summary.md	OK	exact
+reports/PAPER_INPUTS.md	46	hash	8be7ca6	commit	
+reports/PAPER_INPUTS.md	47	path	B0/B1	MISSING	missing
+reports/PAPER_INPUTS.md	47	path	B0/B1	MISSING	missing
+reports/PAPER_INPUTS.md	47	path	50/100/200	MISSING	missing
+reports/PAPER_INPUTS.md	47	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+reports/PAPER_INPUTS.md	47	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2/summary.md	OK	exact
+reports/PAPER_INPUTS.md	47	hash	8ebb806	commit	
+reports/PAPER_INPUTS.md	47	hash	8be7ca6	commit	
+reports/PAPER_INPUTS.md	48	path	N76/N77	MISSING	missing
+reports/PAPER_INPUTS.md	48	path	docs/PRIORITY_ADMISSION.md	OK	exact
+reports/PAPER_INPUTS.md	48	path	requests/s	MISSING	missing
+reports/PAPER_INPUTS.md	48	path	N79/N80	MISSING	missing
+reports/PAPER_INPUTS.md	48	path	benchmark/results/20261003T125216Z-18ac3ac-N76-stress	OK	exact
+reports/PAPER_INPUTS.md	48	path	…20261003T142316Z-18ac3ac-N76-storm	OK	ellipsis
+reports/PAPER_INPUTS.md	48	path	…20261003T174726Z-a000c9b-v2-stress-storm	OK	ellipsis
+reports/PAPER_INPUTS.md	48	path	…20261003T200008Z-a000c9b-v2-noregress	OK	ellipsis
+reports/PAPER_INPUTS.md	48	path	docs/PRIORITY_ADMISSION.md	OK	exact
+reports/PAPER_INPUTS.md	48	path	docs/PRIORITY_ADMISSION_V2.md	OK	exact
+reports/PAPER_INPUTS.md	48	hash	293a919	commit	
+reports/PAPER_INPUTS.md	48	hash	d07a8e7	commit	
+reports/PAPER_INPUTS.md	48	hash	18ac3ac	commit	
+reports/PAPER_INPUTS.md	48	hash	18ac3ac	commit	
+reports/PAPER_INPUTS.md	48	hash	a000c9b	commit	
+reports/PAPER_INPUTS.md	48	hash	a000c9b	commit	
+reports/PAPER_INPUTS.md	49	path	tokens/s	MISSING	missing
+reports/PAPER_INPUTS.md	49	path	benchmark/results/20261003T101319Z-18ac3ac-N76-slots/summary.md	OK	exact
+reports/PAPER_INPUTS.md	49	hash	18ac3ac	commit	
+reports/PAPER_INPUTS.md	50	path	docs/PRIORITY_ADMISSION.md	OK	exact
+reports/PAPER_INPUTS.md	50	path	docs/PRIORITY_ADMISSION_V2.md	OK	exact
+reports/PAPER_INPUTS.md	51	path	1/Level	MISSING	missing
+reports/PAPER_INPUTS.md	52	hash	ad950d1c	NOT-AN-OBJECT	
+reports/PAPER_INPUTS.md	52	hash	71792b89	NOT-AN-OBJECT	
+reports/PAPER_INPUTS.md	55	path	taurusgroup/multi-party-sig	MISSING	missing
+reports/PAPER_INPUTS.md	55	path	PASTA/ROAST	MISSING	missing
+reports/PAPER_INPUTS.md	63	path	35/69	MISSING	missing
+reports/REPRO.md	3	path	scripts/repro.sh	OK	exact
+reports/REPRO.md	8	hash	aef95d5e88657e4132475633ad34553a78381f95	commit	
+reports/REPRO.md	9	path	GNU/Linux	MISSING	missing
+reports/REPRO.md	11	path	linux/amd64	MISSING	missing
+reports/REPRO.md	13	path	linux/amd64	MISSING	missing
+reports/REPRO.md	16	path	kindest/node	MISSING	missing
+reports/REPRO.md	21	path	reports/repro-logs/install-base-packages.log	MISSING	missing
+reports/REPRO.md	22	path	reports/repro-logs/install-docker-engine.log	MISSING	missing
+reports/REPRO.md	23	path	reports/repro-logs/install-kind-kubectl-gitleaks-go.log	MISSING	missing
+reports/REPRO.md	24	path	reports/repro-logs/build-kind-node-image.log	MISSING	missing
+reports/REPRO.md	25	path	reports/repro-logs/make-test.log	MISSING	missing
+reports/REPRO.md	26	path	reports/repro-logs/make-check-images.log	MISSING	missing
+reports/REPRO.md	27	path	reports/repro-logs/make-e2e.log	MISSING	missing
+reports/REPRO.md	33	hash	aef95d5e88657e4132475633ad34553a78381f95	commit	
+reports/REPRO.md	36	path	public-meta.json	MISSING	basename
+reports/REPRO.md	42	path	20/20	MISSING	missing
+reports/REPRO.md	42	path	deployment/replicaset	MISSING	missing
+reports/REPRO.md	42	path	KCM/scheduler	MISSING	missing
+reports/REPRO.md	46	path	0/15	MISSING	missing
+reports/REPRO.md	47	path	Sign/FetchKeys	MISSING	missing
+reports/REPRO.md	56	path	.github/workflows/repro.yml	OK	exact
+reports/REPRO.md	57	runid	36157069748	CHECK	
+reports/REPRO.md	57	runid	36157069748	CHECK	
+reports/REPRO.md	58	hash	aef95d5	commit	
+reports/REPRO.md	59	path	scripts/repro.sh	OK	exact
+reports/REPRO.md	62	path	ci.yml	OK	basename
+reports/REPRO.md	62	runid	36157069679	CHECK	
+reports/REPRO.md	62	runid	36157069679	CHECK	
+reports/REVIEW_RESPONSE.md	3	path	6B/6C	MISSING	missing
+reports/REVIEW_RESPONSE.md	7	path	PAPER_INPUTS.md	OK	relative
+reports/REVIEW_RESPONSE.md	7	path	PAPER_INPUTS.md	OK	relative
+reports/REVIEW_RESPONSE.md	8	path	PAPER_INPUTS.md	OK	relative
+reports/REVIEW_RESPONSE.md	13	path	reports/CLAIMS_AUDIT.md	OK	exact
+reports/REVIEW_RESPONSE.md	17	path	legacy/frost/internal/signing/ecdsa.go:61	OK	exact
+reports/REVIEW_RESPONSE.md	17	path	legacy/frost/cmd/grpc-proxy/main.go:198	OK	exact
+reports/REVIEW_RESPONSE.md	17	path	spike/gate0-output.txt	OK	exact
+reports/REVIEW_RESPONSE.md	18	path	legacy/frost/cmd/grpc-proxy/main.go:205	OK	exact
+reports/REVIEW_RESPONSE.md	18	path	scripts/check-images.sh	OK	exact
+reports/REVIEW_RESPONSE.md	18	test	TestCoordinatorHasNoSecretTypes	OK	
+reports/REVIEW_RESPONSE.md	19	path	ecdsa-signing.pem	MISSING	basename
+reports/REVIEW_RESPONSE.md	19	path	reports/HISTORY_PURGE.md	OK	exact
+reports/REVIEW_RESPONSE.md	19	test	TestIssuedJWTVerifiesWithFetchKeysOnly	OK	
+reports/REVIEW_RESPONSE.md	19	test	TestFetchKeysPKIXRoundTrip	OK	
+reports/REVIEW_RESPONSE.md	20	path-external	staging/src/k8s.io/externaljwt/apis/v1/api.proto	SKIP	
+reports/REVIEW_RESPONSE.md	20	hash	ad950d1cc78b0183c476bd4d3f1934c104229727	NOT-AN-OBJECT	
+reports/REVIEW_RESPONSE.md	20	hash	71792b894080db4ff05f9f73879dea6e624e62a1	NOT-AN-OBJECT	
+reports/REVIEW_RESPONSE.md	21	path	docs/THREAT_MODEL.md	OK	exact
+reports/REVIEW_RESPONSE.md	21	path	E1/E2	MISSING	missing
+reports/REVIEW_RESPONSE.md	21	test	TestPolicyRejects	OK	
+reports/REVIEW_RESPONSE.md	21	test	TestSignerRateLimit	OK	
+reports/REVIEW_RESPONSE.md	22	path	legacy/frost/benchmark/results	OK	exact
+reports/REVIEW_RESPONSE.md	22	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+reports/REVIEW_RESPONSE.md	22	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2/summary.md	OK	exact
+reports/REVIEW_RESPONSE.md	22	path	benchmark/results/20260927T131349Z-73be90f-7C/summary.md	OK	exact
+reports/REVIEW_RESPONSE.md	22	hash	8ebb806	commit	
+reports/REVIEW_RESPONSE.md	22	hash	8be7ca6	commit	
+reports/REVIEW_RESPONSE.md	22	hash	73be90f	commit	
+reports/REVIEW_RESPONSE.md	23	path	1	MISSING	basename
+reports/REVIEW_RESPONSE.md	23	path	1	MISSING	basename
+reports/REVIEW_RESPONSE.md	23	path	1	MISSING	basename
+reports/REVIEW_RESPONSE.md	23	path	reports/INDEPENDENCE.md	OK	exact
+reports/REVIEW_RESPONSE.md	24	path	niclabs/tcrsa	MISSING	missing
+reports/REVIEW_RESPONSE.md	24	path	RS256/ES256/ES384/ES512	MISSING	missing
+reports/REVIEW_RESPONSE.md	24	path-external	pkg/serviceaccount/externaljwt/plugin/plugin.go	SKIP	
+reports/REVIEW_RESPONSE.md	25	path	legacy/frost/docs/README-prototype.md:924	OK	exact
+reports/REVIEW_RESPONSE.md	25	path	1/Level	MISSING	missing
+reports/REVIEW_RESPONSE.md	25	path	test/e2e/multihost.sh	OK	exact
+reports/REVIEW_RESPONSE.md	26	path	benchmark/results/20260926T172317Z-8ebb806-7A-single-m7i-flex.large/summary.md	OK	exact
+reports/REVIEW_RESPONSE.md	26	path	benchmark/results/20260926T194921Z-8be7ca6-multihost-L2/summary.md	OK	exact
+reports/REVIEW_RESPONSE.md	26	path	B0/B1**	MISSING	glob
+reports/REVIEW_RESPONSE.md	26	path	B0/B1/T	MISSING	missing
+reports/REVIEW_RESPONSE.md	26	path	benchmark/results/20260927T131349Z-73be90f-7C/summary.md	OK	exact
+reports/REVIEW_RESPONSE.md	26	path	tokens/s	MISSING	missing
+reports/REVIEW_RESPONSE.md	26	hash	8ebb806	commit	
+reports/REVIEW_RESPONSE.md	26	hash	8be7ca6	commit	
+reports/REVIEW_RESPONSE.md	26	hash	73be90f	commit	
+reports/REVIEW_RESPONSE.md	27	path	niclabs/tcrsa	MISSING	missing
+reports/REVIEW_RESPONSE.md	28	path	reports/multihost/e2e-*	OK	glob
+reports/REVIEW_RESPONSE.md	28	path	reports/multihost/e2e-20260926T191044Z-b2f63ca	OK	exact
+reports/REVIEW_RESPONSE.md	28	path	reports/multihost/l2-recheck-20260926T194211Z-ebabdb1	OK	exact
+reports/REVIEW_RESPONSE.md	28	path	reports/INDEPENDENCE.md	OK	exact
+reports/REVIEW_RESPONSE.md	28	path	reports/INDEPENDENCE.md	OK	exact
+reports/REVIEW_RESPONSE.md	28	path	deployment/evaluation	MISSING	missing
+reports/REVIEW_RESPONSE.md	28	hash	b91bf19	commit	
+reports/REVIEW_RESPONSE.md	28	hash	b2f63ca	commit	
+reports/REVIEW_RESPONSE.md	28	hash	ebabdb1	commit	
+reports/REVIEW_RESPONSE.md	29	path	legacy/frost/docs/README-prototype.md:819	OK	exact
+reports/REVIEW_RESPONSE.md	30	path	legacy/frost/docs/README-prototype.md:916	OK	exact
+reports/REVIEW_RESPONSE.md	34	path	T1/E2	MISSING	missing
+reports/REVIEW_RESPONSE.md	34	test	TestMaliciousSignerExcluded	OK	
+reports/REVIEW_RESPONSE.md	34	test	TestMaliciousShareExcludedAndAttributed	OK	
+reports/REVIEW_RESPONSE.md	34	test	TestShareIDBoundToMTLSIdentity	OK	
+reports/REVIEW_RESPONSE.md	34	test	TestJoinOutOfRangeIDs	OK	
+reports/REVIEW_RESPONSE.md	34	test	TestTamperedShareRejected	OK	
+reports/aws/7c/POSTPROCESSING.md	1	path	reports/aws/7c	OK	exact
+reports/aws/7c/POSTPROCESSING.md	3	path	bootstrap-checks.json	MISSING	basename
+reports/aws/7c/POSTPROCESSING.md	6	path	check.sh	OK	basename
+reports/aws/7c/POSTPROCESSING.md	6	hash	a0173b4	commit	
+reports/aws/REPRO-attempt1-FAIL.md	3	path	scripts/repro.sh	OK	exact
+reports/aws/REPRO-attempt1-FAIL.md	8	path	fix/threshold-rsa	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	8	hash	87b0c23aaad8f291fb6742219a310782e53a2a01	commit	
+reports/aws/REPRO-attempt1-FAIL.md	9	path	GNU/Linux	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	11	path	linux/amd64	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	13	path	linux/amd64	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	16	path	kindest/node	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	21	path	reports/repro-logs/install-base-packages.log	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	22	path	reports/repro-logs/install-docker-engine.log	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	23	path	reports/repro-logs/install-kind-kubectl-gitleaks-go.log	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	24	path	reports/repro-logs/build-kind-node-image.log	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	25	path	reports/repro-logs/make-test.log	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	26	path	reports/repro-logs/make-check-images.log	MISSING	missing
+reports/aws/REPRO-attempt1-FAIL.md	27	path	reports/repro-logs/make-e2e.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	3	path	scripts/repro.sh	OK	exact
+reports/aws/REPRO-attempt2-FAIL.md	8	path	scripts/repro.sh	OK	exact
+reports/aws/REPRO-attempt2-FAIL.md	9	path	fix/threshold-rsa	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	9	hash	c46daba4305e2ff35f2c655c0bd4dcf324b3fffb	commit	
+reports/aws/REPRO-attempt2-FAIL.md	10	path	GNU/Linux	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	12	path	linux/amd64	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	14	path	linux/amd64	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	17	path	kindest/node	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	22	path	reports/repro-logs/install-base-packages.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	23	path	reports/repro-logs/install-docker-engine.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	24	path	reports/repro-logs/install-kind-kubectl-gitleaks-go.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	25	path	reports/repro-logs/build-kind-node-image.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	26	path	reports/repro-logs/make-test.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	27	path	reports/repro-logs/make-check-images.log	MISSING	missing
+reports/aws/REPRO-attempt2-FAIL.md	28	path	reports/repro-logs/make-e2e.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	3	path	scripts/repro.sh	OK	exact
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	8	path	scripts/repro.sh	OK	exact
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	9	path	fix/threshold-rsa	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	9	hash	f9c4c58a1c84ac239adde139a7d59d1fea475bd8	commit	
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	10	path	GNU/Linux	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	12	path	linux/amd64	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	14	path	linux/amd64	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	17	path	kindest/node	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	22	path	reports/repro-logs/install-base-packages.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	23	path	reports/repro-logs/install-docker-engine.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	24	path	reports/repro-logs/install-kind-kubectl-gitleaks-go.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	25	path	reports/repro-logs/build-kind-node-image.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	26	path	reports/repro-logs/make-test.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	27	path	reports/repro-logs/make-check-images.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	28	path	reports/repro-logs/make-e2e.log	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	34	hash	f9c4c58a1c84ac239adde139a7d59d1fea475bd8	commit	
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	37	path	public-meta.json	MISSING	basename
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	43	path	20/20	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	43	path	deployment/replicaset	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	43	path	KCM/scheduler	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	47	path	0/15	MISSING	missing
+reports/aws/REPRO-ec2-m7i-flex.large-ap-south-1.md	48	path	Sign/FetchKeys	MISSING	missing
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	3	path	deploy/aws/teardown.sh	OK	exact
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	01613173649b1ecd0	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	06a33f5ea1a281a90	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	07cb608c56f18d496	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	03bd470c36dca0081	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	00131ddce32858fb8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	04b30649d7890a9f4	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	0c3f1ca0f28f01bc6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	003ac7fe42b75371d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	0ca518e936b8e835f	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	07a091064f6412031	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	7	hash	01dc632e7b3dec9f8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	8	hash	07a091064f6412031	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	9	hash	01dc632e7b3dec9f8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	10	hash	06a33f5ea1a281a90	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	11	hash	03bd470c36dca0081	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	12	hash	07cb608c56f18d496	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	13	hash	01613173649b1ecd0	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	14	hash	0c3f1ca0f28f01bc6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	15	hash	0ca518e936b8e835f	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	16	hash	003ac7fe42b75371d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	17	hash	04b30649d7890a9f4	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	18	hash	00131ddce32858fb8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	19	hash	00b70b0fc42914ade	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	20	hash	00b70b0fc42914ade	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	21	hash	067ffc9240ef060d7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	22	hash	067ffc9240ef060d7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	23	hash	0da2b731033501722	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	24	hash	0da2b731033501722	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	25	hash	0e96e3abeacde40fe	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	26	hash	0e96e3abeacde40fe	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	28	hash	09c36510a168d1c73	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	31	hash	08d862df34c48f18e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	33	hash	08d862df34c48f18e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	36	hash	0f751935842cde3cf	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	38	hash	0f751935842cde3cf	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	41	hash	06c217f1190a527ad	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	43	hash	06c217f1190a527ad	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	46	hash	0644c851ff7fb3ad5	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	48	hash	0644c851ff7fb3ad5	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	51	hash	06f2fb14d7d76055d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	53	hash	06f2fb14d7d76055d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	54	hash	0cad5c159ce987b10	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	57	hash	0ac842f4c6af32e84	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	59	hash	0ac842f4c6af32e84	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	60	hash	0c8c1e3e93e491f25	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	63	hash	09b4fdadb6b079fad	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	65	hash	09b4fdadb6b079fad	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	66	hash	0d51c45266af98328	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	69	hash	0cd0aac0e938b85ac	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	71	hash	0cd0aac0e938b85ac	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	72	hash	0df8386391de5a19d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	75	hash	0aa29b071b573b5a0	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	77	hash	0aa29b071b573b5a0	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	78	hash	0191a016d342d2085	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	79	path	~/.ssh/tk8s-research-ed25519	MISSING	missing
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	79	hash	ed25519	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	01613173649b1ecd0	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	06a33f5ea1a281a90	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	07cb608c56f18d496	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	03bd470c36dca0081	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	00131ddce32858fb8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	04b30649d7890a9f4	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	0c3f1ca0f28f01bc6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	003ac7fe42b75371d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	0ca518e936b8e835f	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	07a091064f6412031	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	82	hash	01dc632e7b3dec9f8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	83	hash	00b70b0fc42914ade	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	84	hash	067ffc9240ef060d7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	85	hash	0da2b731033501722	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-7C-20260927T194900Z.md	86	hash	0e96e3abeacde40fe	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	1	path	N76/N77	MISSING	missing
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	3	path	deploy/aws/teardown.sh	OK	exact
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	6	hash	06a0c22d1e49c03aa	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	7	hash	0e2b10a140ba265ed	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	10	hash	0be062b4b60441750	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	12	hash	0be062b4b60441750	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	13	hash	09487daeb7c21d3cc	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	16	hash	0fa77c715582debb6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	18	hash	0fa77c715582debb6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	19	hash	0a0f5f4666348b36a	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	22	hash	0d763d365fbb8cbab	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	24	hash	0d763d365fbb8cbab	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	25	hash	0beab82992faf3006	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	26	path	~/.ssh/tk8s-research-ed25519	MISSING	missing
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	26	hash	ed25519	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	08a9166a993f5b1e0	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0ecfeff73cd6760d8	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	05a0b32e5522d38f6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0c53504374032e944	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0a9414723b6c04ef3	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0077734d26f79139d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0476a2a1b4f50f5eb	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	08b155dde72ac9cfa	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0369caba3601c7be5	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	03fc249543cfd878d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	39	hash	0f9aea880fa591cb6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	40	hash	0fc5d1d392b0bd925	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	41	hash	03fcc56073657ed00	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	42	hash	0c3a592a81e911d08	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-N76-20261003T154358Z.md	43	hash	0bb1be8cdf47c167f	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	3	path	deploy/aws/teardown.sh	OK	exact
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	09f62b873cc1751fd	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	05e70ba5d5270a298	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	09035f5a045ae7350	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	0b5294721811d7e43	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	04668f1a65a8f954e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	02a06dcaa06c46d6b	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	0a970b9d7d7436dea	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	0e2c8c072ec8cd0b4	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	02920f7caac286a71	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	056251e34557a70a7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	7	hash	0937134ad573049d6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	8	hash	056251e34557a70a7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	9	hash	0937134ad573049d6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	10	hash	09f62b873cc1751fd	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	11	hash	09035f5a045ae7350	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	12	hash	0b5294721811d7e43	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	13	hash	05e70ba5d5270a298	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	14	hash	0e2c8c072ec8cd0b4	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	15	hash	04668f1a65a8f954e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	16	hash	02a06dcaa06c46d6b	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	17	hash	02920f7caac286a71	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	18	hash	0a970b9d7d7436dea	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	19	hash	044ec1180a895084c	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	20	hash	044ec1180a895084c	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	21	hash	069af349e95933ed6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	22	hash	069af349e95933ed6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	23	hash	048093e37eab8a841	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	24	hash	048093e37eab8a841	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	25	hash	02841f5b3988463a2	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	26	hash	02841f5b3988463a2	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	28	hash	00b459c15115cba9b	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	31	hash	09d26321257d9ad87	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	33	hash	09d26321257d9ad87	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	36	hash	0e4ed8a8612b105b7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	38	hash	0e4ed8a8612b105b7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	41	hash	00f12e0df6a3cff1d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	43	hash	00f12e0df6a3cff1d	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	46	hash	083da7a3b0f36657a	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	48	hash	083da7a3b0f36657a	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	51	hash	07c7f487d37286c31	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	53	hash	07c7f487d37286c31	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	54	hash	043540b826bd8a009	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	57	hash	0dff42dfc5c1529ff	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	59	hash	0dff42dfc5c1529ff	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	60	hash	096a7b7af32746316	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	63	hash	0d0620783918f5f26	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	65	hash	0d0620783918f5f26	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	66	hash	0acbe9d506498f0df	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	69	hash	02c89120642e25f23	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	71	hash	02c89120642e25f23	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	72	hash	0ff83d75ac35d7739	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	75	hash	0c7c1745f9187351e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	77	hash	0c7c1745f9187351e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	78	hash	0b920c1b9f26d411f	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	79	path	~/.ssh/tk8s-research-ed25519	MISSING	missing
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	79	hash	ed25519	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	09f62b873cc1751fd	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	05e70ba5d5270a298	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	09035f5a045ae7350	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	0b5294721811d7e43	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	04668f1a65a8f954e	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	02a06dcaa06c46d6b	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	0a970b9d7d7436dea	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	0e2c8c072ec8cd0b4	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	02920f7caac286a71	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	056251e34557a70a7	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	82	hash	0937134ad573049d6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	83	hash	044ec1180a895084c	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	84	hash	069af349e95933ed6	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	85	hash	048093e37eab8a841	NOT-AN-OBJECT	
+reports/aws/TEARDOWN-v2-20261003T214235Z.md	86	hash	02841f5b3988463a2	NOT-AN-OBJECT	
+reports/multihost/e2e-20260926T191044Z-b2f63ca/POSTPROCESSING.md	1	path	multihost-e2e.log	OK	relative
+reports/multihost/l2-recheck-20260926T194211Z-ebabdb1/POSTPROCESSING.md	1	path	multihost-e2e.log	OK	relative
+deploy/multihost/README.md	9	path	test/e2e/multihost.sh	OK	exact
+deploy/multihost/README.md	10	path	exec/transfer	MISSING	missing
+deploy/multihost/README.md	10	path	ssh/scp	MISSING	missing
+deploy/multihost/README.md	15	path	reports/INDEPENDENCE.md	OK	exact
+deploy/multihost/README.md	21	path	topology.local.env	OK	relative
+deploy/multihost/README.md	22	path	deploy.sh	OK	relative
+deploy/multihost/README.md	23	path	setup-signer-host.sh	OK	relative
+deploy/multihost/README.md	23	path	share/key	MISSING	missing
+deploy/multihost/README.md	24	path	coordinator-egress.sh	OK	relative
+deploy/multihost/README.md	25	path	../docker-compose.multihost.yml	OK	relative
+deploy/multihost/README.md	26	path	teardown.sh	OK	relative
+deploy/multihost/README.md	27	path	../../test/e2e/multihost.sh	OK	relative
+deploy/multihost/README.md	27	path	test/e2e/run.sh	OK	exact
+deploy/multihost/README.md	28	path	../../benchmark/multihost/run.sh	OK	relative
+deploy/multihost/README.md	28	path	1/10/50	MISSING	missing
+deploy/multihost/README.md	28	path	0/20/60/150	MISSING	missing
+deploy/multihost/README.md	42	path	test/e2e/multihost.sh	OK	exact
+deploy/multihost/README.md	42	path	deploy.sh	OK	relative
+deploy/multihost/README.md	43	path	benchmark/multihost/run.sh	OK	exact
+deploy/multihost/README.md	43	path	benchmark/results/<ts>-<sha>-multihost-L1	MISSING	glob
+deploy/multihost/README.md	45	path	shares/keys	MISSING	missing
+deploy/multihost/README.md	46	path	deploy/multihost/teardown.sh	OK	exact
+deploy/multihost/README.md	49	path	setup-signer-host.sh	OK	relative
+deploy/multihost/README.md	50	path	reports/multihost/e2e-*/nftables-<vm>.txt	MISSING	glob
+deploy/multihost/README.md	55	path	established/related	MISSING	missing
+deploy/multihost/README.md	66	path	topology.local.env	OK	relative
+deploy/multihost/README.md	68	path	deploy.sh	OK	relative
+deploy/multihost/README.md	68	path	test/e2e/multihost.sh	OK	exact
+deploy/multihost/README.md	68	path	teardown.sh	OK	relative
+deploy/multihost/README.md	69	path	docs/KEY_CEREMONY.md	OK	exact
+deploy/multihost/README.md	69	path	deploy.sh	OK	relative
+deploy/multihost/README.md	73	path	reports/INDEPENDENCE.md	OK	exact

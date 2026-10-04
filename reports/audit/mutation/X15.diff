@@ -1,0 +1,22 @@
+diff --git a/cmd/grpc-proxy/main.go b/cmd/grpc-proxy/main.go
+index dfa1113..798ac70 100644
+--- a/cmd/grpc-proxy/main.go
++++ b/cmd/grpc-proxy/main.go
+@@ -255,7 +255,7 @@ func load(getenv func(string) string) (*settings, error) {
+ 			name string
+ 		}{{&s.GRPCCert, "GRPC_TLS_CERT"}, {&s.GRPCKey, "GRPC_TLS_KEY"}, {&s.GRPCCA, "GRPC_TLS_CA"}} {
+ 			if *p.dst, err = require(getenv, p.name); err != nil {
+-				return nil, fmt.Errorf("TCP_ADDR requires mTLS: %w", err)
++				err = nil; break // MUTATION X15: TCP without mTLS allowed
+ 			}
+ 		}
+ 	}
+@@ -280,6 +280,8 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
+ 	var opts []grpc.ServerOption
+ 	if s.Socket != "" {
+ 		lis, err = grpcserver.ListenUnix(s.Socket)
++	} else if s.GRPCCert == "" { // MUTATION X15: plaintext TCP listener
++		lis, err = net.Listen("tcp", s.TCP)
+ 	} else {
+ 		tc, terr := tlsconf.CoordinatorGRPCServer(s.GRPCCert, s.GRPCKey, s.GRPCCA)
+ 		if terr != nil {

@@ -1,0 +1,8 @@
+mutation M12a  dir <clone>  start 2026-10-04T00:17:15Z
+unit rc=1 malicious rc=0 seconds=280
+failing tests:
+--- FAIL: TestFetchKeysPKIXRoundTrip
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/grpcserver	119.269s
+RESULT M12a CAUGHT

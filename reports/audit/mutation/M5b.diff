@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..f79e273 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -666,7 +666,7 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = fmt.Errorf("malformed response: %v", err)
+ 		return r
+ 	}
+-	if sr.SignerID != ep.ID {
++	if false && sr.SignerID != ep.ID { // MUTATION M5b
+ 		r.err = fmt.Errorf("response claims signer_id %d but came from authenticated signer-%d", sr.SignerID, ep.ID)
+ 		return r
+ 	}

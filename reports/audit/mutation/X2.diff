@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..798fff4 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -265,7 +265,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
+ 		return nil, err
+ 	}
+ 	for _, a := range auds {
+-		if !p.audiences[a] {
++		if false && !p.audiences[a] { // MUTATION X2: aud allowlist off
+ 			return nil, violation("aud", "audience %q is not allowed", a)
+ 		}
+ 	}

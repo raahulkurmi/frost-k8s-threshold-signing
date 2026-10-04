@@ -1,0 +1,13 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..cb3b260 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -313,7 +313,7 @@ func (s *Server) handleSignShare(w http.ResponseWriter, r *http.Request) {
+ 				rej = reject(http.StatusBadRequest, "bad_request", "%s must be 1..60000 ms", wire.DeadlineHeader)
+ 			} else {
+ 				// N76: never wait longer than MaxDeadline, whatever the caller asks.
+-				d := min(time.Duration(ms)*time.Millisecond, s.cfg.MaxDeadline)
++				d := time.Duration(ms) * time.Millisecond // MUTATION X8: deadline header not capped
+ 				var cancel context.CancelFunc
+ 				ctx, cancel = context.WithTimeout(ctx, d)
+ 				defer cancel()

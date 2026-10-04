@@ -1,0 +1,20 @@
+=== RUN   TestAllThresholdSubsetsIdentical
+testutil: generated 2048-bit 3-of-5 key in 2.995s
+2026/10/04 04:41:16 INFO signed request_id=a0b0728dd2fdcc0f70d30522 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[1 2 3]" excluded=[] share_verifications=3 latency_ms=13.684 fanout_ms=13.448 max_share_verify_ms=5.194 combine_ms=0.205 final_verify_ms=0.028
+2026/10/04 04:41:16 INFO signed request_id=10e633ecf29c59ebb343222b strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[1 2 4]" excluded=[] share_verifications=3 latency_ms=13.243 fanout_ms=13.002 max_share_verify_ms=5.433 combine_ms=0.205 final_verify_ms=0.033
+2026/10/04 04:41:16 INFO signed request_id=c8bcd611e8b88de8eb0af81b strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[1 2 5]" excluded=[] share_verifications=3 latency_ms=18.094 fanout_ms=17.846 max_share_verify_ms=9.23 combine_ms=0.212 final_verify_ms=0.032
+2026/10/04 04:41:16 INFO signed request_id=e8a8f62b9792234ddf9b3af4 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[1 3 4]" excluded=[] share_verifications=3 latency_ms=18.528 fanout_ms=18.289 max_share_verify_ms=6.408 combine_ms=0.206 final_verify_ms=0.03
+2026/10/04 04:41:16 INFO signed request_id=ce8a42beccc10819f3c1b1d5 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[1 3 5]" excluded=[] share_verifications=3 latency_ms=13.562 fanout_ms=13.338 max_share_verify_ms=5.32 combine_ms=0.194 final_verify_ms=0.028
+2026/10/04 04:41:16 INFO signed request_id=e699d77fc762e6e8a37abdd2 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[1 4 5]" excluded=[] share_verifications=3 latency_ms=13.272 fanout_ms=12.869 max_share_verify_ms=5.279 combine_ms=0.37 final_verify_ms=0.03
+2026/10/04 04:41:16 INFO signed request_id=8500afbe3df6d202802724f9 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[2 3 4]" excluded=[] share_verifications=3 latency_ms=13.775 fanout_ms=13.537 max_share_verify_ms=5.952 combine_ms=0.205 final_verify_ms=0.029
+2026/10/04 04:41:16 INFO signed request_id=5da48127656cb39ece76df1c strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[2 3 5]" excluded=[] share_verifications=3 latency_ms=13.699 fanout_ms=13.468 max_share_verify_ms=5.658 combine_ms=0.199 final_verify_ms=0.029
+2026/10/04 04:41:16 INFO signed request_id=f9c0d44bfab309b236913574 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[2 4 5]" excluded=[] share_verifications=3 latency_ms=13.506 fanout_ms=13.271 max_share_verify_ms=5.538 combine_ms=0.202 final_verify_ms=0.031
+2026/10/04 04:41:16 INFO signed request_id=373e58b1a68241f49bdc5961 strategy=strict strategy_effective=strict fanout=all signers_contacted=3 valid_shares=3 combined="[3 4 5]" excluded=[] share_verifications=3 latency_ms=13.425 fanout_ms=13.194 max_share_verify_ms=5.493 combine_ms=0.201 final_verify_ms=0.028
+    correctness_test.go:120: all 10 subsets byte-identical; sha256(sig)=a72969e738a3f425860ca17a6cb6f133e04fd398846b45c127ffe75ba3e6e105
+--- PASS: TestAllThresholdSubsetsIdentical (3.20s)
+=== RUN   TestTwoSharesCannotForge
+    correctness_test.go:213: all 10 pairs: Join refuses; K forced to 2 and fabricated third shares yield invalid signatures
+--- PASS: TestTwoSharesCannotForge (0.48s)
+PASS
+ok  	frost-k8s-threshold-signing/test	4.885s
+EXIT 0

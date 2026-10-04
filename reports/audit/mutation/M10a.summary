@@ -1,0 +1,8 @@
+mutation M10a  dir <clone>  start 2026-10-03T23:54:47Z
+unit rc=1 malicious rc=0 seconds=388
+failing tests:
+--- FAIL: TestMultiShareFileRejected
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/cmd/signer	59.262s
+RESULT M10a CAUGHT

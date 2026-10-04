@@ -1,0 +1,179 @@
+== .
+E1004 04:40:51.546113   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/keymeta: cannot find a known open source license for "<clone>/internal/keymeta" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.563142   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/keyshare: cannot find a known open source license for "<clone>/internal/keyshare" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.576560   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/prioritykey: cannot find a known open source license for "<clone>/internal/prioritykey" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.589533   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/dealer: cannot find a known open source license for "<clone>/internal/dealer" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.602514   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/cmd/dealer: cannot find a known open source license for "<clone>/cmd/dealer" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.615666   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/jwtfmt: cannot find a known open source license for "<clone>/internal/jwtfmt" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.628966   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/wire: cannot find a known open source license for "<clone>/internal/wire" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.641920   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/coordinator: cannot find a known open source license for "<clone>/internal/coordinator" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.654803   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/policy: cannot find a known open source license for "<clone>/internal/policy" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:51.668168   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/grpcserver: cannot find a known open source license for "<clone>/internal/grpcserver" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+~/go/pkg/mod/golang.org/x/sys@v0.48.0/unix/asm_bsd_arm64.s
+~/go/pkg/mod/golang.org/x/sys@v0.48.0/unix/zsyscall_darwin_arm64.s
+E1004 04:40:52.661584   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/tlsconf: cannot find a known open source license for "<clone>/internal/tlsconf" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:52.675093   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/cmd/grpc-proxy: cannot find a known open source license for "<clone>/cmd/grpc-proxy" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:52.688095   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/audit: cannot find a known open source license for "<clone>/internal/audit" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:52.702505   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/signer: cannot find a known open source license for "<clone>/internal/signer" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:52.718633   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/cmd/signer: cannot find a known open source license for "<clone>/cmd/signer" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:52.733688   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/testutil: cannot find a known open source license for "<clone>/internal/testutil" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:52.838020   90297 library.go:122] Failed to find license for frost-k8s-threshold-signing/test/e2e/probe: cannot find a known open source license for "<clone>/test/e2e/probe" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+frost-k8s-threshold-signing/cmd/dealer,Unknown,Unknown
+frost-k8s-threshold-signing/cmd/grpc-proxy,Unknown,Unknown
+frost-k8s-threshold-signing/cmd/signer,Unknown,Unknown
+frost-k8s-threshold-signing/internal/audit,Unknown,Unknown
+frost-k8s-threshold-signing/internal/coordinator,Unknown,Unknown
+frost-k8s-threshold-signing/internal/dealer,Unknown,Unknown
+frost-k8s-threshold-signing/internal/grpcserver,Unknown,Unknown
+frost-k8s-threshold-signing/internal/jwtfmt,Unknown,Unknown
+frost-k8s-threshold-signing/internal/keymeta,Unknown,Unknown
+frost-k8s-threshold-signing/internal/keyshare,Unknown,Unknown
+frost-k8s-threshold-signing/internal/policy,Unknown,Unknown
+frost-k8s-threshold-signing/internal/prioritykey,Unknown,Unknown
+frost-k8s-threshold-signing/internal/signer,Unknown,Unknown
+frost-k8s-threshold-signing/internal/testutil,Unknown,Unknown
+frost-k8s-threshold-signing/internal/tlsconf,Unknown,Unknown
+frost-k8s-threshold-signing/internal/wire,Unknown,Unknown
+frost-k8s-threshold-signing/test/e2e/probe,Unknown,Unknown
+github.com/go-jose/go-jose/v4,https://github.com/go-jose/go-jose/blob/v4.1.5/LICENSE,Apache-2.0
+github.com/go-jose/go-jose/v4/json,https://github.com/go-jose/go-jose/blob/v4.1.5/json/LICENSE,BSD-3-Clause
+github.com/niclabs/tcrsa,https://github.com/niclabs/tcrsa/blob/v0.0.5/LICENSE,MIT
+golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.57.0:LICENSE,BSD-3-Clause
+golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.59.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.48.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.42.0:LICENSE,BSD-3-Clause
+golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.16.0:LICENSE,BSD-3-Clause
+google.golang.org/genproto/googleapis/rpc/status,https://github.com/googleapis/go-genproto/blob/f0a921348800/googleapis/rpc/LICENSE,Apache-2.0
+google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.84.0/LICENSE,Apache-2.0
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/f2248ac996af/LICENSE,BSD-3-Clause
+gopkg.in/go-jose/go-jose.v2,https://github.com/go-jose/go-jose/blob/v2.6.3/LICENSE,Apache-2.0
+gopkg.in/go-jose/go-jose.v2/json,https://github.com/go-jose/go-jose/blob/v2.6.3/json/LICENSE,BSD-3-Clause
+k8s.io/externaljwt/apis/v1,https://github.com/kubernetes/externaljwt/blob/v0.36.5/LICENSE,Apache-2.0
+exit=0
+== benchmark
+E1004 04:40:57.852959   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/benchmark/b1signer: cannot find a known open source license for "<clone>/benchmark/b1signer" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>/benchmark"
+E1004 04:40:57.866721   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/coordinator: cannot find a known open source license for "<clone>/internal/coordinator" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:57.879823   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/jwtfmt: cannot find a known open source license for "<clone>/internal/jwtfmt" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:57.892752   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/keymeta: cannot find a known open source license for "<clone>/internal/keymeta" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:57.907218   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/wire: cannot find a known open source license for "<clone>/internal/wire" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:57.920529   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/grpcserver: cannot find a known open source license for "<clone>/internal/grpcserver" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:57.934584   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/policy: cannot find a known open source license for "<clone>/internal/policy" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+~/go/pkg/mod/golang.org/x/sys@v0.48.0/unix/asm_bsd_arm64.s
+~/go/pkg/mod/golang.org/x/sys@v0.48.0/unix/zsyscall_darwin_arm64.s
+E1004 04:40:58.890423   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/internal/tlsconf: cannot find a known open source license for "<clone>/internal/tlsconf" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>"
+E1004 04:40:58.890497   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/benchmark/k8s7c: cannot find a known open source license for "<clone>/benchmark/k8s7c" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>/benchmark"
+~/go/pkg/mod/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee/relfect2_arm64.s
+~/go/pkg/mod/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee/relfect2_mips64x.s
+~/go/pkg/mod/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee/relfect2_mipsx.s
+~/go/pkg/mod/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee/relfect2_ppc64x.s
+E1004 04:40:59.530007   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/benchmark/summarize: cannot find a known open source license for "<clone>/benchmark/summarize" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>/benchmark"
+E1004 04:40:59.530065   90350 library.go:122] Failed to find license for frost-k8s-threshold-signing/benchmark/tokenbench: cannot find a known open source license for "<clone>/benchmark/tokenbench" whose name matches regexp ^(?i)((UN)?LICEN(S|C)E|COPYING|README|NOTICE).*$ and locates up until "<clone>/benchmark"
+frost-k8s-threshold-signing/benchmark/b1signer,Unknown,Unknown
+frost-k8s-threshold-signing/benchmark/k8s7c,Unknown,Unknown
+frost-k8s-threshold-signing/benchmark/summarize,Unknown,Unknown
+frost-k8s-threshold-signing/benchmark/tokenbench,Unknown,Unknown
+frost-k8s-threshold-signing/internal/coordinator,Unknown,Unknown
+frost-k8s-threshold-signing/internal/grpcserver,Unknown,Unknown
+frost-k8s-threshold-signing/internal/jwtfmt,Unknown,Unknown
+frost-k8s-threshold-signing/internal/keymeta,Unknown,Unknown
+frost-k8s-threshold-signing/internal/policy,Unknown,Unknown
+frost-k8s-threshold-signing/internal/tlsconf,Unknown,Unknown
+frost-k8s-threshold-signing/internal/wire,Unknown,Unknown
+github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
+github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.13.0/LICENSE,MIT
+github.com/fxamacker/cbor/v2,https://github.com/fxamacker/cbor/blob/v2.9.0/LICENSE,MIT
+github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.3/LICENSE,Apache-2.0
+github.com/go-openapi/jsonpointer,https://github.com/go-openapi/jsonpointer/blob/v0.21.0/LICENSE,Apache-2.0
+github.com/go-openapi/jsonreference,https://github.com/go-openapi/jsonreference/blob/v0.20.2/LICENSE,Apache-2.0
+github.com/go-openapi/swag,https://github.com/go-openapi/swag/blob/v0.23.0/LICENSE,Apache-2.0
+github.com/google/gnostic-models,https://github.com/google/gnostic-models/blob/v0.7.0/LICENSE,Apache-2.0
+github.com/google/uuid,https://github.com/google/uuid/blob/v1.6.0/LICENSE,BSD-3-Clause
+github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
+github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
+github.com/mailru/easyjson,https://github.com/mailru/easyjson/blob/v0.7.7/LICENSE,MIT
+github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
+github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/35a7c28c31ee/LICENSE,Apache-2.0
+github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
+github.com/niclabs/tcrsa,https://github.com/niclabs/tcrsa/blob/v0.0.5/LICENSE,MIT
+github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.9/LICENSE,BSD-3-Clause
+github.com/x448/float16,https://github.com/x448/float16/blob/v0.8.4/LICENSE,MIT
+go.yaml.in/yaml/v2,https://github.com/yaml/go-yaml/blob/v2.4.3/LICENSE,Apache-2.0
+go.yaml.in/yaml/v3,https://github.com/yaml/go-yaml/blob/v3.0.4/LICENSE,MIT
+golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.59.0:LICENSE,BSD-3-Clause
+golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.36.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.48.0:LICENSE,BSD-3-Clause
+golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.46.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.42.0:LICENSE,BSD-3-Clause
+golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.16.0:LICENSE,BSD-3-Clause
+google.golang.org/genproto/googleapis/rpc/status,https://github.com/googleapis/go-genproto/blob/f0a921348800/googleapis/rpc/LICENSE,Apache-2.0
+google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.84.0/LICENSE,Apache-2.0
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/f2248ac996af/LICENSE,BSD-3-Clause
+gopkg.in/evanphx/json-patch.v4,https://github.com/evanphx/json-patch/blob/v4.13.0/LICENSE,BSD-3-Clause
+gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
+gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
+k8s.io/api,https://github.com/kubernetes/api/blob/v0.36.5/LICENSE,Apache-2.0
+k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.36.5/LICENSE,Apache-2.0
+k8s.io/apimachinery/third_party/forked/golang,https://github.com/kubernetes/apimachinery/blob/v0.36.5/third_party/forked/golang/LICENSE,BSD-3-Clause
+k8s.io/client-go,https://github.com/kubernetes/client-go/blob/v0.36.5/LICENSE,Apache-2.0
+k8s.io/externaljwt/apis/v1,https://github.com/kubernetes/externaljwt/blob/v0.36.5/LICENSE,Apache-2.0
+k8s.io/klog/v2,https://github.com/kubernetes/klog/blob/v2.140.0/LICENSE,Apache-2.0
+k8s.io/kube-openapi/pkg,https://github.com/kubernetes/kube-openapi/blob/43fb72c5454a/LICENSE,Apache-2.0
+k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json,https://github.com/kubernetes/kube-openapi/blob/43fb72c5454a/pkg/internal/third_party/go-json-experiment/json/LICENSE,BSD-3-Clause
+k8s.io/kube-openapi/pkg/validation/spec,https://github.com/kubernetes/kube-openapi/blob/43fb72c5454a/pkg/validation/spec/LICENSE,Apache-2.0
+k8s.io/utils,https://github.com/kubernetes/utils/blob/b8788abfbbc2/LICENSE,Apache-2.0
+k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/b8788abfbbc2/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
+sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/2d320260d730/LICENSE,Apache-2.0
+sigs.k8s.io/randfill,https://github.com/kubernetes-sigs/randfill/blob/v1.0.0/LICENSE,Apache-2.0
+sigs.k8s.io/structured-merge-diff/v6,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v6.3.3/LICENSE,Apache-2.0
+sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.6.0/LICENSE,Apache-2.0
+exit=0
+== spike
+exit=1
+== legacy/frost
+F1004 04:41:14.382036   90535 main.go:77] unknown flag: --build_tags
+exit=0
+== legacy/frost (GOFLAGS=-tags=legacy)
+W1004 04:41:24.803250   90650 library.go:101] "filippo.io/edwards25519/field" contains non-Go code that can't be inspected for further dependencies:
+W1004 04:41:24.815948   90650 library.go:101] "golang.org/x/sys/cpu" contains non-Go code that can't be inspected for further dependencies:
+W1004 04:41:24.822317   90650 library.go:101] "filippo.io/nistec" contains non-Go code that can't be inspected for further dependencies:
+W1004 04:41:25.067164   90650 library.go:101] "golang.org/x/sys/unix" contains non-Go code that can't be inspected for further dependencies:
+filippo.io/edwards25519,https://github.com/FiloSottile/edwards25519/blob/v1.1.0/LICENSE,BSD-3-Clause
+filippo.io/nistec,https://github.com/FiloSottile/nistec/blob/v0.0.3/LICENSE,BSD-3-Clause
+frost-k8s-threshold-signing/legacy/frost/cmd/coordinator,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/dkg-coordinator,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/encrypt-keys,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/frostlab,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/grpc-proxy,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/keygen,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/signer,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/cmd/testsign,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/deploy/cmd/encrypt-keys,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/deploy/internal/keystore,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/externaljwt/v1alpha1,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/api,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/config,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/coordinator,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/coordinatorstate,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/dkg,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/froststate,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/grpcserver,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/keystore,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/mtls,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/signer,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/signing,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/internal/types,Unknown,Unknown
+frost-k8s-threshold-signing/legacy/frost/proto/externaljwt/v1alpha1,Unknown,Unknown
+github.com/bytemare/ecc,https://github.com/bytemare/ecc/blob/v0.8.2/LICENSE,MIT
+github.com/bytemare/frost,https://github.com/bytemare/frost/blob/8c6db5b04145/LICENSE,MIT
+github.com/bytemare/hash,https://github.com/bytemare/hash/blob/v0.3.0/LICENSE,MIT
+github.com/bytemare/hash2curve,https://github.com/bytemare/hash2curve/blob/v0.3.0/LICENSE,MIT
+github.com/bytemare/secp256k1,https://github.com/bytemare/secp256k1/blob/v0.1.6/LICENSE,MIT
+github.com/bytemare/secret-sharing,https://github.com/bytemare/secret-sharing/blob/v0.7.0/LICENSE,MIT
+github.com/gtank/ristretto255,https://github.com/gtank/ristretto255/blob/v0.1.2/LICENSE,BSD-3-Clause
+golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.54.0:LICENSE,BSD-3-Clause
+golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.57.0:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.47.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.40.0:LICENSE,BSD-3-Clause
+google.golang.org/genproto/googleapis/rpc/status,https://github.com/googleapis/go-genproto/blob/f0a921348800/googleapis/rpc/LICENSE,Apache-2.0
+google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.84.0/LICENSE,Apache-2.0
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.36.11/LICENSE,BSD-3-Clause

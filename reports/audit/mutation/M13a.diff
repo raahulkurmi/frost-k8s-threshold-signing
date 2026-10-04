@@ -1,0 +1,14 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..5f8df36 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -176,6 +176,9 @@ func (s *Server) admit(ctx context.Context) (func(), *Rejection) {
+ }
+ 
+ func (s *Server) admitN48(ctx context.Context) (func(), *Rejection) {
++	if true { // MUTATION M13a: no admission control
++		return func() {}, nil
++	}
+ 	release := func() { <-s.slots }
+ 	waitStart := time.Now()
+ 	observe := func() {

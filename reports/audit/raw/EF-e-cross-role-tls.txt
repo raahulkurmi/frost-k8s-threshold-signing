@@ -1,0 +1,15 @@
+=== RUN   TestEFCrossRole
+    zz_ef_eku_test.go:65: signer-1 server <- coordinator-1 client (control): err=<nil>
+    zz_ef_eku_test.go:69: signer-1 server <- lb cert as client: err=certificate SANs [lb] (ip []) are not exactly one DNS:coordinator-<1..64>
+    zz_ef_eku_test.go:69: signer-1 server <- signer-2 cert as client: err=tls: failed to verify certificate: x509: certificate specifies an incompatible key usage
+    zz_ef_eku_test.go:69: signer-1 server <- coordinator-grpc cert as client: err=tls: failed to verify certificate: x509: certificate specifies an incompatible key usage
+    zz_ef_eku_test.go:78: coordinator-grpc server <- lb cert as client: err=<nil>
+    zz_ef_eku_test.go:78: coordinator-grpc server <- coordinator-1 cert as client: err=certificate SANs [coordinator-1] (ip []) are not exactly DNS:lb
+    zz_ef_eku_test.go:78: coordinator-grpc server <- signer-1 cert as client: err=tls: failed to verify certificate: x509: certificate specifies an incompatible key usage
+    zz_ef_eku_test.go:83: coordinator client (expects signer-1) -> server presenting coordinator-1: err=remote error: tls: bad certificate
+    zz_ef_eku_test.go:83: coordinator client (expects signer-1) -> server presenting coordinator-grpc: err=remote error: tls: bad certificate
+    zz_ef_eku_test.go:83: coordinator client (expects signer-1) -> server presenting signer-2: err=remote error: tls: bad certificate
+--- PASS: TestEFCrossRole (1.27s)
+PASS
+ok  	frost-k8s-threshold-signing/internal/tlsconf	1.820s
+EXIT 0

@@ -1,0 +1,13 @@
+Event (N60): 2026-09-26 ~19:33 UTC (operator Wi-Fi drop during multihost.sh deploy)
+Last commit before event:
+b2f63ca 2026-09-27T00:38:35+05:30 (1790449715) 7B: strict+optimistic, client vs coordinator latency columns, scale-up with load-based cooldown
+Search for re-run/network-drop rule text in tree at b2f63ca:
+(none)
+First commits containing the rule text:
+ebabdb1 2026-09-27T01:12:09+05:30 7B: Level 2 multihost e2e evidence (L2 invalid: operator network drop), --recheck-l2, chrony-primary clock check
+8be7ca6 2026-09-27T01:15:02+05:30 7B: network-robust run-l2 (detached remote work, INVALID + one re-run on any ssh failure), per-rep scale-up
+45ff8fb 2026-09-27T02:48:49+05:30 Phase 7B results (Level 2, 5 AWS regions) + INDEPENDENCE.md; track evidence logs
+0d1aaaf 2026-09-27T01:19:41+05:30 NOTES N60: operator network drop during 7B deploy, L2 recheck PASS, chrony-primary clock check, INVALID rule
+45ff8fb 2026-09-27T02:48:49+05:30 Phase 7B results (Level 2, 5 AWS regions) + INDEPENDENCE.md; track evidence logs
+d868153 2026-09-27T14:43:38+05:30 Phase 7C tooling: kubeadm cluster, system switching, 7C driver and summary (N67)
+L2 recheck dir timestamp: 20260926T194211Z

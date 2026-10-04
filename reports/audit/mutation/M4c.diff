@@ -1,0 +1,26 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..77c47c0 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -202,7 +202,7 @@ func New(cfg Config) (*Coordinator, error) {
+ 	}
+ 	seen := map[int]bool{}
+ 	for _, ep := range cfg.Endpoints {
+-		if ep.ID < 1 || ep.ID > cfg.Meta.Parties {
++		if false && (ep.ID < 1 || ep.ID > cfg.Meta.Parties) { // MUTATION M4b
+ 			return nil, fmt.Errorf("coordinator: signer id %d outside [1,%d]", ep.ID, cfg.Meta.Parties)
+ 		}
+ 		if seen[ep.ID] {
+diff --git a/internal/wire/wire.go b/internal/wire/wire.go
+index f351b32..c041a22 100644
+--- a/internal/wire/wire.go
++++ b/internal/wire/wire.go
+@@ -87,7 +87,7 @@ func FromTcrsa(s *tcrsa.SigShare) SigShare {
+ // because tcrsa's SigShare.Verify indexes VerificationKey.I[id-1] unchecked
+ // and panics otherwise (NOTES.md N5).
+ func (s SigShare) ToTcrsa(id, parties int, n *big.Int) (*tcrsa.SigShare, error) {
+-	if id < 1 || id > parties {
++	if false && (id < 1 || id > parties) { // MUTATION M4a
+ 		return nil, fmt.Errorf("share id %d outside [1,%d]", id, parties)
+ 	}
+ 	d := base64.StdEncoding.DecodeString

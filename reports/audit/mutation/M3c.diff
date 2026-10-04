@@ -1,0 +1,22 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..e9555bb 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -205,7 +205,7 @@ func New(cfg Config) (*Coordinator, error) {
+ 		if ep.ID < 1 || ep.ID > cfg.Meta.Parties {
+ 			return nil, fmt.Errorf("coordinator: signer id %d outside [1,%d]", ep.ID, cfg.Meta.Parties)
+ 		}
+-		if seen[ep.ID] {
++		if false && seen[ep.ID] { // MUTATION M3b
+ 			return nil, fmt.Errorf("coordinator: signer id %d configured twice", ep.ID)
+ 		}
+ 		seen[ep.ID] = true
+@@ -516,7 +516,7 @@ collect:
+ 			if r.skipped { // strict: t shares already verified; this one is not needed
+ 				continue
+ 			}
+-			if valid[r.id] != nil || candidates[r.id] != nil {
++			if false && (valid[r.id] != nil || candidates[r.id] != nil) { // MUTATION M3a
+ 				fail(r.id, "duplicate share id") // unreachable with unique endpoints; defensive dedupe
+ 				continue
+ 			}

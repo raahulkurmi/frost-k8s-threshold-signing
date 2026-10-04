@@ -1,0 +1,61 @@
+### M1-no-final-verify
+-		err = rsa.VerifyPKCS1v15(c.meta.PublicKey, crypto.SHA256, digest[:], s)
++		err = nil; _ = rsa.VerifyPKCS1v15
+   1 --- FAIL: TestBreakerFallbackToStrict (0.25s)
+   1 --- FAIL: TestBreakerRecovery (0.09s)
+   1 --- FAIL: TestBreakerTripMarksSuspect (0.09s)
+   1 --- FAIL: TestBreakerWorkBound (0.13s)
+   1 --- FAIL: TestMaliciousShareExcludedAndAttributed (1.01s)
+   1 --- FAIL: TestMaliciousSignerExcluded (127.84s)
+   1 --- FAIL: TestThreeMaliciousFails (0.14s)
+   3 FAIL
+   1 FAIL	frost-k8s-threshold-signing/internal/coordinator	146.212s
+   1 FAIL	frost-k8s-threshold-signing/test	130.454s
+
+### M2-no-id-bound
+-	if id < 1 || id > parties {
++	if false {
+   1 --- FAIL: TestJoinOutOfRangeIDs (0.26s)
+   2 FAIL
+   1 FAIL	frost-k8s-threshold-signing/internal/coordinator	134.771s
+
+### M3-no-vsi-check
+-	if got := new(big.Int).Exp(v, new(big.Int).SetBytes(si), n); got.Cmp(want) != 0 {
++	if got := new(big.Int).Exp(v, new(big.Int).SetBytes(si), n); false && got.Cmp(want) != 0 {
+   1 --- FAIL: TestCorruptedShareRejected (0.11s)
+   1 --- FAIL: TestWrongShareIndexRejected (204.52s)
+   1 --- FAIL: TestWrongShareIndexRejected (87.44s)
+   3 FAIL
+   1 FAIL	frost-k8s-threshold-signing/cmd/signer	88.175s
+   1 FAIL	frost-k8s-threshold-signing/test	207.001s
+
+### M4-no-xi-range
+-	if x.Sign() <= 0 || x.Cmp(n) >= 0 {
++	if false && (x.Sign() <= 0 || x.Cmp(n) >= 0) {
+   1 --- FAIL: TestJoinOutOfRangeIDs (116.60s)
+   2 FAIL
+   1 FAIL	frost-k8s-threshold-signing/internal/coordinator	117.196s
+
+### M5-no-endpoint-dedupe
+-		if seen[ep.ID] {
++		if false && seen[ep.ID] {
+   1 --- FAIL: TestNewRejectsBadEndpoints (359.39s)
+   2 FAIL
+   1 FAIL	frost-k8s-threshold-signing/internal/coordinator	360.098s
+
+### M6-no-response-id-binding
+-	if sr.SignerID != ep.ID {
++	if false && sr.SignerID != ep.ID {
+   1 --- FAIL: TestShareIDBoundToMTLSIdentity (357.79s)
+   2 FAIL
+   1 FAIL	frost-k8s-threshold-signing/internal/coordinator	358.431s
+
+### M7-dealer-NewKey-b
+-	shares, meta, err := tcrsa.NewKey(modulusBits+1, uint16(t), uint16(n), nil)
++	shares, meta, err := tcrsa.NewKey(modulusBits, uint16(t), uint16(n), nil)
+   1 --- FAIL: TestPublicMetaHasNoSecretFields (100.31s)
+   2 FAIL
+   1 FAIL	frost-k8s-threshold-signing/cmd/dealer	101.011s
+
+mut-EF restored:        0 changed files
+EXIT 0

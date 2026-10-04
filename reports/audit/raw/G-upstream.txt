@@ -1,0 +1,53 @@
+     1	  }
+     2	  
+     3	  message SignJWTRequest {
+     4	    // URL-safe base64 wrapped payload to be signed.
+     5	    // Exactly as it appears in the second segment of the JWT
+     6	    string claims = 1;
+     7	  }
+     8	  
+     9	  message SignJWTResponse {
+    10	    // header must contain only alg, kid, typ claims.
+    11	    // typ must be “JWT”.
+    12	    // kid must be non-empty, <=1024 characters, and its corresponding public key should not be excluded from OIDC discovery.
+    13	    // alg must be one of the algorithms supported by kube-apiserver (currently RS256, ES256, ES384, ES512).
+    14	    // header cannot have any additional data that kube-apiserver does not recognize.
+    15	    // Already wrapped in URL-safe base64, exactly as it appears in the first segment of the JWT.
+    16	    string header = 1;
+    17	  
+    18	    // The signature for the JWT.
+    19	    // Already wrapped in URL-safe base64, exactly as it appears in the final segment of the JWT.
+    20	    string signature = 2;
+    21	  }
+    22	    string key_id = 1;
+    23	  
+    24	    // The public key, PKIX-serialized.
+    25	    // must be a public key supported by kube-apiserver (currently RSA 256 or ECDSA 256/384/521)
+    26	    bytes key = 2;
+
+ad950d1cc78b0183c476bd4d3f1934c104229727
+141669	open	ExternalJWTSigner (KEP-740) proto doc doesn't specify required signature encoding (RFC 7518 IEEE P1363), causing silent verification failures	kind/documentation,sig/auth,needs-triage	4	raahulkurmi	2026-08-29T04:19:57Z
+141670	open	Consider a stronger explicit warning against re-encoding SignJWTRequest.claims (KEP-740 ExternalJWTSigner)	kind/documentation,sig/auth,needs-triage	1	raahulkurmi	2026-08-29T04:21:42Z
+141687	open	false	externaljwt: warn against re-encoding claims in proto; add encoding contract test	kind/documentation,size/L,release-note-none,sig/auth,cncf-cla: yes,needs-ok-to-test,needs-priority,needs-triage	anupamojha-eng	2026-08-30T11:10:10Z
+693b7b3db83a	2026-08-29T01:12:25Z	gofmt: fix to pass with go1.27 (Go 1.27 prep)
+0baeccd32f04	2025-04-14T22:33:39Z	KEP-740: promote ExternalJWTSigner feature to beta
+v1.36.5 e366361cb0b86f7d2b41a0b971502259d2462a66  -
+master 1ecd17a8b1300025c441b23824094282e3e8be81  -
+e7967bb9b76d43a6388abb7a4e90d2f899ef97ff
+141673	closed	docs: specify ECDSA signature encoding	alinaqvi1129
+141687	open	externaljwt: warn against re-encoding claims in proto; add encoding contract test	anupamojha-eng
+kubernetes-prow[bot]	2026-08-29T04:20:05Z	This issue is currently awaiting triage.  If a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` labe
+alinaqvi1129	2026-08-29T07:17:12Z	/assign
+anupamojha-eng	2026-08-30T11:15:14Z	https://github.com/kubernetes/kubernetes/pull/141687
+alinaqvi1129	2026-09-15T08:08:13Z	/unassign
+kubernetes-prow[bot]	2026-08-29T04:21:49Z	This issue is currently awaiting triage.  If a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` labe
+8:This is technically correct and, on a careful read, unambiguous — the payload is already base64url-encoded and must be used as-is.
+     1		switch header.Algorithm {
+     2		// IMPORTANT: If this function is updated to support additional algorithms,
+     3		// JWTTokenGenerator, signerFromRSAPrivateKey, signerFromECDSAPrivateKey in
+     4		// kubernetes/pkg/serviceaccount/jwt.go must also be updated to support the same Algorithms.
+     5		case "RS256", "ES256", "ES384", "ES512":
+     6			// OK
+     7		default:
+     8			return fmt.Errorf("bad signing algorithm %q", header.Algorithm)
+     9		}

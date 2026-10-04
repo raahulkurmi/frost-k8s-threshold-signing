@@ -1,0 +1,26 @@
+== .
+all modules verified
+exit=0
+7:github.com/niclabs/tcrsa v0.0.5 h1:QgS3DOhBBlhNloRif7M1DLhEkgijEedcx3G2IYXcUWw=
+8:github.com/niclabs/tcrsa v0.0.5/go.mod h1:ratVlzSF2LkdYLmDDvqwmpQFtHbyZIWTa1J02Ogxw+A=
+      54
+== benchmark
+frost-k8s-threshold-signing v0.0.0: missing ziphash: open hash: no such file or directory
+exit=1
+52:github.com/niclabs/tcrsa v0.0.5 h1:QgS3DOhBBlhNloRif7M1DLhEkgijEedcx3G2IYXcUWw=
+53:github.com/niclabs/tcrsa v0.0.5/go.mod h1:ratVlzSF2LkdYLmDDvqwmpQFtHbyZIWTa1J02Ogxw+A=
+     103
+== spike
+all modules verified
+exit=0
+5:github.com/niclabs/tcrsa v0.0.5 h1:QgS3DOhBBlhNloRif7M1DLhEkgijEedcx3G2IYXcUWw=
+6:github.com/niclabs/tcrsa v0.0.5/go.mod h1:ratVlzSF2LkdYLmDDvqwmpQFtHbyZIWTa1J02Ogxw+A=
+      13
+== legacy/frost
+all modules verified
+exit=0
+      57
+2076376
+github.com/niclabs/tcrsa v0.0.5 h1:QgS3DOhBBlhNloRif7M1DLhEkgijEedcx3G2IYXcUWw=
+github.com/niclabs/tcrsa v0.0.5/go.mod h1:ratVlzSF2LkdYLmDDvqwmpQFtHbyZIWTa1J02Ogxw+A=
+

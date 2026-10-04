@@ -1,0 +1,8 @@
+=== RUN   TestEFFiles
+    zz_ef_files_test.go:25: (a) pre-existing dir mode 0777 accepted: err=<nil>; dir mode after=-rwxrwxrwx share-1 mode=-rw-------
+    zz_ef_files_test.go:33: (b) dangling symlink at share-1.json: err=write <tmp>: open <tmp>: file exists; target created=false
+    zz_ef_files_test.go:40: (c) share-2 exists -> err=write <tmp>: open <tmp>: file exists; share-1.json left on disk=true
+--- PASS: TestEFFiles (0.03s)
+PASS
+ok  	frost-k8s-threshold-signing/internal/dealer	0.574s
+EXIT 0

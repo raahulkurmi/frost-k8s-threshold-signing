@@ -1,0 +1,13 @@
+diff --git a/internal/signer/signer.go b/internal/signer/signer.go
+index 0b853b1..1d808fc 100644
+--- a/internal/signer/signer.go
++++ b/internal/signer/signer.go
+@@ -358,7 +358,7 @@ func (s *Server) SignShare(ctx context.Context, req wire.SignShareRequest, clien
+ 		return nil, rej
+ 	}
+ 
+-	if !s.limiter.Allow() {
++	if false && !s.limiter.Allow() { // MUTATION X7: no rate limit
+ 		return deny(reject(http.StatusTooManyRequests, "rate_limited", "signer %d rate limit exceeded", s.cfg.ID))
+ 	}
+ 	if !wire.ValidRequestID(req.RequestID) {

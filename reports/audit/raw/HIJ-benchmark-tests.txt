@@ -1,0 +1,5 @@
+$ (cd benchmark) go test -count=1 ./...
+ok  	frost-k8s-threshold-signing/benchmark/b1signer	1.893s
+ok  	frost-k8s-threshold-signing/benchmark/k8s7c	0.698s
+ok  	frost-k8s-threshold-signing/benchmark/summarize	1.495s
+ok  	frost-k8s-threshold-signing/benchmark/tokenbench	1.342s

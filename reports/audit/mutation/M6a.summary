@@ -1,0 +1,10 @@
+mutation M6a  dir <clone>  start 2026-10-04T00:45:45Z
+unit rc=1 malicious rc=0 seconds=363
+failing tests:
+    --- FAIL: TestSignerRejectsPrehashedInput/raw_digest,_base64url
+--- FAIL: TestSignerRejectsPrehashedInput
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	178.948s
+FAIL	frost-k8s-threshold-signing/test	129.583s
+RESULT M6a CAUGHT

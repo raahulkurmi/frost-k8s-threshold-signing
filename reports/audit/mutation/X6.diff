@@ -1,0 +1,13 @@
+diff --git a/internal/keyshare/keyshare.go b/internal/keyshare/keyshare.go
+index 0021bb4..5886889 100644
+--- a/internal/keyshare/keyshare.go
++++ b/internal/keyshare/keyshare.go
+@@ -105,7 +105,7 @@ func (f *File) validate(meta *keymeta.Meta, expectedIndex int) (*tcrsa.KeyShare,
+ 	n := meta.PublicKey.N
+ 	v := new(big.Int).SetBytes(meta.Tcrsa.VerificationKey.V)
+ 	want := new(big.Int).SetBytes(meta.Tcrsa.VerificationKey.I[expectedIndex-1])
+-	if got := new(big.Int).Exp(v, new(big.Int).SetBytes(si), n); got.Cmp(want) != 0 {
++	if got := new(big.Int).Exp(v, new(big.Int).SetBytes(si), n); false && got.Cmp(want) != 0 { // MUTATION X6
+ 		return nil, errors.New("share does not match its verification key (wrong key, index or corrupted)")
+ 	}
+ 	return &tcrsa.KeyShare{Si: si, Id: uint16(expectedIndex)}, nil

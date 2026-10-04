@@ -1,0 +1,17 @@
+mutation M7  dir <clone>  start 2026-10-04T00:55:30Z
+unit rc=1 malicious rc=0 seconds=223
+failing tests:
+    --- FAIL: TestSignerRejectsPrehashedInput/digest_as_payload
+    --- FAIL: TestSignerRejectsPrehashedInput/padded_block_as_payload
+--- FAIL: TestPriorityRefusalHTTPAndAudit
+--- FAIL: TestSignErrorIsGeneric
+--- FAIL: TestSignerAppliesPolicy
+--- FAIL: TestSignerAuditLog
+--- FAIL: TestSignerPolicyRejectsCoordinatorBypass
+--- FAIL: TestSignerRejectsPrehashedInput
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/grpcserver	137.168s
+FAIL	frost-k8s-threshold-signing/internal/signer	88.226s
+FAIL	frost-k8s-threshold-signing/test	48.192s
+RESULT M7 CAUGHT

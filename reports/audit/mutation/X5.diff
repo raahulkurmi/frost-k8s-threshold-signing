@@ -1,0 +1,13 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..97e904e 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -646,7 +646,7 @@ func (c *Coordinator) fetch(ctx context.Context, ep Endpoint, body []byte, reqID
+ 		r.err = fmt.Errorf("read response: %v", err)
+ 		return r
+ 	}
+-	if len(raw) > wire.MaxResponseBytes {
++	if false && len(raw) > wire.MaxResponseBytes { // MUTATION X5: response size unchecked
+ 		r.err = errors.New("response too large")
+ 		return r
+ 	}

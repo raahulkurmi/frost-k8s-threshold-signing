@@ -1,0 +1,13 @@
+diff --git a/internal/wire/wire.go b/internal/wire/wire.go
+index f351b32..c041a22 100644
+--- a/internal/wire/wire.go
++++ b/internal/wire/wire.go
+@@ -87,7 +87,7 @@ func FromTcrsa(s *tcrsa.SigShare) SigShare {
+ // because tcrsa's SigShare.Verify indexes VerificationKey.I[id-1] unchecked
+ // and panics otherwise (NOTES.md N5).
+ func (s SigShare) ToTcrsa(id, parties int, n *big.Int) (*tcrsa.SigShare, error) {
+-	if id < 1 || id > parties {
++	if false && (id < 1 || id > parties) { // MUTATION M4a
+ 		return nil, fmt.Errorf("share id %d outside [1,%d]", id, parties)
+ 	}
+ 	d := base64.StdEncoding.DecodeString

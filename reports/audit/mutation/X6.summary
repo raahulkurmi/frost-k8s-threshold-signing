@@ -1,0 +1,10 @@
+mutation X6  dir <clone>  start 2026-10-04T00:46:24Z
+unit rc=1 malicious rc=0 seconds=302
+failing tests:
+--- FAIL: TestCorruptedShareRejected
+--- FAIL: TestWrongShareIndexRejected
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/cmd/signer	85.171s
+FAIL	frost-k8s-threshold-signing/test	177.786s
+RESULT X6 CAUGHT

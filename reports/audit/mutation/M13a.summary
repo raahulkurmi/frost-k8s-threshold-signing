@@ -1,0 +1,8 @@
+mutation M13a  dir <clone>  start 2026-10-04T00:35:57Z
+unit rc=1 malicious rc=0 seconds=4756
+failing tests:
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/signer	1803.665s
+panic: test timed out after 30m0s
+RESULT M13a CAUGHT

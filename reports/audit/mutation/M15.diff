@@ -1,0 +1,13 @@
+diff --git a/internal/grpcserver/server.go b/internal/grpcserver/server.go
+index e597436..3932d5c 100644
+--- a/internal/grpcserver/server.go
++++ b/internal/grpcserver/server.go
+@@ -73,7 +73,7 @@ func (s *Server) Sign(ctx context.Context, req *externaljwtv1.SignJWTRequest) (*
+ 		var te *coordinator.ThresholdError
+ 		switch {
+ 		case errors.As(err, &te):
+-			return nil, status.Error(codes.Unavailable, ErrMsgThreshold)
++			return nil, status.Error(codes.Unavailable, ErrMsgThreshold+": "+err.Error()) // MUTATION M15: revert N33
+ 		case errors.Is(err, coordinator.ErrInvalidClaims):
+ 			return nil, status.Error(codes.InvalidArgument, ErrMsgInvalidRequest)
+ 		default:

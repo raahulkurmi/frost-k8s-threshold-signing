@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..3ae6e48 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -312,7 +312,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	if p.denyNS[ns] {
++	if false && p.denyNS[ns] { // MUTATION X13: namespace deny list off
+ 		return nil, violation("deny", "namespace %q is denied", ns)
+ 	}
+ 	if p.denySA[ns+":"+name] {

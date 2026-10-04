@@ -1,0 +1,8 @@
+mutation M4b  dir <clone>  start 2026-10-04T00:20:59Z
+unit rc=1 malicious rc=0 seconds=359
+failing tests:
+--- FAIL: TestNewRejectsBadEndpoints
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/coordinator	310.092s
+RESULT M4b CAUGHT

@@ -1,0 +1,14 @@
+mutation M9  dir <clone>  start 2026-10-03T23:41:35Z
+unit rc=1 malicious rc=0 seconds=788
+failing tests:
+    --- FAIL: TestPolicyRejects/iat_too_far_in_future
+    --- FAIL: TestPolicyRejects/iat_too_far_in_past_(backdated)
+--- FAIL: TestPolicyRejects
+--- FAIL: TestSignerAppliesPolicy
+--- FAIL: TestSignerPolicyRejectsCoordinatorBypass
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/internal/policy	4.954s
+FAIL	frost-k8s-threshold-signing/internal/signer	398.796s
+FAIL	frost-k8s-threshold-signing/test	322.816s
+RESULT M9 CAUGHT

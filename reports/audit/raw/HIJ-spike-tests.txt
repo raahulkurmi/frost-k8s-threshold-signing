@@ -1,0 +1,9 @@
+$ go test -count=1 -run "TestLibraryHazards|TestTamperedShareRejected|TestAllThresholdSubsetsIdentical" -v .
+=== RUN   TestAllThresholdSubsetsIdentical
+--- PASS: TestAllThresholdSubsetsIdentical (88.20s)
+=== RUN   TestTamperedShareRejected
+--- PASS: TestTamperedShareRejected (0.21s)
+=== RUN   TestLibraryHazards
+--- PASS: TestLibraryHazards (0.05s)
+PASS
+ok  	github.com/raahulkurmi/frost-k8s-threshold-signing/spike	88.922s

@@ -1,0 +1,18 @@
+diff --git a/internal/coordinator/coordinator.go b/internal/coordinator/coordinator.go
+index c880314..fa083f2 100644
+--- a/internal/coordinator/coordinator.go
++++ b/internal/coordinator/coordinator.go
+@@ -30,6 +30,7 @@ import (
+ 	"github.com/niclabs/tcrsa"
+ 
+ 	"frost-k8s-threshold-signing/internal/jwtfmt"
++	"frost-k8s-threshold-signing/internal/keyshare" // MUTATION M11
+ 	"frost-k8s-threshold-signing/internal/keymeta"
+ 	"frost-k8s-threshold-signing/internal/wire"
+ )
+@@ -702,3 +703,5 @@ func (c *Coordinator) Strategy() Strategy { return c.strategy }
+ 
+ // FanoutMode returns the configured fan-out mode.
+ func (c *Coordinator) FanoutMode() Fanout { return c.fanout }
++
++var _ = keyshare.FormatVersion // MUTATION M11

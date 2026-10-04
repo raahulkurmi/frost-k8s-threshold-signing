@@ -1,0 +1,9 @@
+mutation M17a  dir mut-final  start 2026-10-04T08:17:30Z
+unit rc=1 malicious rc=0 seconds=183
+failing tests:
+--- FAIL: TestLoadDefaults
+--- FAIL: TestQuorumAbortDefaultsOff
+failing packages:
+FAIL
+FAIL	frost-k8s-threshold-signing/cmd/grpc-proxy	134.772s
+RESULT M17a CAUGHT

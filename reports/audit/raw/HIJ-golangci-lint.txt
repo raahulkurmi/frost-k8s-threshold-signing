@@ -1,0 +1,299 @@
+== module . ==
+cmd/dealer/dealer_test.go:58:15: Error return value of `os.RemoveAll` is not checked (errcheck)
+		os.RemoveAll(filepath.Dir(sharedDir))
+		            ^
+cmd/dealer/main.go:42:14: Error return value of `fmt.Fprintf` is not checked (errcheck)
+		fmt.Fprintf(stderr, "dealer: unexpected arguments %v\n", fs.Args())
+		           ^
+cmd/dealer/main.go:46:14: Error return value of `fmt.Fprintf` is not checked (errcheck)
+		fmt.Fprintf(stderr, "dealer: %v\n", err)
+		           ^
+cmd/dealer/main.go:74:13: Error return value of `fmt.Fprintf` is not checked (errcheck)
+	fmt.Fprintf(stdout, "Generating %d-of-%d threshold RSA key, %d-bit modulus (safe primes; this can take minutes)...\n", t, n, bits)
+	           ^
+cmd/dealer/main.go:116:14: Error return value of `fmt.Fprintln` is not checked (errcheck)
+	fmt.Fprintln(stdout, "SHA-256 of outputs:")
+	            ^
+cmd/signer/main.go:254:22: Error return value of `auditLog.Close` is not checked (errcheck)
+	defer auditLog.Close()
+	                    ^
+internal/coordinator/coordinator.go:634:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/dealer/dealer.go:98:10: Error return value of `f.Close` is not checked (errcheck)
+		f.Close()
+		       ^
+internal/dealer/dealer.go:102:10: Error return value of `f.Close` is not checked (errcheck)
+		f.Close()
+		       ^
+internal/grpcserver/server.go:134:10: Error return value of `l.Close` is not checked (errcheck)
+		l.Close()
+		       ^
+internal/grpcserver/server_test.go:41:33: Error return value of `os.RemoveAll` is not checked (errcheck)
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	                               ^
+internal/grpcserver/server_test.go:48:12: Error return value of `g.Serve` is not checked (errcheck)
+	go g.Serve(lis)
+	          ^
+internal/grpcserver/server_test.go:54:31: Error return value of `conn.Close` is not checked (errcheck)
+	t.Cleanup(func() { conn.Close() })
+	                             ^
+internal/grpcserver/server_test.go:166:12: Error return value of `g.Serve` is not checked (errcheck)
+	go g.Serve(lis)
+	          ^
+internal/grpcserver/server_test.go:185:19: Error return value of `conn.Close` is not checked (errcheck)
+		defer conn.Close()
+		                ^
+internal/grpcserver/server_test.go:254:20: Error return value of `os.RemoveAll` is not checked (errcheck)
+	defer os.RemoveAll(dir)
+	                  ^
+internal/grpcserver/server_test.go:264:9: Error return value of `l.Close` is not checked (errcheck)
+	l.Close()
+	       ^
+internal/grpcserver/server_test.go:269:10: Error return value of `l2.Close` is not checked (errcheck)
+	l2.Close()
+	        ^
+internal/keyshare/keyshare.go:139:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/prioritykey/prioritykey.go:118:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/signer/admission_test.go:33:29: Error return value of `al.Close` is not checked (errcheck)
+	t.Cleanup(func() { al.Close() })
+	                           ^
+internal/signer/admission_test.go:297:29: Error return value of `al.Close` is not checked (errcheck)
+	t.Cleanup(func() { al.Close() })
+	                           ^
+internal/signer/signer_test.go:217:15: Error return value of `f.Close` is not checked (errcheck)
+	defer f.Close()
+	             ^
+internal/signer/signer_test.go:248:18: Error return value of `e.auditLog.Close` is not checked (errcheck)
+	e.auditLog.Close()
+	                ^
+internal/testutil/cluster.go:60:30: Error return value of `al.Close` is not checked (errcheck)
+		t.Cleanup(func() { al.Close() })
+		                           ^
+test/e2e/probe/main.go:122:10: Error return value of `c.Close` is not checked (errcheck)
+		c.Close()
+		       ^
+test/helpers_test.go:72:12: Error return value of `g.Serve` is not checked (errcheck)
+	go g.Serve(lis)
+	          ^
+test/helpers_test.go:78:31: Error return value of `conn.Close` is not checked (errcheck)
+	t.Cleanup(func() { conn.Close() })
+	                             ^
+internal/signer/priority.go:402:5: QF1001: could apply De Morgan's law (staticcheck)
+	if !(el >= a.cfg.MaxWindow || (el >= a.cfg.MinWindow && a.arrivals >= a.cfg.MinArrivals)) {
+	   ^
+internal/testutil/cluster.go:71:9: ST1023: should omit type http.Handler from declaration; it will be inferred from the right-hand side (staticcheck)
+		var h http.Handler = srv.Handler()
+		      ^
+internal/wire/wire.go:70:6: QF1001: could apply De Morgan's law (staticcheck)
+		if !(c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.') {
+		   ^
+31 issues:
+* errcheck: 28
+* staticcheck: 3
+exit=1
+cmd/dealer/dealer_test.go:58:15: Error return value of `os.RemoveAll` is not checked (errcheck)
+		os.RemoveAll(filepath.Dir(sharedDir))
+		            ^
+cmd/dealer/main.go:42:14: Error return value of `fmt.Fprintf` is not checked (errcheck)
+		fmt.Fprintf(stderr, "dealer: unexpected arguments %v\n", fs.Args())
+		           ^
+cmd/dealer/main.go:46:14: Error return value of `fmt.Fprintf` is not checked (errcheck)
+		fmt.Fprintf(stderr, "dealer: %v\n", err)
+		           ^
+cmd/dealer/main.go:74:13: Error return value of `fmt.Fprintf` is not checked (errcheck)
+	fmt.Fprintf(stdout, "Generating %d-of-%d threshold RSA key, %d-bit modulus (safe primes; this can take minutes)...\n", t, n, bits)
+	           ^
+cmd/dealer/main.go:116:14: Error return value of `fmt.Fprintln` is not checked (errcheck)
+	fmt.Fprintln(stdout, "SHA-256 of outputs:")
+	            ^
+cmd/signer/main.go:254:22: Error return value of `auditLog.Close` is not checked (errcheck)
+	defer auditLog.Close()
+	                    ^
+internal/dealer/dealer.go:98:10: Error return value of `f.Close` is not checked (errcheck)
+		f.Close()
+		       ^
+internal/dealer/dealer.go:102:10: Error return value of `f.Close` is not checked (errcheck)
+		f.Close()
+		       ^
+internal/dealer/dealer.go:198:18: Error return value of `resp.Body.Close` is not checked (errcheck)
+		resp.Body.Close()
+		               ^
+internal/grpcserver/server.go:134:10: Error return value of `l.Close` is not checked (errcheck)
+		l.Close()
+		       ^
+internal/grpcserver/server_test.go:41:33: Error return value of `os.RemoveAll` is not checked (errcheck)
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	                               ^
+internal/grpcserver/server_test.go:48:12: Error return value of `g.Serve` is not checked (errcheck)
+	go g.Serve(lis)
+	          ^
+internal/grpcserver/server_test.go:54:31: Error return value of `conn.Close` is not checked (errcheck)
+	t.Cleanup(func() { conn.Close() })
+	                             ^
+internal/grpcserver/server_test.go:166:12: Error return value of `g.Serve` is not checked (errcheck)
+	go g.Serve(lis)
+	          ^
+internal/grpcserver/server_test.go:185:19: Error return value of `conn.Close` is not checked (errcheck)
+		defer conn.Close()
+		                ^
+internal/grpcserver/server_test.go:254:20: Error return value of `os.RemoveAll` is not checked (errcheck)
+	defer os.RemoveAll(dir)
+	                  ^
+internal/grpcserver/server_test.go:264:9: Error return value of `l.Close` is not checked (errcheck)
+	l.Close()
+	       ^
+internal/grpcserver/server_test.go:269:10: Error return value of `l2.Close` is not checked (errcheck)
+	l2.Close()
+	        ^
+internal/keyshare/keyshare.go:139:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/prioritykey/prioritykey.go:118:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/signer/admission_test.go:33:29: Error return value of `al.Close` is not checked (errcheck)
+	t.Cleanup(func() { al.Close() })
+	                           ^
+internal/signer/admission_test.go:297:29: Error return value of `al.Close` is not checked (errcheck)
+	t.Cleanup(func() { al.Close() })
+	                           ^
+internal/signer/signer_test.go:217:15: Error return value of `f.Close` is not checked (errcheck)
+	defer f.Close()
+	             ^
+internal/signer/signer_test.go:248:18: Error return value of `e.auditLog.Close` is not checked (errcheck)
+	e.auditLog.Close()
+	                ^
+internal/testutil/cluster.go:60:30: Error return value of `al.Close` is not checked (errcheck)
+		t.Cleanup(func() { al.Close() })
+		                           ^
+test/e2e/probe/main.go:122:10: Error return value of `c.Close` is not checked (errcheck)
+		c.Close()
+		       ^
+test/helpers_test.go:72:12: Error return value of `g.Serve` is not checked (errcheck)
+	go g.Serve(lis)
+	          ^
+test/helpers_test.go:78:31: Error return value of `conn.Close` is not checked (errcheck)
+	t.Cleanup(func() { conn.Close() })
+	                             ^
+internal/signer/priority.go:402:5: QF1001: could apply De Morgan's law (staticcheck)
+	if !(el >= a.cfg.MaxWindow || (el >= a.cfg.MinWindow && a.arrivals >= a.cfg.MinArrivals)) {
+	   ^
+internal/testutil/cluster.go:71:9: ST1023: should omit type http.Handler from declaration; it will be inferred from the right-hand side (staticcheck)
+		var h http.Handler = srv.Handler()
+		      ^
+internal/wire/wire.go:70:6: QF1001: could apply De Morgan's law (staticcheck)
+		if !(c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.') {
+		   ^
+31 issues:
+* errcheck: 28
+* staticcheck: 3
+exit(tags)=1
+== module benchmark ==
+summarize/eval.go:356:13: Error return value of `fmt.Sscanf` is not checked (errcheck)
+		fmt.Sscanf(f[2], "%f", &st)
+		          ^
+summarize/eval.go:357:13: Error return value of `fmt.Sscanf` is not checked (errcheck)
+		fmt.Sscanf(f[3], "%f", &lat)
+		          ^
+summarize/eval_test.go:63:13: Error return value of `os.MkdirAll` is not checked (errcheck)
+	os.MkdirAll(rd, 0o755)
+	           ^
+summarize/eval_test.go:83:15: Error return value of `os.WriteFile` is not checked (errcheck)
+		os.WriteFile(filepath.Join(rd, lab+".pods.jsonl"), []byte(strings.Join(pods, "\n")+"\n"), 0o644)
+		            ^
+summarize/eval_test.go:120:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(filepath.Join(rd, st+"@n48-c50.cpu-signer1.txt"), []byte(cs.String()), 0o644)
+	            ^
+summarize/eval_test.go:121:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(filepath.Join(rd, st+"@n48-c50.signer1.log.jsonl"), []byte(
+	            ^
+summarize/eval_test.go:169:13: Error return value of `os.MkdirAll` is not checked (errcheck)
+	os.MkdirAll(rd, 0o755)
+	           ^
+summarize/eval_test.go:228:13: Error return value of `os.MkdirAll` is not checked (errcheck)
+	os.MkdirAll(rd, 0o755)
+	           ^
+summarize/main.go:97:15: Error return value of `f.Close` is not checked (errcheck)
+	defer f.Close()
+	             ^
+summarize/scale.go:77:16: Error return value of `g.Close` is not checked (errcheck)
+		defer g.Close()
+		             ^
+summarize/scale.go:82:17: Error return value of `zr.Close` is not checked (errcheck)
+		defer zr.Close()
+		              ^
+summarize/scale.go:85:16: Error return value of `f.Close` is not checked (errcheck)
+		defer f.Close()
+		             ^
+summarize/sevenc.go:150:13: Error return value of `fmt.Sscanf` is not checked (errcheck)
+		fmt.Sscanf(n.RequestTime, "%f", &rt)
+		          ^
+tokenbench/main.go:161:9: Error return value of `f.Close` is not checked (errcheck)
+	f.Close()
+	       ^
+summarize/sevenc.go:81:14: ST1023: should omit type float64 from declaration; it will be inferred from the right-hand side (staticcheck)
+	var b0ready float64 = math.NaN()
+	            ^
+15 issues:
+* errcheck: 14
+* staticcheck: 1
+exit=1
+summarize/eval.go:356:13: Error return value of `fmt.Sscanf` is not checked (errcheck)
+		fmt.Sscanf(f[2], "%f", &st)
+		          ^
+summarize/eval.go:357:13: Error return value of `fmt.Sscanf` is not checked (errcheck)
+		fmt.Sscanf(f[3], "%f", &lat)
+		          ^
+summarize/eval_test.go:63:13: Error return value of `os.MkdirAll` is not checked (errcheck)
+	os.MkdirAll(rd, 0o755)
+	           ^
+summarize/eval_test.go:83:15: Error return value of `os.WriteFile` is not checked (errcheck)
+		os.WriteFile(filepath.Join(rd, lab+".pods.jsonl"), []byte(strings.Join(pods, "\n")+"\n"), 0o644)
+		            ^
+summarize/eval_test.go:120:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(filepath.Join(rd, st+"@n48-c50.cpu-signer1.txt"), []byte(cs.String()), 0o644)
+	            ^
+summarize/eval_test.go:121:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(filepath.Join(rd, st+"@n48-c50.signer1.log.jsonl"), []byte(
+	            ^
+summarize/eval_test.go:169:13: Error return value of `os.MkdirAll` is not checked (errcheck)
+	os.MkdirAll(rd, 0o755)
+	           ^
+summarize/eval_test.go:228:13: Error return value of `os.MkdirAll` is not checked (errcheck)
+	os.MkdirAll(rd, 0o755)
+	           ^
+summarize/main.go:97:15: Error return value of `f.Close` is not checked (errcheck)
+	defer f.Close()
+	             ^
+summarize/scale.go:77:16: Error return value of `g.Close` is not checked (errcheck)
+		defer g.Close()
+		             ^
+summarize/scale.go:82:17: Error return value of `zr.Close` is not checked (errcheck)
+		defer zr.Close()
+		              ^
+summarize/scale.go:85:16: Error return value of `f.Close` is not checked (errcheck)
+		defer f.Close()
+		             ^
+summarize/sevenc.go:150:13: Error return value of `fmt.Sscanf` is not checked (errcheck)
+		fmt.Sscanf(n.RequestTime, "%f", &rt)
+		          ^
+tokenbench/main.go:161:9: Error return value of `f.Close` is not checked (errcheck)
+	f.Close()
+	       ^
+summarize/sevenc.go:81:14: ST1023: should omit type float64 from declaration; it will be inferred from the right-hand side (staticcheck)
+	var b0ready float64 = math.NaN()
+	            ^
+15 issues:
+* errcheck: 14
+* staticcheck: 1
+exit(tags)=1
+== module spike ==
+0 issues.
+exit=0
+0 issues.
+exit(tags)=0

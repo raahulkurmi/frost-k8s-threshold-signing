@@ -1,0 +1,13 @@
+diff --git a/internal/policy/policy.go b/internal/policy/policy.go
+index 1f6fb2b..6653aab 100644
+--- a/internal/policy/policy.go
++++ b/internal/policy/policy.go
+@@ -286,7 +286,7 @@ func (p *Policy) Evaluate(payload []byte, now time.Time) (*Decision, error) {
+ 		return nil, violation("exp", "lifetime %ds exceeds max %ds", exp-iat, p.cfg.MaxTokenSeconds)
+ 	}
+ 	skew := p.cfg.ClockSkewSeconds
+-	if d := iat - now.Unix(); d > skew || d < -skew {
++	if d := iat - now.Unix(); false && (d > skew || d < -skew) { // MUTATION M9
+ 		return nil, violation("iat", "iat %d is %ds from signer clock (max skew %ds)", iat, d, skew)
+ 	}
+ 	if nbfN != nil {

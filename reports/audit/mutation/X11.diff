@@ -1,0 +1,13 @@
+diff --git a/internal/tlsconf/tlsconf.go b/internal/tlsconf/tlsconf.go
+index aee2108..648330b 100644
+--- a/internal/tlsconf/tlsconf.go
++++ b/internal/tlsconf/tlsconf.go
+@@ -110,7 +110,7 @@ func SignerServer(certFile, keyFile, caFile string, i int) (*tls.Config, error)
+ 			if len(cs.PeerCertificates) == 0 {
+ 				return errors.New("no client certificate")
+ 			}
+-			return coordinatorSAN(cs.PeerCertificates[0])
++			return nil // MUTATION X11: signer accepts any client cert from the CA
+ 		},
+ 	}, nil
+ }
