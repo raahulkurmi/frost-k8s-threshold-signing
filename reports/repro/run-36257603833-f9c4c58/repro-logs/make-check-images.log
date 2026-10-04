@@ -1,0 +1,12 @@
+make[1]: Entering directory '/home/runner/work/_temp/repo'
+scripts/check-images.sh
+== coordinator image frost-k8s/coordinator:dev (sha256:e62c8da0173f)
+  layers inspected: 3
+  files in image: 91, binaries: grpc-proxy 
+  history: 6 entries, no secret references
+== signer image frost-k8s/signer:dev (sha256:e04b1ac3f257)
+  layers inspected: 3
+  files in image: 91, binaries: signer 
+  history: 6 entries, no secret references
+check-images: PASS (no shares, keys, certs, encrypted blobs or private keys in any layer of either image)
+make[1]: Leaving directory '/home/runner/work/_temp/repo'

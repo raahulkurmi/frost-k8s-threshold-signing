@@ -1,0 +1,59 @@
+make[1]: Entering directory '/home/runner/work/_temp/repo'
+go test -count=1 -timeout 30m ./...
+go: downloading google.golang.org/grpc v1.84.0
+go: downloading github.com/niclabs/tcrsa v0.0.5
+go: downloading google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
+go: downloading k8s.io/externaljwt v0.36.5
+go: downloading golang.org/x/time v0.16.0
+go: downloading github.com/go-jose/go-jose/v4 v4.1.5
+go: downloading gopkg.in/go-jose/go-jose.v2 v2.6.3
+go: downloading golang.org/x/net v0.59.0
+go: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800
+go: downloading golang.org/x/crypto v0.57.0
+go: downloading golang.org/x/sys v0.48.0
+go: downloading golang.org/x/text v0.42.0
+ok  	frost-k8s-threshold-signing/cmd/dealer	281.724s
+?   	frost-k8s-threshold-signing/cmd/grpc-proxy	[no test files]
+ok  	frost-k8s-threshold-signing/cmd/signer	32.303s
+?   	frost-k8s-threshold-signing/internal/audit	[no test files]
+ok  	frost-k8s-threshold-signing/internal/coordinator	120.201s
+?   	frost-k8s-threshold-signing/internal/dealer	[no test files]
+ok  	frost-k8s-threshold-signing/internal/grpcserver	195.457s
+?   	frost-k8s-threshold-signing/internal/jwtfmt	[no test files]
+?   	frost-k8s-threshold-signing/internal/keymeta	[no test files]
+?   	frost-k8s-threshold-signing/internal/keyshare	[no test files]
+ok  	frost-k8s-threshold-signing/internal/policy	0.009s
+ok  	frost-k8s-threshold-signing/internal/signer	117.404s
+?   	frost-k8s-threshold-signing/internal/testutil	[no test files]
+?   	frost-k8s-threshold-signing/internal/tlsconf	[no test files]
+?   	frost-k8s-threshold-signing/internal/wire	[no test files]
+ok  	frost-k8s-threshold-signing/test	150.569s
+?   	frost-k8s-threshold-signing/test/e2e/probe	[no test files]
+go test -count=1 -timeout 30m -tags testmalicious -run 'TestMaliciousSignerExcluded' -v ./test/
+=== RUN   TestMaliciousSignerExcluded
+testutil: generated 2048-bit 3-of-5 key in 1m36.737s
+=== RUN   TestMaliciousSignerExcluded/strict/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/strict/three_malicious
+2026/09/25 16:00:21 WARN excluded invalid signature share request_id=2e3f68c86a83f4f1c2288f69 signer_id=1 err="invalid signature share: invalid signature share with id 1"
+2026/09/25 16:00:21 WARN excluded invalid signature share request_id=2e3f68c86a83f4f1c2288f69 signer_id=3 err="invalid signature share: invalid signature share with id 3"
+2026/09/25 16:00:21 WARN excluded invalid signature share request_id=2e3f68c86a83f4f1c2288f69 signer_id=2 err="invalid signature share: invalid signature share with id 2"
+2026/09/25 16:00:21 ERROR sign failed request_id=2e3f68c86a83f4f1c2288f69 strategy=strict fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:1 Reason:invalid signature share: invalid signature share with id 1} {SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]" latency_ms=56.774
+    malicious_test.go:71: threshold not met: 2 valid shares, need 3; failures: [signer-1: invalid signature share: invalid signature share with id 1; signer-3: invalid signature share: invalid signature share with id 3; signer-2: invalid signature share: invalid signature share with id 2]
+=== RUN   TestMaliciousSignerExcluded/optimistic/one_malicious
+    malicious_test.go:56: combined [1 3 4], excluded [{SignerID:2 Reason:invalid signature share: invalid signature share with id 2}]; log attributes signer_id 2
+=== RUN   TestMaliciousSignerExcluded/optimistic/three_malicious
+2026/09/25 16:00:21 WARN optimistic combine failed final verification; verifying shares individually request_id=a0a99cc7a502a4ee7df83de3 err="crypto/rsa: verification error"
+2026/09/25 16:00:21 WARN excluded invalid signature share request_id=a0a99cc7a502a4ee7df83de3 signer_id=3 err="invalid signature share with id 3"
+2026/09/25 16:00:21 WARN excluded invalid signature share request_id=a0a99cc7a502a4ee7df83de3 signer_id=2 err="invalid signature share with id 2"
+2026/09/25 16:00:21 WARN excluded invalid signature share request_id=a0a99cc7a502a4ee7df83de3 signer_id=1 err="invalid signature share with id 1"
+2026/09/25 16:00:21 ERROR sign failed request_id=a0a99cc7a502a4ee7df83de3 strategy=optimistic fanout=all signers_contacted=5 valid_shares=2 failures="[{SignerID:3 Reason:invalid signature share: invalid signature share with id 3} {SignerID:2 Reason:invalid signature share: invalid signature share with id 2} {SignerID:1 Reason:invalid signature share: invalid signature share with id 1}]" latency_ms=68.101
+    malicious_test.go:71: threshold not met: 2 valid shares, need 3; failures: [signer-3: invalid signature share: invalid signature share with id 3; signer-2: invalid signature share: invalid signature share with id 2; signer-1: invalid signature share: invalid signature share with id 1]
+--- PASS: TestMaliciousSignerExcluded (97.00s)
+    --- PASS: TestMaliciousSignerExcluded/strict/one_malicious (0.05s)
+    --- PASS: TestMaliciousSignerExcluded/strict/three_malicious (0.06s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/one_malicious (0.06s)
+    --- PASS: TestMaliciousSignerExcluded/optimistic/three_malicious (0.07s)
+PASS
+ok  	frost-k8s-threshold-signing/test	97.938s
+make[1]: Leaving directory '/home/runner/work/_temp/repo'
