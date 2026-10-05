@@ -1780,3 +1780,43 @@ The Phase 12 adversarial audit and its three approved fix rounds are complete.
   aborted result folders stay untracked (G-44).
 - The commit that adds this entry contains only documentation and evidence (this entry,
   REPRO.md, AUDIT.md and the run artifact); it changes no code.
+
+### N89. Review traceability complete: 6A/6B/6C texts stored, R19–R22 added
+Documentation only; no code changed (freeze rule N83).
+- **Review texts.** The original SCORED '26 reviews, as pasted by the author on 2026-10-05, are
+  stored verbatim in `reports/reviews/SCORED26-6A.md`, `SCORED26-6B.md` and `SCORED26-6C.md`.
+  The 6B text starts at its "Paper Review" section; its merit/expertise header was not pasted.
+- **Checked against R1–R18.** Every point in the three texts was compared with the existing rows.
+  - New rows:
+    - R19 (6B): security claims rested on unreviewed companion preprints;
+      ADDRESSED-IN-PAPER, the new paper must be self-contained.
+    - R20 (6B): the conclusion repeats itself; ADDRESSED-IN-PAPER.
+    - R21 (6C): the Minikube/macOS/Docker Desktop/socat-only evaluation. FIXED (partial) by
+      Phase 7C. It is partial because 6C asks for "geographically or administratively
+      independent signers", and 7C gives geographic separation only (one provider, account,
+      operator, build and dealer; R12).
+    - R22 (6B): the KEP-740 issues were presented as the main contribution;
+      ADDRESSED-IN-PAPER.
+  - Reviewer attributions corrected:
+    - R9 also 6A ("Section 9 contains two limitations labeled L2");
+    - R10 also 6A ("changes both the signing algorithm and parts of the deployment
+      architecture");
+    - R12 also 6B ("everything runs on a single machine").
+  - R10 note: 6B suggested a single-key ES256 baseline. B1 is single-key RS256 on the same path,
+    because the threshold system signs RS256, so B1 vs T holds the algorithm fixed.
+  - R18 note, for 6C's "reuse nonces, leak state":
+    - signature shares are deterministic;
+    - Shoup's proof uses a fresh `crypto/rand` nonce per share (tcrsa `key_share.go:79`);
+    - nonce reuse or state leakage would reveal only the reusing signer's own share, which the
+      threshold covers (C5/T4);
+    - neither is tested adversarially, and side channels are not reviewed (F-2).
+- **PAPER_INPUTS** gains rows for the contributions (R22), the self-contained security analysis
+  (R19), the evaluation environment (R21), the baseline choice (R10) and the conclusion (R20).
+- **Table fix:** a quoted legacy line with unescaped `|` (introduced in N85's G-14 correction)
+  broke one row of PAPER_INPUTS and CLAIMS_AUDIT; the pipes are now escaped.
+- **UNVERIFIED notes** about the missing review texts are removed from REVIEW_RESPONSE,
+  AUDIT.md and CLAIMS_RECHECK.md. The paper-text counts (R13–R15) remain unverified, because the
+  paper is not in the repository.
+
+Review traceability is complete: every reviewer point in 6A, 6B and 6C maps to a row with a
+status and evidence.

@@ -148,8 +148,10 @@ Re-derivation baseline used throughout:
 
 ## 6. reports/REVIEW_RESPONSE.md rows (R1–R18)
 
-Every row R1–R18 has a status and evidence (checked). The original 6B/6C review texts were never pasted (header,
-REVIEW_RESPONSE.md:3-4), so **points missing from R1–R18 cannot be ruled out: UNVERIFIED**.
+Every row R1–R18 has a status and evidence (checked). At the time of the audit the original 6B/6C review
+texts were not in the repository. *(Update 2026-10-05: the 6A/6B/6C texts are stored verbatim in
+`reports/reviews/`; every point in them is mapped to R1–R22, with R19–R22 added and the reviewer attributions
+of R9, R10 and R12 corrected; NOTES N89. No reviewer point is left unmapped.)*
 
 | Row | Status | Recheck |
 |---|---|---|
@@ -197,6 +199,5 @@ Every row above that was CONTRADICTED, STALE or UNSUPPORTED, with its new verdic
 | REVIEW_RESPONSE R17 | framing incomplete | G-15 | 29868bd | SUPPORTED |
 | E-3 (new sentences) | — | README, THREAT_MODEL §4/§7, PAPER_INPUTS | d23d0f4 | SUPPORTED (`deploy/policy.json` deny lists empty; N29) |
 
-Still UNVERIFIED, and outside the repository by nature:
-- whether 6B/6C contain points beyond R1–R18 (texts never pasted);
-- the paper-text counts (R13–R15).
+Still UNVERIFIED, and outside the repository by nature: the paper-text counts (R13–R15). (Coverage of the
+6B/6C review points is now verified against the stored texts: R1–R22, NOTES N89.)

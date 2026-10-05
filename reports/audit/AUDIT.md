@@ -43,7 +43,7 @@ The high findings are about **evidence and tests, not exploitable code**:
 - **gremlins on `coordinator`:** not executed, and on `signer` only partly (9 mutants in 5.5 h). Every mutant re-runs a 2048-bit keygen, and hanging mutants wait out the timeout. The manual mutations cover both packages' security paths (MUTATION.md).
 - **gremlins on `wire`, `tlsconf`, `keyshare`, `dealer`:** executed but uninformative. gremlins counts coverage per package, these packages have no tests of their own, so every mutant is "not covered". Manual mutations M4a, M10a, X6, X11, M16 and the dealer mutation cover them instead.
 - **Live slow-loris / HTTP/2 stream fuzzing:** not executed (FUZZ.md limitations).
-- **Paper text (R13–R15 counts) and 6B/6C review texts:** UNVERIFIED. Neither is in the repository.
+- **Paper text (R13–R15 counts):** UNVERIFIED; the paper is not in the repository. *(Update 2026-10-05: the 6A/6B/6C review texts are now stored verbatim in `reports/reviews/`, and every point in them is mapped in REVIEW_RESPONSE R1–R22; NOTES N89.)*
 - **Worker interruption.** Four parallel workers stopped early because of an account spend limit. Their raw output was complete except where noted. The lead auditor re-checked and finished:
   - Pass G's findings file was complete;
   - Pass D's runs had all finished;
